@@ -1,0 +1,49 @@
+# Compiled objects
+*.o
+*.obj
+obj/
+
+# CMake build directories
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# Executables
+*.exe
+*.out
+my_project
+unit_tests
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Valgrind
+*.log
+vgcore.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Criterion coverage
+*.gcda
+*.gcno
+*.gcov
+
+# Temporary files
+/tmp/

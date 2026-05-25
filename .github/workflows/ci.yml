@@ -1,0 +1,51 @@
+##
+## EPITECH PROJECT, 2025
+## CI Pipeline
+## File description:
+## GitHub Actions workflow for Epitech C++ projects
+##
+
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main, dev, 'feat/**', 'fix/**']
+  pull_request:
+    branches: [main, dev]
+
+env:
+  MIRROR_URL: ${{ vars.MIRROR_URL }}
+  EXECUTABLE_NAME: my_project
+
+jobs:
+  build-test-mirror:
+    runs-on: ubuntu-latest
+    container:
+      image: epitechcontent/epitest-docker
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compile project with CMake
+        run: |
+          echo "Configuration CMake..."
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+          echo "Build..."
+          cmake --build build
+
+          if [ ! -f "build/${{ env.EXECUTABLE_NAME }}" ]; then
+            echo "❌ Échec : l'exécutable n'a pas été créé"
+            exit 1
+          fi
+          echo "✓ Compilation OK"
+
+      - name: Mirror to Epitech repository
+        if: success() && github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: pixta-dev/repository-mirroring-action@v1
+        with:
+          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          target_repo_url: ${{ env.MIRROR_URL }}
