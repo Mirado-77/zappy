@@ -15,7 +15,7 @@ on:
 
 env:
   MIRROR_URL: ${{ vars.MIRROR_URL }}
-  EXECUTABLE_NAME: my_project
+  EXECUTABLES: "zappy_server zappy_gui zappy_ai"
 
 jobs:
   build-test-mirror:
@@ -37,10 +37,17 @@ jobs:
           echo "Build..."
           cmake --build build
 
-          if [ ! -f "build/${{ env.EXECUTABLE_NAME }}" ]; then
-            echo "❌ Échec : l'exécutable n'a pas été créé"
-            exit 1
-          fi
+          for exe in ${{ env.EXECUTABLES }}; do
+            if [ ! -f "$exe" ]; then
+              echo "❌ Échec : l'exécutable $exe n'a pas été créé"
+              exit 1
+            fi
+            if [ ! -x "$exe" ]; then
+              echo "❌ Échec : $exe n'est pas exécutable"
+              exit 1
+            fi
+            echo "✓ $exe OK"
+          done
           echo "✓ Compilation OK"
 
       - name: Mirror to Epitech repository
