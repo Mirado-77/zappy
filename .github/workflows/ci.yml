@@ -2,7 +2,7 @@
 ## EPITECH PROJECT, 2025
 ## CI Pipeline
 ## File description:
-## GitHub Actions workflow for Epitech C++ projects
+## GitHub Actions workflow for Epitech Zappy project
 ##
 
 name: CI Pipeline
@@ -18,7 +18,26 @@ env:
   EXECUTABLES: "zappy_server zappy_gui zappy_ai"
 
 jobs:
+  check-repo:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - name: Check repository origin
+        id: check
+        run: |
+          echo "Current repo: ${{ github.repository }}"
+          if [[ "${{ github.repository }}" == *"/local-zappy" ]]; then
+            echo "✓ Running on local-zappy repo"
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "⏭  Running on Epitech mirror, skipping build"
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+
   build-test-mirror:
+    needs: check-repo
+    if: needs.check-repo.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     container:
       image: epitechcontent/epitest-docker
@@ -29,13 +48,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Compile project with CMake
+      - name: Compile project with Make
         run: |
-          echo "Configuration CMake..."
-          cmake -B build -DCMAKE_BUILD_TYPE=Release
-
           echo "Build..."
-          cmake --build build
+          make
 
           for exe in ${{ env.EXECUTABLES }}; do
             if [ ! -f "$exe" ]; then
