@@ -3,21 +3,15 @@
 *.obj
 obj/
 
-# CMake build directories
+# Build directory
 build/
-cmake-build-*/
-CMakeFiles/
-CMakeCache.txt
-cmake_install.cmake
-Makefile
-*.cmake
-!CMakeLists.txt
 
 # Executables
 *.exe
 *.out
-my_project
-unit_tests
+zappy_server
+zappy_gui
+zappy_ai
 
 # Debug files
 *.dSYM/
