@@ -25,9 +25,14 @@ TEST_LDLIBS = -lcriterion
 COV_FLAGS = --coverage
 TEST_SRC = src/server/posix/FileDescriptor.cpp \
 			src/server/posix/Address.cpp \
-      src/server/cli/CliParser.cpp \
+			src/server/network/Listener.cpp \
+			src/server/network/SignalHandler.cpp \
+			src/server/network/PollLoop.cpp \
+      		src/server/cli/CliParser.cpp \
+		    $(wildcard tests/cli/*.cpp) \
 			$(wildcard tests/server/posix/*.cpp) \
-      $(wildcard tests/cli/*.cpp) \
+			$(wildcard tests/server/posix/*.cpp) \
+			$(wildcard tests/server/network/*.cpp)
 
 all:	$(BINS)
 
