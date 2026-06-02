@@ -17,6 +17,15 @@ AI_DIR = src/ia
 
 BUILD_DIR = build
 
+TEST_BIN = unit_tests
+TEST_CXX = g++
+TEST_CXXFLAGS = -std=c++20 -Wall -Wextra -iquote include/
+TEST_LDLIBS = -lcriterion
+COV_FLAGS = --coverage
+TEST_SRC = src/server/posix/FileDescriptor.cpp \
+			src/server/posix/Address.cpp \
+				$(wildcard tests/server/posix/*.cpp)
+
 all:	$(BINS)
 
 $(SERVER):
@@ -41,9 +50,20 @@ clean:
 
 fclean: clean
 	rm -f $(BINS)
+	rm -f $(TEST_BIN)
+	rm -f *.gcno *.gcda *.gcov
+
+tests_run:
+	$(TEST_CXX) $(TEST_CXXFLAGS) $(TEST_SRC) -o $(TEST_BIN) $(TEST_LDLIBS)
+	./$(TEST_BIN)
+
+tests_cov: TEST_CXXFLAGS += $(COV_FLAGS)
+tests_cov: TEST_LDLIBS += $(COV_FLAGS)
+tests_cov: tests_run
+	gcovr --exclude tests/ --print-summary
 
 re: fclean all
 
 debugre: fclean debug
 
-.PHONY: all debug clean fclean re debugre $(SERVER) $(GUI) $(AI)
+.PHONY: all debug clean fclean re debugre tests_run tests_cov $(SERVER) $(GUI) $(AI)

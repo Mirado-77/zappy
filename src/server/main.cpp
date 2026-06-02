@@ -7,8 +7,10 @@
 
 #include <iostream>
 
+#include "Constants.hpp"
+
 int main(void)
 {
     std::cout << "hello world i'm the server" << std::endl;
-    return 0;
+    return zappy::server::FAILURE;
 }
