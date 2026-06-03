@@ -20,41 +20,74 @@
 
 namespace zappy::server::network {
 
-/// @brief Single-threaded poll() event loop dispatching to per-fd callbacks.
+/**
+ * @brief Single-threaded poll() event loop dispatching to per-fd callbacks.
+ */
 class PollLoop {
 public:
-    /// @brief Callback invoked with the ready revents of its descriptor.
+    /**
+     * @brief Callback invoked with the ready revents of its descriptor.
+     */
     typedef std::function<void(short revents)> Callback;
 
-    /// @brief Build the loop and register the SIGINT self-pipe.
+    /**
+     * @brief Build the loop and register the SIGINT signalfd and wake eventfd.
+     */
     PollLoop();
 
     PollLoop(const PollLoop &) = delete;
     PollLoop &operator=(const PollLoop &) = delete;
 
-    /// @brief Watch @p fd for @p events and dispatch to @p callback.
+    /**
+     * @brief Watch @p fd for @p events and dispatch to @p callback when ready.
+     *
+     * @param fd file descriptor to register
+     * @param events bitmask of events to monitor (POLLIN, POLLOUT, ...)
+     * @param callback function invoked with the actual revents when the fd is ready
+     */
     void register_fd(int fd, short events, Callback callback);
 
-    /// @brief Stop watching @p fd.
+    /**
+     * @brief Stop watching @p fd and drop its callback.
+     *
+     * @param fd file descriptor to unregister
+     */
     void unregister_fd(int fd);
 
-    /// @brief Change the watched events of an already registered @p fd.
+    /**
+     * @brief Change the watched events of an already registered @p fd.
+     *
+     * @param fd file descriptor to update (no-op if not registered)
+     * @param events new bitmask of events to monitor
+     */
     void modify_events(int fd, short events);
 
-    /// @brief Set the poll timeout in ms (-1 blocks forever); used later by the Scheduler.
+    /**
+     * @brief Set the poll timeout in ms (-1 blocks forever); used later by the Scheduler.
+     *
+     * @param ms timeout in milliseconds, -1 to block indefinitely
+     */
     void set_next_timeout(int ms) noexcept;
 
-    /// @brief Run until stop() or SIGINT.
+    /**
+     * @brief Run the event loop until stop() or SIGINT.
+     */
     void run();
 
-    /// @brief Request the loop to stop and wake it up; thread/signal safe.
+    /**
+     * @brief Request the loop to stop and wake it up; thread/signal safe.
+     */
     void stop() noexcept;
 
 private:
-    /// @brief Dispatch the descriptors flagged ready by the last poll.
+    /**
+     * @brief Dispatch the descriptors flagged ready by the last poll.
+     */
     void dispatch();
 
-    /// @brief Drain the eventfd used to wake the loop.
+    /**
+     * @brief Drain the eventfd used to wake the loop.
+     */
     void drain_wake_event() noexcept;
 
     std::vector<pollfd> _pollfds;

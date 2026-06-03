@@ -19,7 +19,11 @@
 #include <utility>
 #include <vector>
 
-/// @brief Create a non-blocking eventfd used to wake the loop.
+/**
+ * @brief Create a non-blocking eventfd used to wake the loop.
+ *
+ * @return zappy::server::posix::FileDescriptor owning the eventfd
+ */
 static zappy::server::posix::FileDescriptor makeWakeEvent()
 {
     zappy::server::posix::FileDescriptor fd(
@@ -31,7 +35,13 @@ static zappy::server::posix::FileDescriptor makeWakeEvent()
     return fd;
 }
 
-/// @brief Append a descriptor to the polled set.
+/**
+ * @brief Append a descriptor to the polled set.
+ *
+ * @param pollfds the polled set to extend
+ * @param fd file descriptor to watch
+ * @param events bitmask of events to monitor (POLLIN, POLLOUT, ...)
+ */
 static void watch(std::vector<pollfd> &pollfds, int fd, short events)
 {
     pollfd entry = {};
@@ -41,7 +51,9 @@ static void watch(std::vector<pollfd> &pollfds, int fd, short events)
     pollfds.push_back(entry);
 }
 
-/// @brief Build the loop and register the SIGINT signalfd and wake eventfd.
+/**
+ * @brief Build the loop and register the SIGINT signalfd and wake eventfd.
+ */
 zappy::server::network::PollLoop::PollLoop()
     : _stop_requested(false), _wake_event(makeWakeEvent()), _timeout_ms(-1)
 {
@@ -49,7 +61,13 @@ zappy::server::network::PollLoop::PollLoop()
     watch(_pollfds, _wake_event.get(), POLLIN);
 }
 
-/// @brief Watch @p fd for @p events and dispatch to @p callback.
+/**
+ * @brief Watch @p fd for @p events and dispatch to @p callback when ready.
+ *
+ * @param fd file descriptor to register
+ * @param events bitmask of events to monitor (POLLIN, POLLOUT, ...)
+ * @param callback function invoked with the actual revents when the fd is ready
+ */
 void zappy::server::network::PollLoop::register_fd(int fd, short events,
     Callback callback)
 {
@@ -57,7 +75,11 @@ void zappy::server::network::PollLoop::register_fd(int fd, short events,
     _callbacks[fd] = std::move(callback);
 }
 
-/// @brief Stop watching @p fd.
+/**
+ * @brief Stop watching @p fd and drop its callback.
+ *
+ * @param fd file descriptor to unregister
+ */
 void zappy::server::network::PollLoop::unregister_fd(int fd)
 {
     _callbacks.erase(fd);
@@ -65,7 +87,12 @@ void zappy::server::network::PollLoop::unregister_fd(int fd)
         [fd](const pollfd &entry) { return entry.fd == fd; });
 }
 
-/// @brief Change the watched events of an already registered @p fd.
+/**
+ * @brief Change the watched events of an already registered @p fd.
+ *
+ * @param fd file descriptor to update (no-op if not registered)
+ * @param events new bitmask of events to monitor
+ */
 void zappy::server::network::PollLoop::modify_events(int fd, short events)
 {
     for (pollfd &entry : _pollfds) {
@@ -76,13 +103,19 @@ void zappy::server::network::PollLoop::modify_events(int fd, short events)
     }
 }
 
-/// @brief Set the poll timeout in ms (-1 blocks forever).
+/**
+ * @brief Set the poll timeout in ms (-1 blocks forever).
+ *
+ * @param ms timeout in milliseconds, -1 to block indefinitely
+ */
 void zappy::server::network::PollLoop::set_next_timeout(int ms) noexcept
 {
     _timeout_ms = ms;
 }
 
-/// @brief Drain the eventfd used to wake the loop.
+/**
+ * @brief Drain the eventfd used to wake the loop.
+ */
 void zappy::server::network::PollLoop::drain_wake_event() noexcept
 {
     std::uint64_t value = 0;
@@ -91,7 +124,9 @@ void zappy::server::network::PollLoop::drain_wake_event() noexcept
         ;
 }
 
-/// @brief Dispatch the descriptors flagged ready by the last poll.
+/**
+ * @brief Dispatch the descriptors flagged ready by the last poll.
+ */
 void zappy::server::network::PollLoop::dispatch()
 {
     std::vector<std::pair<int, short>> ready;
@@ -127,7 +162,9 @@ void zappy::server::network::PollLoop::dispatch()
     }
 }
 
-/// @brief Run until stop() or SIGINT.
+/**
+ * @brief Run the event loop until stop() or SIGINT.
+ */
 void zappy::server::network::PollLoop::run()
 {
     while (!_stop_requested.load()) {
@@ -144,7 +181,9 @@ void zappy::server::network::PollLoop::run()
     }
 }
 
-/// @brief Request the loop to stop and wake it up.
+/**
+ * @brief Request the loop to stop and wake it up.
+ */
 void zappy::server::network::PollLoop::stop() noexcept
 {
     const std::uint64_t one = 1;

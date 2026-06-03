@@ -13,10 +13,16 @@
 
 namespace zappy::server::network {
 
-/// @brief Exception signalling a network layer failure.
+/**
+ * @brief Exception signalling a network layer failure.
+ */
 class NetworkError : public std::runtime_error {
 public:
-    /// @brief Build an error with a reason.
+    /**
+     * @brief Build an error with a reason.
+     *
+     * @param reason description of the failure
+     */
     explicit NetworkError(const std::string &reason)
         : std::runtime_error(reason)
     {
