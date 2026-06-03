@@ -10,7 +10,7 @@
 #include <optional>
 #include <unordered_map>
 
-#include "Constants.hpp"
+#include "server/Constants.hpp"
 #include "server/cli/CliParseError.hpp"
 #include "server/cli/CliParser.hpp"
 #include "server/network/ClientBuffer.hpp"
@@ -18,6 +18,13 @@
 #include "server/network/NetworkError.hpp"
 #include "server/network/PollLoop.hpp"
 
+/**
+ * @brief Unregister @p client_fd from the poll loop and drop its buffer.
+ *
+ * @param client_fd file descriptor of the client to drop
+ * @param poll the poll loop to unregister from
+ * @param clients the client buffer map to erase from
+ */
 static void drop_client(int client_fd,
     zappy::server::network::PollLoop &poll,
     std::unordered_map<int, zappy::server::network::ClientBuffer> &clients)
@@ -26,6 +33,14 @@ static void drop_client(int client_fd,
     clients.erase(client_fd);
 }
 
+/**
+ * @brief Handle the events flagged on a client fd: read, echo, write, retune poll mask.
+ *
+ * @param client_fd file descriptor of the client
+ * @param revents bitmask of events returned by poll for this fd
+ * @param poll the poll loop (used to adjust the watched events)
+ * @param clients the client buffer map
+ */
 static void handle_client_events(int client_fd, short revents,
     zappy::server::network::PollLoop &poll,
     std::unordered_map<int, zappy::server::network::ClientBuffer> &clients)
@@ -63,6 +78,13 @@ static void handle_client_events(int client_fd, short revents,
     poll.modify_events(client_fd, events);
 }
 
+/**
+ * @brief Accept every pending connection on @p listener and register them in @p poll.
+ *
+ * @param listener the listening socket to drain
+ * @param poll the poll loop to register the new clients into
+ * @param clients the client buffer map to populate
+ */
 static void handle_new_connections(
     const zappy::server::network::Listener &listener,
     zappy::server::network::PollLoop &poll,
@@ -89,6 +111,13 @@ static void handle_new_connections(
     }
 }
 
+/**
+ * @brief zappy_server entry point: parse the CLI, then boot the server.
+ *
+ * @param argc number of command-line arguments
+ * @param argv command-line argument vector
+ * @return int SUCCESS on clean shutdown, FAILURE on CLI or network error
+ */
 int main(int argc, char **argv)
 {
     try {

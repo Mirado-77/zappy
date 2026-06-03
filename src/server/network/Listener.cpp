@@ -19,7 +19,13 @@
 #include <cstring>
 
 
-/// @brief Create a non-blocking listening socket bound to INADDR_ANY.
+/**
+ * @brief Create a non-blocking TCP listening socket bound to INADDR_ANY.
+ *
+ * @param port server port (0 lets the OS pick a free port)
+ * @param backlog kernel queue size for pending connections
+ * @return zappy::server::posix::FileDescriptor owning the listening socket
+ */
 static zappy::server::posix::FileDescriptor makeListeningSocket(
     std::uint16_t port, int backlog)
 {
@@ -46,7 +52,12 @@ static zappy::server::posix::FileDescriptor makeListeningSocket(
     return sock;
 }
 
-/// @brief Read the locally bound port (resolves OS-assigned port 0).
+/**
+ * @brief Read the locally bound port (resolves OS-assigned port when bound on 0).
+ *
+ * @param sock a bound listening socket
+ * @return std::uint16_t the port the kernel actually bound the socket to
+ */
 static std::uint16_t resolvePort(
     const zappy::server::posix::FileDescriptor &sock)
 {
@@ -59,25 +70,43 @@ static std::uint16_t resolvePort(
     return ntohs(addr.sin_port);
 }
 
-/// @brief Create, bind and listen on @p port.
+/**
+ * @brief Create, bind and listen on @p port; resolve the actually bound port.
+ *
+ * @param port server port
+ * @param backlog kernel queue size for pending connections
+ */
 zappy::server::network::Listener::Listener(std::uint16_t port, int backlog)
     : _socket(makeListeningSocket(port, backlog)), _port(resolvePort(_socket))
 {
 }
 
-/// @brief The raw listening descriptor.
+/**
+ * @brief Raw fd of the listening socket, for poll registration.
+ *
+ * @return int the listening socket file descriptor
+ */
 int zappy::server::network::Listener::fd() const noexcept
 {
     return _socket.get();
 }
 
-/// @brief The port actually bound.
+/**
+ * @brief Port the socket is actually bound to (useful when constructed with port 0).
+ *
+ * @return std::uint16_t the bound port
+ */
 std::uint16_t zappy::server::network::Listener::port() const noexcept
 {
     return _port;
 }
 
-/// @brief Accept one pending connection without blocking.
+/**
+ * @brief Accept one pending connection without blocking.
+ *
+ * @return std::optional<zappy::server::posix::FileDescriptor> the accepted client
+ *         socket, or std::nullopt on EAGAIN/EWOULDBLOCK
+ */
 std::optional<zappy::server::posix::FileDescriptor>
 zappy::server::network::Listener::accept_connection() const
 {
@@ -91,7 +120,12 @@ zappy::server::network::Listener::accept_connection() const
     return zappy::server::posix::FileDescriptor(client);
 }
 
-/// @brief Resolve the peer address of a connected socket.
+/**
+ * @brief Resolve the peer address of an already-connected client socket.
+ *
+ * @param client an accepted client socket
+ * @return zappy::server::posix::Address the remote address of the peer
+ */
 zappy::server::posix::Address zappy::server::network::Listener::peer_address(
     const zappy::server::posix::FileDescriptor &client)
 {

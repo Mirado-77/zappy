@@ -15,7 +15,11 @@
 #include <csignal>
 #include <cstring>
 
-/// @brief Block SIGINT process-wide and return its non-blocking signalfd.
+/**
+ * @brief Block SIGINT process-wide and return its non-blocking signalfd.
+ *
+ * @return zappy::server::posix::FileDescriptor owning the signalfd
+ */
 static zappy::server::posix::FileDescriptor makeSignalFd()
 {
     sigset_t mask;
@@ -35,19 +39,27 @@ static zappy::server::posix::FileDescriptor makeSignalFd()
     return fd;
 }
 
-/// @brief Block SIGINT and open its signalfd.
+/**
+ * @brief Block SIGINT and open its signalfd.
+ */
 zappy::server::network::SignalHandler::SignalHandler()
     : _signal_fd(makeSignalFd())
 {
 }
 
-/// @brief The signalfd to register in the poll loop.
+/**
+ * @brief The signalfd to register in the poll loop.
+ *
+ * @return int the signalfd file descriptor
+ */
 int zappy::server::network::SignalHandler::read_fd() const noexcept
 {
     return _signal_fd.get();
 }
 
-/// @brief Drain pending signal notifications.
+/**
+ * @brief Drain pending signal notifications.
+ */
 void zappy::server::network::SignalHandler::consume() const noexcept
 {
     signalfd_siginfo info;

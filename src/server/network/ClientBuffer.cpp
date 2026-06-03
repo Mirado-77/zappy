@@ -5,7 +5,7 @@
 ** ClientBuffer implementation
 */
 
-#include "Constants.hpp"
+#include "server/Constants.hpp"
 #include "server/network/ClientBuffer.hpp"
 
 #include <array>
@@ -14,15 +14,32 @@
 #include <string_view>
 #include <unistd.h>
 
+/**
+ * @brief Construct a new zappy::server::network::Client Buffer::Client Buffer object
+ * Take ownership of @p fd and zero-initialise the write offset.
+ * @param fd is a file descriptor
+ */
 zappy::server::network::ClientBuffer::ClientBuffer(posix::FileDescriptor fd)
     : _fd(std::move(fd)), _write_offset(0)
 {}
 
+/**
+ * @brief Return the raw descriptor without releasing ownership.
+ * 
+ * @return int 
+ */
 int zappy::server::network::ClientBuffer::fd() const noexcept
 {
     return _fd.get();
 }
 
+/**
+ * @brief Append @p data to the read buffer;
+ * return ERROR if the 1 MB cap is exceeded.
+ * 
+ * @param data information that is retrieve
+ * @return zappy::server::network::ReadResult 
+ */
 zappy::server::network::ReadResult
 zappy::server::network::ClientBuffer::_append_and_check(std::string_view data)
 {
@@ -34,6 +51,11 @@ zappy::server::network::ClientBuffer::_append_and_check(std::string_view data)
     return result;
 }
 
+/**
+ * @brief Read all available bytes in a loop; EINTR retries,
+ *        EAGAIN ends the loop normally
+ * @return zappy::server::network::ReadResult 
+ */
 zappy::server::network::ReadResult zappy::server::network::ClientBuffer::on_readable()
 {
     std::array<char, zappy::server::READ_CHUNK_SIZE> chunk = {};
@@ -57,6 +79,10 @@ zappy::server::network::ReadResult zappy::server::network::ClientBuffer::on_read
     return result;
 }
 
+/**
+ * @brief Split the read buffer on '\\n', strip trailing '\\r',
+ * push complete lines into ready_messages
+ */
 void zappy::server::network::ClientBuffer::_extract_lines()
 {
     std::size_t pos = 0;
@@ -73,6 +99,10 @@ void zappy::server::network::ClientBuffer::_extract_lines()
     _read_buffer.erase(0, pos);
 }
 
+/**
+ * @brief If write_buffer is empty and the outgoing queue is not,
+ * pop the next message into write_buffer
+ */
 void zappy::server::network::ClientBuffer::_load_next_message()
 {
     if (_write_buffer.empty() && !_outgoing_messages.empty()) {
@@ -82,6 +112,9 @@ void zappy::server::network::ClientBuffer::_load_next_message()
     }
 }
 
+/**
+ * @brief Clear the current write_buffer and load the next outgoing message, if any.
+ */
 void zappy::server::network::ClientBuffer::_advance_write_buffer()
 {
     _write_buffer.clear();
@@ -92,6 +125,14 @@ void zappy::server::network::ClientBuffer::_advance_write_buffer()
     }
 }
 
+/**
+ * @brief Interpret the return value of ::write; update @p result and return true when the loop should stop.
+ * 
+ * @param n Return value of the preceding ::write call.
+ * @param result Out parameter
+ * @return true 
+ * @return false 
+ */
 bool zappy::server::network::ClientBuffer::_handle_write_result(
     std::ptrdiff_t n, WriteResult &result)
 {
@@ -111,6 +152,12 @@ bool zappy::server::network::ClientBuffer::_handle_write_result(
     return done;
 }
 
+/**
+ * @brief Drain the outgoing queue progressively;
+ * EINTR retries, EAGAIN yields WriteResult::OK.
+ * 
+ * @return zappy::server::network::WriteResult 
+ */
 zappy::server::network::WriteResult zappy::server::network::ClientBuffer::on_writable()
 {
     WriteResult result = WriteResult::ALL_SENT;
@@ -126,6 +173,11 @@ zappy::server::network::WriteResult zappy::server::network::ClientBuffer::on_wri
     return result;
 }
 
+/**
+ * @brief Append @p msg to the outgoing queue; adds '\\n' if absent.
+ * 
+ * @param msg message that comes from client
+ */
 void zappy::server::network::ClientBuffer::queue_message(std::string msg)
 {
     if (msg.empty() || msg.back() != '\n')
@@ -133,11 +185,22 @@ void zappy::server::network::ClientBuffer::queue_message(std::string msg)
     _outgoing_messages.push_back(std::move(msg));
 }
 
+/**
+ * @brief Return true when write_buffer or outgoing_messages is non-empty.
+ * 
+ * @return true 
+ * @return false 
+ */
 bool zappy::server::network::ClientBuffer::has_pending_write() const noexcept
 {
     return !_write_buffer.empty() || !_outgoing_messages.empty();
 }
 
+/**
+ * @brief Return the next parsed line and remove it from the queue, or nullopt if none.
+ * 
+ * @return std::optional<std::string> 
+ */
 std::optional<std::string> zappy::server::network::ClientBuffer::pop_ready_message()
 {
     std::optional<std::string> result = std::nullopt;
@@ -149,6 +212,12 @@ std::optional<std::string> zappy::server::network::ClientBuffer::pop_ready_messa
     return result;
 }
 
+/**
+ * @brief Return true when at least one complete line is ready for the dispatcher.
+ * 
+ * @return true 
+ * @return false 
+ */
 bool zappy::server::network::ClientBuffer::has_ready_messages() const noexcept
 {
     return !_ready_messages.empty();

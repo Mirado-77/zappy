@@ -12,10 +12,14 @@
 
 namespace zappy::server::network {
 
-/// @brief Turns SIGINT into a readable descriptor via signalfd; no globals.
+/**
+ * @brief Turns SIGINT into a readable descriptor via signalfd; no globals.
+ */
 class SignalHandler {
 public:
-    /// @brief Block SIGINT and open its signalfd.
+    /**
+     * @brief Block SIGINT and open its signalfd.
+     */
     SignalHandler();
 
     SignalHandler(const SignalHandler &) = delete;
@@ -23,10 +27,16 @@ public:
     SignalHandler(SignalHandler &&) noexcept = default;
     SignalHandler &operator=(SignalHandler &&) noexcept = default;
 
-    /// @brief The signalfd to register in the poll loop.
+    /**
+     * @brief The signalfd to register in the poll loop.
+     *
+     * @return int the signalfd file descriptor
+     */
     [[nodiscard]] int read_fd() const noexcept;
 
-    /// @brief Drain pending signal notifications.
+    /**
+     * @brief Drain pending signal notifications.
+     */
     void consume() const noexcept;
 
 private:

@@ -20,7 +20,8 @@ class CliParseError : public std::runtime_error {
 public:
     /**
      * @brief Build an error with a reason.
-     * @param reason Description of the invalid input.
+     *
+     * @param reason description of the invalid input
      */
     explicit CliParseError(const std::string &reason)
         : std::runtime_error(reason)

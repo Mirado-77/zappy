@@ -14,20 +14,25 @@
     #include <vector>
 
 namespace zappy::server::cli {
+
+/**
+ * @brief Immutable validated configuration consumed by the server at boot.
+ */
 class ServerConfig {
 public:
     /**
      * @brief Construct a configuration from validated values.
-     * @param port Listening port (1..65535).
-     * @param width World width in tiles (> 0).
-     * @param height World height in tiles (> 0).
-     * @param teamNames Unique team names (at least one, no "GRAPHIC").
-     * @param clientsPerTeam Authorised clients per team (> 0).
-     * @param frequency Reciprocal of the time unit (> 0).
-     * @param enableEvents Bonus: dynamic events.
-     * @param enableBiomes Bonus: biome generation.
-     * @param enableAdmin  Bonus: admin console.
-     * @param adminPassword Bonus: admin console password.
+     *
+     * @param port listening port (1..65535)
+     * @param width world width in tiles (> 0)
+     * @param height world height in tiles (> 0)
+     * @param teamNames unique team names (at least one, no "GRAPHIC")
+     * @param clientsPerTeam authorised clients per team (> 0)
+     * @param frequency reciprocal of the time unit (> 0)
+     * @param enableEvents bonus: dynamic events subsystem
+     * @param enableBiomes bonus: biome generation
+     * @param enableAdmin bonus: admin console
+     * @param adminPassword bonus: admin console password (empty if none)
      */
     ServerConfig(std::uint16_t port, int width, int height,
         std::vector<std::string> teamNames, int clientsPerTeam, int frequency,
@@ -41,35 +46,77 @@ public:
     {
     }
 
-    /// @return Listening port number.
+    /**
+     * @brief Listening port number.
+     *
+     * @return std::uint16_t the port
+     */
     std::uint16_t port() const noexcept { return _port; }
-    
-    /// @return World width in tiles.
+
+    /**
+     * @brief World width in tiles.
+     *
+     * @return int the width
+     */
     int width() const noexcept { return _width; }
-    
-    /// @return World height in tiles.
+
+    /**
+     * @brief World height in tiles.
+     *
+     * @return int the height
+     */
     int height() const noexcept { return _height; }
-    
-    /// @return Immutable list of unique team names.
+
+    /**
+     * @brief Immutable list of unique team names.
+     *
+     * @return const std::vector<std::string>& reference to the team names
+     */
     const std::vector<std::string> &teamNames() const noexcept { return _teamNames; }
-    
-    /// @return Initial authorised clients per team.
+
+    /**
+     * @brief Initial authorised clients per team.
+     *
+     * @return int the number of clients per team
+     */
     int clientsPerTeam() const noexcept { return _clientsPerTeam; }
-    
-    /// @return Reciprocal of the time unit for action execution.
+
+    /**
+     * @brief Reciprocal of the time unit for action execution.
+     *
+     * @return int the frequency
+     */
     int frequency() const noexcept { return _frequency; }
 
-    
-    /// @return Whether the bonus events subsystem is enabled.
+    /**
+     * @brief Whether the bonus events subsystem is enabled.
+     *
+     * @return true if the events subsystem is enabled
+     * @return false otherwise
+     */
     bool eventsEnabled() const noexcept { return _enableEvents; }
-    
-    /// @return Whether the bonus biomes subsystem is enabled.
+
+    /**
+     * @brief Whether the bonus biomes subsystem is enabled.
+     *
+     * @return true if the biomes subsystem is enabled
+     * @return false otherwise
+     */
     bool biomesEnabled() const noexcept { return _enableBiomes; }
-    
-    /// @return Whether the bonus admin subsystem is enabled.
+
+    /**
+     * @brief Whether the bonus admin subsystem is enabled.
+     *
+     * @return true if the admin subsystem is enabled
+     * @return false otherwise
+     */
     bool adminEnabled() const noexcept { return _enableAdmin; }
 
-    /// @return Configured admin password (empty if none provided).
+    /**
+     * @brief Configured admin password.
+     *
+     * @return const std::string& reference to the password (empty if none provided)
+     */
     const std::string &adminPassword() const noexcept { return _adminPassword; }
 
 private:
@@ -79,7 +126,6 @@ private:
     const std::vector<std::string> _teamNames;
     const int _clientsPerTeam;
     const int _frequency;
-
     const bool _enableEvents;
     const bool _enableBiomes;
     const bool _enableAdmin;
@@ -87,4 +133,5 @@ private:
 };
 
 }
+
 #endif /* !CLI_SERVERCONFIG_HPP_ */

@@ -2,7 +2,7 @@
 ** EPITECH PROJECT, 2026
 ** Zappy
 ** File description:
-** Command line parser turning argc/argv into an ServerConfig
+** Command line parser turning argc/argv into a ServerConfig
 */
 
 #ifndef CLI_CLIPARSER_HPP_
@@ -27,21 +27,25 @@ public:
 
     /**
      * @brief Parse a command line into a validated configuration.
-     * @param argc Argument count from @c main().
-     * @param argv Argument vector from @c main().
-     * @return The configuration, or @c std::nullopt when @c --help was asked.
-     * @throws CliParseError on any invalid input.
+     *
+     * @param argc argument count from @c main()
+     * @param argv argument vector from @c main()
+     * @return std::optional<ServerConfig> the configuration, or std::nullopt when @c --help was asked
+     * @throws CliParseError on any invalid input
      */
     std::optional<ServerConfig> parse(int argc, const char *const argv[]) const;
 
     /**
      * @brief The usage / help message.
-     * @return The usage string, newline-terminated.
+     *
+     * @return std::string the usage string, newline-terminated
      */
     static std::string usage();
 
 private:
-    /// @brief Accumulator filled while scanning the argument vector.
+    /**
+     * @brief Accumulator filled while scanning the argument vector.
+     */
     struct Builder {
         std::optional<long> port;
         std::optional<long> width;
@@ -56,21 +60,56 @@ private:
         std::optional<std::string> adminPassword;
     };
 
-    /// @brief Tokenise the arguments into the builder.
+    /**
+     * @brief Tokenise the arguments into the builder.
+     *
+     * @param args raw argument tokens (excluding argv[0])
+     * @param out builder to populate
+     * @throws CliParseError on any invalid token
+     */
     void collect(const std::vector<std::string> &args, Builder &out) const;
 
-    /// @brief Validate the builder and build the config.
+    /**
+     * @brief Validate the builder and build the config.
+     *
+     * @param b populated builder
+     * @return ServerConfig the validated configuration
+     * @throws CliParseError if any required field is missing or invalid
+     */
     ServerConfig finalize(const Builder &b) const;
 
-    /// @brief Take the value token following @p flag, advancing @p index.
+    /**
+     * @brief Take the value token following @p flag, advancing @p index.
+     *
+     * @param args raw argument tokens
+     * @param index in/out: current position in @p args, advanced past the value
+     * @param flag the flag being parsed (used in error messages)
+     * @return const std::string& reference to the consumed value
+     * @throws CliParseError if no value follows the flag
+     */
     const std::string &takeValue(const std::vector<std::string> &args,
         std::size_t &index, std::string_view flag) const;
 
-    /// @brief Take an integer flag value, advancing @p index.
+    /**
+     * @brief Take an integer flag value, advancing @p index.
+     *
+     * @param args raw argument tokens
+     * @param index in/out: current position in @p args, advanced past the value
+     * @param flag the flag being parsed (used in error messages)
+     * @return long the parsed integer
+     * @throws CliParseError if the value is missing or not a valid integer
+     */
     long takeInteger(const std::vector<std::string> &args, std::size_t &index,
         std::string_view flag) const;
 
-    /// @brief Take a -n run of team names, advancing @p index.
+    /**
+     * @brief Take a -n run of team names, advancing @p index.
+     *
+     * @param args raw argument tokens
+     * @param index in/out: current position in @p args, advanced past the last team name
+     * @param out builder receiving the team names
+     * @throws CliParseError if no team name follows -n
+     */
     void takeTeamNames(const std::vector<std::string> &args, std::size_t &index,
         Builder &out) const;
 };
