@@ -5,48 +5,72 @@
 ** zappy_server entry point: parse the CLI, then boot the server
 */
 
-#include <unistd.h>
-
-#include <array>
 #include <cstdint>
 #include <iostream>
 #include <optional>
 #include <unordered_map>
 
 #include "Constants.hpp"
+#include "server/cli/CliParseError.hpp"
+#include "server/cli/CliParser.hpp"
+#include "server/network/ClientBuffer.hpp"
 #include "server/network/Listener.hpp"
 #include "server/network/NetworkError.hpp"
 #include "server/network/PollLoop.hpp"
-#include "server/posix/FileDescriptor.hpp"
 
-/// @brief Read and log raw bytes from a client; drop it on EOF/error.
-static void handle_client_data(int client_fd,
+static void drop_client(int client_fd,
     zappy::server::network::PollLoop &poll,
-    std::unordered_map<int, zappy::server::posix::FileDescriptor> &clients)
+    std::unordered_map<int, zappy::server::network::ClientBuffer> &clients)
 {
-    std::array<char, zappy::server::READ_BUFFER_SIZE> buffer = {};
-    const ssize_t count = ::read(client_fd, buffer.data(), buffer.size());
-
-    if (count <= 0) {
-        std::cout << "client " << client_fd << " disconnected\n";
-        poll.unregister_fd(client_fd);
-        clients.erase(client_fd);
-        return;
-    }
-    std::cout << "received " << count << " byte(s) from client " << client_fd
-              << "\n";
+    poll.unregister_fd(client_fd);
+    clients.erase(client_fd);
 }
 
-/// @brief Accept every pending connection, log it and watch it for data.
+static void handle_client_events(int client_fd, short revents,
+    zappy::server::network::PollLoop &poll,
+    std::unordered_map<int, zappy::server::network::ClientBuffer> &clients)
+{
+    auto it = clients.find(client_fd);
+    if (it == clients.end())
+        return;
+
+    if (revents & POLLIN) {
+        const auto result = it->second.on_readable();
+        if (result != zappy::server::network::ReadResult::OK) {
+            std::cerr << "client " << client_fd << " disconnected\n";
+            drop_client(client_fd, poll, clients);
+            return;
+        }
+        while (it->second.has_ready_messages()) {
+            const auto msg = it->second.pop_ready_message();
+            std::cerr << "[fd=" << client_fd << "] " << *msg << "\n";
+            // TODO(ZAP-dispatcher): forward to Dispatcher instead of echoing
+            it->second.queue_message(*msg);
+        }
+    }
+
+    if (revents & POLLOUT) {
+        const auto result = it->second.on_writable();
+        if (result == zappy::server::network::WriteResult::ERROR) {
+            std::cerr << "client " << client_fd << " write error\n";
+            drop_client(client_fd, poll, clients);
+            return;
+        }
+    }
+
+    const short events = static_cast<short>(
+        POLLIN | (it->second.has_pending_write() ? POLLOUT : 0));
+    poll.modify_events(client_fd, events);
+}
+
 static void handle_new_connections(
     const zappy::server::network::Listener &listener,
     zappy::server::network::PollLoop &poll,
-    std::unordered_map<int, zappy::server::posix::FileDescriptor> &clients)
+    std::unordered_map<int, zappy::server::network::ClientBuffer> &clients)
 {
     while (true) {
         std::optional<zappy::server::posix::FileDescriptor> client =
             listener.accept_connection();
-
         if (!client)
             break;
 
@@ -56,22 +80,27 @@ static void handle_new_connections(
 
         std::cout << "client connected from " << peer.ip() << ":"
                   << peer.port() << "\n";
-        clients.emplace(client_fd, std::move(*client));
-        poll.register_fd(client_fd, POLLIN, [client_fd, &poll, &clients](short) {
-            handle_client_data(client_fd, poll, clients);
-        });
+        clients.emplace(client_fd,
+            zappy::server::network::ClientBuffer(std::move(*client)));
+        poll.register_fd(client_fd, POLLIN,
+            [client_fd, &poll, &clients](short revents) {
+                handle_client_events(client_fd, revents, poll, clients);
+            });
     }
 }
 
 int main(int argc, char **argv)
 {
-    // TODO: use ServerConfig::port() from the CLI parser (ZAP-13) once merged.
-    const std::uint16_t port = 4242;
-
     try {
-        zappy::server::network::Listener listener(port);
+        const auto config = zappy::server::cli::CliParser{}.parse(argc, argv);
+
+        if (!config)
+            return zappy::server::SUCCESS;
+
+        zappy::server::network::Listener listener(config->port());
         zappy::server::network::PollLoop poll;
-        std::unordered_map<int, zappy::server::posix::FileDescriptor> clients;
+        // TODO(ZAP-ClientRegistry): replace with ClientRegistry once implemented.
+        std::unordered_map<int, zappy::server::network::ClientBuffer> clients;
 
         std::cout << "zappy_server listening on port " << listener.port()
                   << "\n";
@@ -80,6 +109,10 @@ int main(int argc, char **argv)
         });
         poll.run();
         std::cout << "zappy_server shutting down\n";
+    } catch (const zappy::server::cli::CliParseError &error) {
+        std::cerr << "Error: " << error.what() << "\n";
+        std::cerr << zappy::server::cli::CliParser::usage();
+        return zappy::server::FAILURE;
     } catch (const zappy::server::network::NetworkError &error) {
         std::cerr << "Error: " << error.what() << "\n";
         return zappy::server::FAILURE;
