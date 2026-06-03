@@ -8,10 +8,12 @@
 #ifndef NETWORK_CLIENTBUFFER_HPP_
     #define NETWORK_CLIENTBUFFER_HPP_
 
+    #include <cstddef>
     #include <deque>
     #include <optional>
     #include <queue>
     #include <string>
+    #include <string_view>
 
     #include "server/network/NetworkError.hpp"
     #include "server/posix/FileDescriptor.hpp"
@@ -59,13 +61,17 @@ public:
     [[nodiscard]] bool has_ready_messages() const noexcept;
 
 private:
+    ReadResult _append_and_check(std::string_view data);
     void _extract_lines();
+    void _load_next_message();
+    bool _handle_write_result(std::ptrdiff_t n, WriteResult &result);
+    void _advance_write_buffer();
 
-    posix::FileDescriptor   _fd;
-    std::string             _read_buffer;
+    posix::FileDescriptor _fd;
+    std::string _read_buffer;
     std::deque<std::string> _outgoing_messages;
-    std::string             _write_buffer;
-    std::size_t             _write_offset;
+    std::string _write_buffer;
+    std::size_t _write_offset;
     std::queue<std::string> _ready_messages;
 };
 
