@@ -21,10 +21,13 @@ TEST_BIN = unit_tests
 TEST_CXX = g++
 TEST_CXXFLAGS = -std=c++20 -Wall -Wextra -iquote include/
 TEST_LDLIBS = -lcriterion
+
 COV_FLAGS = --coverage
 TEST_SRC = src/server/posix/FileDescriptor.cpp \
 			src/server/posix/Address.cpp \
-				$(wildcard tests/server/posix/*.cpp)
+      src/server/cli/CliParser.cpp \
+			$(wildcard tests/server/posix/*.cpp) \
+      $(wildcard tests/cli/*.cpp) \
 
 all:	$(BINS)
 
@@ -51,6 +54,7 @@ clean:
 fclean: clean
 	rm -f $(BINS)
 	rm -f $(TEST_BIN)
+
 	rm -f *.gcno *.gcda *.gcov
 
 tests_run:
