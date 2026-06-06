@@ -30,9 +30,13 @@ TEST_SRC = src/server/posix/FileDescriptor.cpp \
 			src/server/network/SignalHandler.cpp \
 			src/server/network/PollLoop.cpp \
       		src/server/cli/CliParser.cpp \
+			src/server/Server.cpp \
+			src/server/client/Client.cpp \
+			src/server/client/ClientRegistry.cpp \
 		    $(wildcard tests/cli/*.cpp) \
 			$(wildcard tests/server/posix/*.cpp) \
-			$(wildcard tests/server/network/*.cpp)
+			$(wildcard tests/server/network/*.cpp) \
+			$(wildcard tests/server/client/*.cpp)
 
 all:	$(BINS)
 
