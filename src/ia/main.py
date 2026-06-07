@@ -9,19 +9,98 @@
 
 import sys
 
-
 USAGE = "USAGE: ./zappy_ai -p port -n name [-h machine]"
 ERROR = 84
 
 
-def parse_args(argv: list[str]) -> tuple[int, str, str]:
-    """Parse command-line arguments.
+def _die(message: str, show_usage: bool = True) -> None:
+    """Print an error message to stderr and exit with code 84.
+
+    Args:
+        message: description of the error.
+        show_usage: Whether to also print the usage line.
+    """
+    print(f"error: {message}", file=sys.stderr)
+    if show_usage:
+        print(USAGE, file=sys.stderr)
+    sys.exit(ERROR)
+
+
+def _parse_port(value: str, already_set: bool) -> int:
+    """Validate and convert a raw port string to an integer.
+
+    Args:
+        value: Raw string value provided after the -p flag.
+        already_set: True if -p was already encountered earlier.
 
     Returns:
-        (port, name, machine)
+        The validated port as an integer (1-65535).
+    """
+    if already_set:
+        _die("duplicate flag -p", show_usage=False)
+    try:
+        port = int(value)
+    except ValueError:
+        _die(f"port must be an integer, got '{value}'", show_usage=False)
+    if not (1 <= port <= 65535):
+        _die(f"port must be in range 1-65535, got {port}", show_usage=False)
+    return port
 
-    Exits with code 84 on missing, duplicate, or invalid arguments.
-    Exits with code 0 and prints usage to stderr on --help.
+
+def _parse_name(value: str, already_set: bool) -> str:
+    """Validate a team name string.
+
+    Args:
+        value: Raw string value provided after the -n flag.
+        already_set: True if -n was already encountered earlier.
+
+    Returns:
+        The validated team name.
+    """
+    if already_set:
+        _die("duplicate flag -n", show_usage=False)
+    if not value:
+        _die("team name must not be empty", show_usage=False)
+    return value
+
+
+def _consume_flag(argv: list[str], i: int) -> tuple[str, str]:
+    """Read a flag and its required value from argv at position i.
+
+    Args:
+        argv: Full argument list.
+        i: Index of the flag token.
+
+    Returns:
+        (flag, value) pair.
+    """
+    flag = argv[i]
+    if i + 1 >= len(argv):
+        _die(f"flag {flag} requires an argument")
+    return flag, argv[i + 1]
+
+
+def _check_required(port: int | None, name: str | None) -> None:
+    """Ensure that all required flags were provided.
+
+    Args:
+        port: Parsed port value, or None if -p was absent.
+        name: Parsed team name, or None if -n was absent.
+    """
+    if port is None:
+        _die("missing required flag -p")
+    if name is None:
+        _die("missing required flag -n")
+
+
+def parse_args(argv: list[str]) -> tuple[int, str, str]:
+    """Parse and validate the full argument list.
+
+    Args:
+        argv: Argument list excluding the program name (sys.argv[1:]).
+
+    Returns:
+        (port, name, machine) with machine defaulting to 'localhost'.
     """
     if "--help" in argv:
         print(USAGE, file=sys.stderr)
@@ -33,52 +112,18 @@ def parse_args(argv: list[str]) -> tuple[int, str, str]:
 
     i = 0
     while i < len(argv):
-        flag = argv[i]
-        if flag in ("-p", "-n", "-h"):
-            if i + 1 >= len(argv):
-                print(f"error: flag {flag} requires an argument", file=sys.stderr)
-                print(USAGE, file=sys.stderr)
-                sys.exit(ERROR)
-            value = argv[i + 1]
-            i += 2
-            if flag == "-p":
-                if port is not None:
-                    print("error: duplicate flag -p", file=sys.stderr)
-                    sys.exit(ERROR)
-                try:
-                    port = int(value)
-                except ValueError:
-                    print(f"error: port must be an integer, got '{value}'",
-                          file=sys.stderr)
-                    sys.exit(ERROR)
-                if not (1 <= port <= 65535):
-                    print(f"error: port must be in range 1-65535, got {port}",
-                          file=sys.stderr)
-                    sys.exit(ERROR)
-            elif flag == "-n":
-                if name is not None:
-                    print("error: duplicate flag -n", file=sys.stderr)
-                    sys.exit(ERROR)
-                if not value:
-                    print("error: team name must not be empty", file=sys.stderr)
-                    sys.exit(ERROR)
-                name = value
-            elif flag == "-h":
-                machine = value
-        else:
-            print(f"error: unknown argument '{flag}'", file=sys.stderr)
-            print(USAGE, file=sys.stderr)
-            sys.exit(ERROR)
+        if argv[i] not in ("-p", "-n", "-h"):
+            _die(f"unknown argument '{argv[i]}'")
+        flag, value = _consume_flag(argv, i)
+        i += 2
+        if flag == "-p":
+            port = _parse_port(value, port is not None)
+        elif flag == "-n":
+            name = _parse_name(value, name is not None)
+        elif flag == "-h":
+            machine = value
 
-    if port is None:
-        print("error: missing required flag -p", file=sys.stderr)
-        print(USAGE, file=sys.stderr)
-        sys.exit(ERROR)
-    if name is None:
-        print("error: missing required flag -n", file=sys.stderr)
-        print(USAGE, file=sys.stderr)
-        sys.exit(ERROR)
-
+    _check_required(port, name)
     return port, name, machine
 
 
