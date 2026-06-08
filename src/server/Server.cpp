@@ -10,12 +10,20 @@
 #include <optional>
 
 /**
- * @brief Initialise listener on the configured port; leave poll and registry empty.
+ * @brief Initialise all members from the validated configuration.
+ *
+ * Member order matches the declaration order in Server.hpp:
+ * _config → _listener → _poll → _teams → _clients → _handshake.
  *
  * @param config validated CLI configuration
  */
 zappy::server::Server::Server(const cli::ServerConfig &config)
-    : _listener(config.port()), _poll(), _clients()
+    : _config(config),
+      _listener(_config.port()),
+      _poll(),
+      _teams(_config.teamNames(), _config.clientsPerTeam()),
+      _clients(),
+      _handshake(_config, _teams)
 {}
 
 /**
@@ -33,7 +41,7 @@ void zappy::server::Server::run()
 }
 
 /**
- * @brief Accept all pending connections and register each in the poll loop.
+ * @brief Accept all pending connections, send WELCOME, and register each in the poll loop.
  */
 void zappy::server::Server::acceptPendingClients()
 {
@@ -43,12 +51,14 @@ void zappy::server::Server::acceptPendingClients()
         const int cfd = conn->get();
         const posix::Address peer =
             network::Listener::peer_address(*conn);
-        _clients.add(std::move(*conn));
+        client::Client &c = _clients.add(std::move(*conn));
+        c.buffer().queue_message("WELCOME");
         std::cout << "client connected from "
                   << peer.ip() << ":" << peer.port() << "\n";
         _poll.register_fd(cfd, POLLIN, [this, cfd](short revents) {
             handleClientEvents(cfd, revents);
         });
+        retunePollMask(cfd);
         conn = _listener.accept_connection();
     }
 }
@@ -72,7 +82,7 @@ void zappy::server::Server::handleClientEvents(
 }
 
 /**
- * @brief Read available data; echo complete lines; drop client on error or EOF.
+ * @brief Read available data, then dispatch ready messages; drop client on error or EOF.
  *
  * @param clientFd readable file descriptor
  * @return true if the client was dropped
@@ -87,7 +97,7 @@ bool zappy::server::Server::handlePollin(int clientFd)
         dropClient(clientFd);
     }
     if (!dropped)
-        echoReadyMessages(clientFd);
+        dropped = dispatchReadyMessages(clientFd);
     return dropped;
 }
 
@@ -110,12 +120,15 @@ bool zappy::server::Server::handlePollout(int clientFd)
 }
 
 /**
- * @brief Unregister @p clientFd from the poll loop and erase it from the registry.
+ * @brief Release the team slot (if AI), unregister from poll, and erase from registry.
  *
  * @param clientFd file descriptor to drop
  */
 void zappy::server::Server::dropClient(int clientFd)
 {
+    if (_clients.contains(clientFd) &&
+        _clients.get(clientFd).state() == client::ClientState::AI)
+        _teams.releaseSlot(_clients.get(clientFd).aiData().teamName);
     _poll.unregister_fd(clientFd);
     _clients.remove(clientFd);
 }
@@ -135,16 +148,26 @@ void zappy::server::Server::retunePollMask(int clientFd)
 }
 
 /**
- * @brief Pop all ready lines from @p clientFd's buffer and queue each as a reply.
+ * @brief Route each ready message to the appropriate handler based on client state.
+ *
+ * For HANDSHAKE: delegates to HandshakeHandler; drops the client on DROP.
+ * For other states: messages are silently consumed (real dispatchers are future work).
  *
  * @param clientFd file descriptor with ready messages
+ * @return true if the client was dropped during dispatch
  */
-void zappy::server::Server::echoReadyMessages(int clientFd)
+bool zappy::server::Server::dispatchReadyMessages(int clientFd)
 {
     client::Client &c = _clients.get(clientFd);
-    while (c.buffer().has_ready_messages()) {
+    bool dropped = false;
+    while (!dropped && c.buffer().has_ready_messages()) {
         const auto msg = c.buffer().pop_ready_message();
-        std::cerr << "[fd=" << clientFd << "] " << *msg << "\n";
-        c.buffer().queue_message(*msg);
+        if (c.state() == client::ClientState::HANDSHAKE) {
+            const auto res = _handshake.handle(c, *msg);
+            dropped = (res == handshake::HandshakeResult::DROP);
+            if (dropped)
+                dropClient(clientFd);
+        }
     }
+    return dropped;
 }

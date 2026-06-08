@@ -10,6 +10,8 @@
 
     #include "server/cli/ServerConfig.hpp"
     #include "server/client/ClientRegistry.hpp"
+    #include "server/game/TeamRegistry.hpp"
+    #include "server/handshake/HandshakeHandler.hpp"
     #include "server/network/Listener.hpp"
     #include "server/network/PollLoop.hpp"
 
@@ -80,15 +82,19 @@ private:
     void retunePollMask(int clientFd);
 
     /**
-     * @brief Drain all ready messages from @p clientFd, echoing each one back.
+     * @brief Route all ready messages from @p clientFd to the appropriate handler.
      *
      * @param clientFd file descriptor whose buffer has ready messages
+     * @return true if the client was dropped during dispatch
      */
-    void echoReadyMessages(int clientFd);
+    bool dispatchReadyMessages(int clientFd);
 
+    cli::ServerConfig _config;
     network::Listener _listener;
     network::PollLoop _poll;
+    game::TeamRegistry _teams;
     client::ClientRegistry _clients;
+    handshake::HandshakeHandler _handshake;
 };
 
 } // namespace zappy::server
