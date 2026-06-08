@@ -33,10 +33,14 @@ TEST_SRC = src/server/posix/FileDescriptor.cpp \
 			src/server/Server.cpp \
 			src/server/client/Client.cpp \
 			src/server/client/ClientRegistry.cpp \
+			src/server/game/TeamRegistry.cpp \
+			src/server/handshake/HandshakeHandler.cpp \
 		    $(wildcard tests/cli/*.cpp) \
 			$(wildcard tests/server/posix/*.cpp) \
 			$(wildcard tests/server/network/*.cpp) \
-			$(wildcard tests/server/client/*.cpp)
+			$(wildcard tests/server/client/*.cpp) \
+			$(wildcard tests/server/game/*.cpp) \
+			$(wildcard tests/server/handshake/*.cpp)
 
 all:	$(BINS)
 
