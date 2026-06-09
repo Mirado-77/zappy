@@ -45,7 +45,7 @@ zappy::server::client::Client::state() const noexcept
  *
  * @return network::ClientBuffer&
  */
-zappy::server::network::ClientBuffer &
+zappy::net::ClientBuffer &
 zappy::server::client::Client::buffer() noexcept
 {
     return _buffer;
@@ -56,7 +56,7 @@ zappy::server::client::Client::buffer() noexcept
  *
  * @return const network::ClientBuffer&
  */
-const zappy::server::network::ClientBuffer &
+const zappy::net::ClientBuffer &
 zappy::server::client::Client::buffer() const noexcept
 {
     return _buffer;

@@ -11,7 +11,7 @@
     #include "server/client/ClientPayloads.hpp"
     #include "server/client/ClientState.hpp"
     #include "server/client/ClientStateError.hpp"
-    #include "server/network/ClientBuffer.hpp"
+    #include "net/ClientBuffer.hpp"
     #include "posix/FileDescriptor.hpp"
 
 namespace zappy::server::client {
@@ -51,16 +51,16 @@ public:
     /**
      * @brief Mutable access to the I/O buffer.
      *
-     * @return network::ClientBuffer&
+     * @return net::ClientBuffer&
      */
-    [[nodiscard]] network::ClientBuffer &buffer() noexcept;
+    [[nodiscard]] net::ClientBuffer &buffer() noexcept;
 
     /**
      * @brief Read-only access to the I/O buffer.
      *
-     * @return const network::ClientBuffer&
+     * @return const net::ClientBuffer&
      */
-    [[nodiscard]] const network::ClientBuffer &buffer() const noexcept;
+    [[nodiscard]] const net::ClientBuffer &buffer() const noexcept;
 
     /**
      * @brief Transition from HANDSHAKE to @p newState and initialise the matching payload.
@@ -101,7 +101,7 @@ public:
     [[nodiscard]] const GuiAdminData &guiAdminData() const;
 
 private:
-    network::ClientBuffer _buffer;
+    net::ClientBuffer _buffer;
     ClientState _state;
     ClientPayload _payload;
 };

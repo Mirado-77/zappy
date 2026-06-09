@@ -15,27 +15,23 @@ SERVER_DIR = src/server
 GUI_DIR = src/gui
 AI_DIR = src/ia
 POSIX_LIB_DIR = libs/posix
+NET_LIB_DIR   = libs/net
 
 BUILD_DIR = build
 
 TEST_BIN = unit_tests
 TEST_CXX = g++
-TEST_CXXFLAGS = -std=c++20 -Wall -Wextra -iquote include/ -I$(POSIX_LIB_DIR)/include
+TEST_CXXFLAGS = -std=c++20 -Wall -Wextra -iquote include/ -I$(POSIX_LIB_DIR)/include -I$(NET_LIB_DIR)/include
 TEST_LDLIBS = -lcriterion
 
 COV_FLAGS = --coverage
-TEST_SRC = src/server/network/ClientBuffer.cpp \
-			src/server/network/Listener.cpp \
-			src/server/network/SignalHandler.cpp \
-			src/server/network/PollLoop.cpp \
-      		src/server/cli/CliParser.cpp \
+TEST_SRC = src/server/cli/CliParser.cpp \
 			src/server/Server.cpp \
 			src/server/client/Client.cpp \
 			src/server/client/ClientRegistry.cpp \
 			src/server/game/TeamRegistry.cpp \
 			src/server/handshake/HandshakeHandler.cpp \
 		    $(wildcard tests/cli/*.cpp) \
-			$(wildcard tests/server/network/*.cpp) \
 			$(wildcard tests/server/client/*.cpp) \
 			$(wildcard tests/server/game/*.cpp) \
 			$(wildcard tests/server/handshake/*.cpp)
@@ -61,6 +57,7 @@ clean:
 	@$(MAKE) -C $(GUI_DIR) clean
 	@$(MAKE) -C $(AI_DIR) clean
 	@$(MAKE) -C $(POSIX_LIB_DIR) clean
+	@$(MAKE) -C $(NET_LIB_DIR) clean
 	rm -rf $(BUILD_DIR)
 
 fclean: clean
@@ -71,8 +68,11 @@ fclean: clean
 
 tests_run:
 	@$(MAKE) -C $(POSIX_LIB_DIR) tests_run
+	@$(MAKE) -C $(NET_LIB_DIR) tests_run
 	$(TEST_CXX) $(TEST_CXXFLAGS) $(TEST_SRC) \
-		-L$(POSIX_LIB_DIR) -lzappy_posix -o $(TEST_BIN) $(TEST_LDLIBS)
+		-L$(NET_LIB_DIR) -lzappy_net \
+		-L$(POSIX_LIB_DIR) -lzappy_posix \
+		-o $(TEST_BIN) $(TEST_LDLIBS)
 	./$(TEST_BIN)
 
 tests_cov: TEST_CXXFLAGS += $(COV_FLAGS)
