@@ -50,7 +50,7 @@ void zappy::server::Server::acceptPendingClients()
     while (conn) {
         const int cfd = conn->get();
         const posix::Address peer =
-            network::Listener::peer_address(*conn);
+            net::Listener::peer_address(*conn);
         client::Client &c = _clients.add(std::move(*conn));
         c.buffer().queue_message("WELCOME");
         std::cout << "client connected from "
@@ -91,7 +91,7 @@ bool zappy::server::Server::handlePollin(int clientFd)
 {
     const auto result =
         _clients.get(clientFd).buffer().on_readable();
-    bool dropped = result != network::ReadResult::OK;
+    bool dropped = result != net::ReadResult::OK;
     if (dropped) {
         std::cerr << "client " << clientFd << " disconnected\n";
         dropClient(clientFd);
@@ -111,7 +111,7 @@ bool zappy::server::Server::handlePollout(int clientFd)
 {
     const auto result =
         _clients.get(clientFd).buffer().on_writable();
-    bool dropped = result == network::WriteResult::ERROR;
+    bool dropped = result == net::WriteResult::ERROR;
     if (dropped) {
         std::cerr << "client " << clientFd << " write error\n";
         dropClient(clientFd);

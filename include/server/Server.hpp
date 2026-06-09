@@ -12,8 +12,8 @@
     #include "server/client/ClientRegistry.hpp"
     #include "server/game/TeamRegistry.hpp"
     #include "server/handshake/HandshakeHandler.hpp"
-    #include "server/network/Listener.hpp"
-    #include "server/network/PollLoop.hpp"
+    #include "net/Listener.hpp"
+    #include "net/PollLoop.hpp"
 
 namespace zappy::server {
 
@@ -90,8 +90,8 @@ private:
     bool dispatchReadyMessages(int clientFd);
 
     cli::ServerConfig _config;
-    network::Listener _listener;
-    network::PollLoop _poll;
+    net::Listener _listener;
+    net::PollLoop _poll;
     game::TeamRegistry _teams;
     client::ClientRegistry _clients;
     handshake::HandshakeHandler _handshake;
