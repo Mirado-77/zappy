@@ -16,7 +16,7 @@
     #include <string_view>
 
     #include "server/network/NetworkError.hpp"
-    #include "server/posix/FileDescriptor.hpp"
+    #include "posix/FileDescriptor.hpp"
 
 namespace zappy::server::network {
 

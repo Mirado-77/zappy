@@ -14,6 +14,9 @@ OBJ_DIR			=	$(BUILD_DIR)/obj
 DBG_DIR			=	$(BUILD_DIR)/debug
 SRC_EXTENSION	=	.cpp
 
+POSIX_LIB_DIR	=	$(ROOT)/libs/posix
+POSIX_LIB		=	$(POSIX_LIB_DIR)/libzappy_posix.a
+
 SRC				=	$(wildcard *$(SRC_EXTENSION)) \
 					$(wildcard **/*$(SRC_EXTENSION)) \
 					$(wildcard **/**/*$(SRC_EXTENSION))
@@ -24,23 +27,27 @@ DEBUG_OBJ		=	$(SRC:%$(SRC_EXTENSION)=$(DBG_DIR)/%.debug.o)
 CXX				=	g++
 CXXFLAGS		=	-std=c++20 -Wall -Wextra
 CXXFLAGS		+=	-iquote $(ROOT)/include/
+CXXFLAGS		+=	-I$(POSIX_LIB_DIR)/include
 
-LDFLAGS			=
+LDFLAGS			=	-L$(POSIX_LIB_DIR) -lzappy_posix
 
 DEBUG_CFLAGS	=	-g3 -fsanitize=address -DDEBUG
 DEBUG_LDFLAGS	=	-fsanitize=address
 
 all:	$(BIN_DIR)/$(NAME)
 
-$(BIN_DIR)/$(NAME):	$(OBJ)
+$(POSIX_LIB):
+	@$(MAKE) -C $(POSIX_LIB_DIR)
+
+$(BIN_DIR)/$(NAME):	$(OBJ) $(POSIX_LIB)
 	@mkdir -p $(BIN_DIR)
-	$(CXX) -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $(OBJ) $(LDFLAGS)
 
 debug: CXXFLAGS += $(DEBUG_CFLAGS)
 debug: $(BIN_DIR)/$(NAME)-debug
 
-$(BIN_DIR)/$(NAME)-debug:	$(DEBUG_OBJ)
-	$(CXX) -o $(BIN_DIR)/$(NAME) $^ $(LDFLAGS) $(DEBUG_LDFLAGS)
+$(BIN_DIR)/$(NAME)-debug:	$(DEBUG_OBJ) $(POSIX_LIB)
+	$(CXX) -o $(BIN_DIR)/$(NAME) $(DEBUG_OBJ) $(LDFLAGS) $(DEBUG_LDFLAGS)
 
 $(OBJ_DIR)/%.o:	%$(SRC_EXTENSION)
 	@mkdir -p $(dir $@)

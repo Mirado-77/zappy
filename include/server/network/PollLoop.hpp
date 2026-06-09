@@ -16,7 +16,7 @@
     #include <vector>
 
     #include "server/network/SignalHandler.hpp"
-    #include "server/posix/FileDescriptor.hpp"
+    #include "posix/FileDescriptor.hpp"
 
 namespace zappy::server::network {
 

@@ -15,7 +15,7 @@
 #include <vector>
 
 #include "server/network/ClientBuffer.hpp"
-#include "server/posix/FileDescriptor.hpp"
+#include "posix/FileDescriptor.hpp"
 
 namespace {
 
@@ -40,7 +40,7 @@ void set_nonblocking(int fd)
 zappy::server::network::ClientBuffer make_buf(int fd)
 {
     return zappy::server::network::ClientBuffer{
-        zappy::server::posix::FileDescriptor{fd}};
+        zappy::posix::FileDescriptor{fd}};
 }
 
 } // namespace

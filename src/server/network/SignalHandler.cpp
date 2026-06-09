@@ -18,9 +18,9 @@
 /**
  * @brief Block SIGINT process-wide and return its non-blocking signalfd.
  *
- * @return zappy::server::posix::FileDescriptor owning the signalfd
+ * @return zappy::posix::FileDescriptor owning the signalfd
  */
-static zappy::server::posix::FileDescriptor makeSignalFd()
+static zappy::posix::FileDescriptor makeSignalFd()
 {
     sigset_t mask;
 
@@ -30,7 +30,7 @@ static zappy::server::posix::FileDescriptor makeSignalFd()
         throw zappy::server::network::NetworkError(
             std::string("sigprocmask: ") + std::strerror(errno));
 
-    zappy::server::posix::FileDescriptor fd(
+    zappy::posix::FileDescriptor fd(
         ::signalfd(-1, &mask, SFD_NONBLOCK | SFD_CLOEXEC));
 
     if (!fd.is_valid())

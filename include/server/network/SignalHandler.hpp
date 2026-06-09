@@ -8,7 +8,7 @@
 #ifndef NETWORK_SIGNALHANDLER_HPP_
     #define NETWORK_SIGNALHANDLER_HPP_
 
-    #include "server/posix/FileDescriptor.hpp"
+    #include "posix/FileDescriptor.hpp"
 
 namespace zappy::server::network {
 

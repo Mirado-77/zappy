@@ -5,7 +5,7 @@
 ** Implementation of the sockaddr_in value wrapper
 */
 
-#include "server/posix/Address.hpp"
+#include "posix/Address.hpp"
 
 #include <arpa/inet.h>
 
@@ -35,7 +35,7 @@ static sockaddr_in makeBase(std::uint16_t port) noexcept
  * @param port port in host byte order
  * @throws std::invalid_argument if @p ip is not a valid IPv4 address
  */
-zappy::server::posix::Address::Address(const std::string &ip,
+zappy::posix::Address::Address(const std::string &ip,
     std::uint16_t port): _addr(makeBase(port))
 {
     if (inet_pton(AF_INET, ip.c_str(), &_addr.sin_addr) != 1)
@@ -47,7 +47,7 @@ zappy::server::posix::Address::Address(const std::string &ip,
  *
  * @param raw existing sockaddr_in to wrap
  */
-zappy::server::posix::Address::Address(const sockaddr_in &raw) noexcept
+zappy::posix::Address::Address(const sockaddr_in &raw) noexcept
     : _addr(raw)
 {
 }
@@ -56,10 +56,10 @@ zappy::server::posix::Address::Address(const sockaddr_in &raw) noexcept
  * @brief Build a wildcard address (INADDR_ANY) on @p port.
  *
  * @param port port in host byte order
- * @return zappy::server::posix::Address bound to INADDR_ANY:port
+ * @return zappy::posix::Address bound to INADDR_ANY:port
  */
-zappy::server::posix::Address
-zappy::server::posix::Address::any(std::uint16_t port) noexcept
+zappy::posix::Address
+zappy::posix::Address::any(std::uint16_t port) noexcept
 {
     sockaddr_in addr = makeBase(port);
 
@@ -72,7 +72,7 @@ zappy::server::posix::Address::any(std::uint16_t port) noexcept
  *
  * @return std::string the IPv4 address in dotted decimal notation
  */
-std::string zappy::server::posix::Address::ip() const
+std::string zappy::posix::Address::ip() const
 {
     std::array<char, INET_ADDRSTRLEN> buffer{};
 
@@ -85,7 +85,7 @@ std::string zappy::server::posix::Address::ip() const
  *
  * @return std::uint16_t the port
  */
-std::uint16_t zappy::server::posix::Address::port() const noexcept
+std::uint16_t zappy::posix::Address::port() const noexcept
 {
     return ntohs(_addr.sin_port);
 }
@@ -95,7 +95,7 @@ std::uint16_t zappy::server::posix::Address::port() const noexcept
  *
  * @return const sockaddr_in& reference to the wrapped sockaddr_in
  */
-const sockaddr_in &zappy::server::posix::Address::raw() const noexcept
+const sockaddr_in &zappy::posix::Address::raw() const noexcept
 {
     return _addr;
 }
@@ -105,7 +105,7 @@ const sockaddr_in &zappy::server::posix::Address::raw() const noexcept
  *
  * @return const sockaddr* pointer to the wrapped address as sockaddr
  */
-const sockaddr *zappy::server::posix::Address::raw_generic() const noexcept
+const sockaddr *zappy::posix::Address::raw_generic() const noexcept
 {
     return reinterpret_cast<const sockaddr *>(&_addr);
 }
@@ -115,7 +115,7 @@ const sockaddr *zappy::server::posix::Address::raw_generic() const noexcept
  *
  * @return socklen_t size of sockaddr_in in bytes
  */
-socklen_t zappy::server::posix::Address::size() const noexcept
+socklen_t zappy::posix::Address::size() const noexcept
 {
     return static_cast<socklen_t>(sizeof(_addr));
 }
