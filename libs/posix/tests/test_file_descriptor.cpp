@@ -13,16 +13,16 @@
 #include <type_traits>
 #include <utility>
 
-#include "server/posix/FileDescriptor.hpp"
+#include "posix/FileDescriptor.hpp"
 
 static_assert(!std::is_copy_constructible_v<
-    zappy::server::posix::FileDescriptor>, "must not be copyable");
+    zappy::posix::FileDescriptor>, "must not be copyable");
 static_assert(!std::is_copy_assignable_v<
-    zappy::server::posix::FileDescriptor>, "must not be copy-assignable");
+    zappy::posix::FileDescriptor>, "must not be copy-assignable");
 static_assert(std::is_move_constructible_v<
-    zappy::server::posix::FileDescriptor>, "must be movable");
+    zappy::posix::FileDescriptor>, "must be movable");
 static_assert(std::is_move_assignable_v<
-    zappy::server::posix::FileDescriptor>, "must be move-assignable");
+    zappy::posix::FileDescriptor>, "must be move-assignable");
 
 namespace {
 
@@ -45,7 +45,7 @@ bool fd_is_open(int fd)
 
 Test(file_descriptor, default_is_invalid)
 {
-    zappy::server::posix::FileDescriptor fd;
+    zappy::posix::FileDescriptor fd;
 
     cr_assert_not(fd.is_valid());
     cr_assert_not(static_cast<bool>(fd));
@@ -55,7 +55,7 @@ Test(file_descriptor, default_is_invalid)
 Test(file_descriptor, takes_ownership_and_exposes_fd)
 {
     int raw = open_fd();
-    zappy::server::posix::FileDescriptor fd(raw);
+    zappy::posix::FileDescriptor fd(raw);
 
     cr_assert(fd.is_valid());
     cr_assert(static_cast<bool>(fd));
@@ -67,7 +67,7 @@ Test(file_descriptor, destructor_closes_fd)
     int raw = open_fd();
 
     {
-        zappy::server::posix::FileDescriptor fd(raw);
+        zappy::posix::FileDescriptor fd(raw);
         cr_assert(fd_is_open(raw));
     }
     cr_assert_not(fd_is_open(raw), "descriptor must be closed after scope");
@@ -76,7 +76,7 @@ Test(file_descriptor, destructor_closes_fd)
 Test(file_descriptor, explicit_close_then_idempotent)
 {
     int raw = open_fd();
-    zappy::server::posix::FileDescriptor fd(raw);
+    zappy::posix::FileDescriptor fd(raw);
 
     fd.close();
     cr_assert_not(fd_is_open(raw));
@@ -88,7 +88,7 @@ Test(file_descriptor, explicit_close_then_idempotent)
 Test(file_descriptor, release_transfers_ownership)
 {
     int raw = open_fd();
-    zappy::server::posix::FileDescriptor fd(raw);
+    zappy::posix::FileDescriptor fd(raw);
 
     int released = fd.release();
 
@@ -101,8 +101,8 @@ Test(file_descriptor, release_transfers_ownership)
 Test(file_descriptor, move_ctor_transfers)
 {
     int raw = open_fd();
-    zappy::server::posix::FileDescriptor src(raw);
-    zappy::server::posix::FileDescriptor dst(std::move(src));
+    zappy::posix::FileDescriptor src(raw);
+    zappy::posix::FileDescriptor dst(std::move(src));
 
     cr_assert_eq(dst.get(), raw);
     cr_assert_not(src.is_valid(), "moved-from must be invalid");
@@ -113,8 +113,8 @@ Test(file_descriptor, move_assign_closes_previous)
 {
     int first = open_fd();
     int second = open_fd();
-    zappy::server::posix::FileDescriptor dst(first);
-    zappy::server::posix::FileDescriptor src(second);
+    zappy::posix::FileDescriptor dst(first);
+    zappy::posix::FileDescriptor src(second);
 
     dst = std::move(src);
 

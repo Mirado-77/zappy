@@ -14,7 +14,7 @@
     #include <cstdint>
     #include <string>
 
-namespace zappy::server::posix {
+namespace zappy::posix {
 
 /**
  * @brief Copyable value wrapper over an IPv4 sockaddr_in.

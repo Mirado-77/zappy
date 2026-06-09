@@ -8,7 +8,7 @@
 #ifndef POSIX_FILEDESCRIPTOR_HPP_
     #define POSIX_FILEDESCRIPTOR_HPP_
 
-namespace zappy::server::posix {
+namespace zappy::posix {
 
 /**
  * @brief Move-only RAII owner of a POSIX file descriptor.

@@ -22,11 +22,11 @@
 /**
  * @brief Create a non-blocking eventfd used to wake the loop.
  *
- * @return zappy::server::posix::FileDescriptor owning the eventfd
+ * @return zappy::posix::FileDescriptor owning the eventfd
  */
-static zappy::server::posix::FileDescriptor makeWakeEvent()
+static zappy::posix::FileDescriptor makeWakeEvent()
 {
-    zappy::server::posix::FileDescriptor fd(
+    zappy::posix::FileDescriptor fd(
         ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC));
 
     if (!fd.is_valid())

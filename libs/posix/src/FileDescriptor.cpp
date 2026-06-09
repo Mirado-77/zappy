@@ -5,18 +5,18 @@
 ** Implementation of the POSIX file descriptor RAII owner
 */
 
-#include "server/posix/FileDescriptor.hpp"
-#include "server/Constants.hpp"
-#include <unistd.h>
+#include "posix/FileDescriptor.hpp"
 
+#include <unistd.h>
 #include <utility>
 
+static constexpr int INVALID_FD = -1;
 
 /**
  * @brief Build an invalid descriptor.
  */
-zappy::server::posix::FileDescriptor::FileDescriptor() noexcept
-    : _fd(zappy::server::INVALID_FD)
+zappy::posix::FileDescriptor::FileDescriptor() noexcept
+    : _fd(INVALID_FD)
 {
 }
 
@@ -25,14 +25,14 @@ zappy::server::posix::FileDescriptor::FileDescriptor() noexcept
  *
  * @param fd raw file descriptor to wrap (INVALID_FD for an empty descriptor)
  */
-zappy::server::posix::FileDescriptor::FileDescriptor(int fd) noexcept : _fd(fd)
+zappy::posix::FileDescriptor::FileDescriptor(int fd) noexcept : _fd(fd)
 {
 }
 
 /**
  * @brief Close the owned descriptor.
  */
-zappy::server::posix::FileDescriptor::~FileDescriptor()
+zappy::posix::FileDescriptor::~FileDescriptor()
 {
     close();
 }
@@ -42,7 +42,7 @@ zappy::server::posix::FileDescriptor::~FileDescriptor()
  *
  * @param other source descriptor, left in an invalid state
  */
-zappy::server::posix::FileDescriptor::FileDescriptor(
+zappy::posix::FileDescriptor::FileDescriptor(
     FileDescriptor &&other) noexcept
     : _fd(other.release())
 {
@@ -54,8 +54,8 @@ zappy::server::posix::FileDescriptor::FileDescriptor(
  * @param other source descriptor, left in an invalid state
  * @return FileDescriptor& reference to this
  */
-zappy::server::posix::FileDescriptor &
-zappy::server::posix::FileDescriptor::operator=(FileDescriptor &&other) noexcept
+zappy::posix::FileDescriptor &
+zappy::posix::FileDescriptor::operator=(FileDescriptor &&other) noexcept
 {
     if (this != &other) {
         close();
@@ -69,7 +69,7 @@ zappy::server::posix::FileDescriptor::operator=(FileDescriptor &&other) noexcept
  *
  * @return int the raw file descriptor, or INVALID_FD if empty
  */
-int zappy::server::posix::FileDescriptor::get() const noexcept
+int zappy::posix::FileDescriptor::get() const noexcept
 {
     return _fd;
 }
@@ -79,19 +79,19 @@ int zappy::server::posix::FileDescriptor::get() const noexcept
  *
  * @return int the raw file descriptor; caller is now responsible for closing it
  */
-int zappy::server::posix::FileDescriptor::release() noexcept
+int zappy::posix::FileDescriptor::release() noexcept
 {
-    return std::exchange(_fd, zappy::server::INVALID_FD);
+    return std::exchange(_fd, INVALID_FD);
 }
 
 /**
  * @brief Close the descriptor if open; idempotent.
  */
-void zappy::server::posix::FileDescriptor::close() noexcept
+void zappy::posix::FileDescriptor::close() noexcept
 {
-    if (_fd != zappy::server::INVALID_FD) {
+    if (_fd != INVALID_FD) {
         ::close(_fd);
-        _fd = zappy::server::INVALID_FD;
+        _fd = INVALID_FD;
     }
 }
 
@@ -101,9 +101,9 @@ void zappy::server::posix::FileDescriptor::close() noexcept
  * @return true if the descriptor is open
  * @return false if the descriptor is INVALID_FD
  */
-bool zappy::server::posix::FileDescriptor::is_valid() const noexcept
+bool zappy::posix::FileDescriptor::is_valid() const noexcept
 {
-    return _fd != zappy::server::INVALID_FD;
+    return _fd != INVALID_FD;
 }
 
 /**
@@ -112,7 +112,7 @@ bool zappy::server::posix::FileDescriptor::is_valid() const noexcept
  * @return true if the descriptor is open
  * @return false if the descriptor is INVALID_FD
  */
-zappy::server::posix::FileDescriptor::operator bool() const noexcept
+zappy::posix::FileDescriptor::operator bool() const noexcept
 {
     return is_valid();
 }

@@ -24,12 +24,12 @@
  *
  * @param port server port (0 lets the OS pick a free port)
  * @param backlog kernel queue size for pending connections
- * @return zappy::server::posix::FileDescriptor owning the listening socket
+ * @return zappy::posix::FileDescriptor owning the listening socket
  */
-static zappy::server::posix::FileDescriptor makeListeningSocket(
+static zappy::posix::FileDescriptor makeListeningSocket(
     std::uint16_t port, int backlog)
 {
-    zappy::server::posix::FileDescriptor sock(
+    zappy::posix::FileDescriptor sock(
         ::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0));
     const int yes = 1;
 
@@ -40,8 +40,8 @@ static zappy::server::posix::FileDescriptor makeListeningSocket(
         throw zappy::server::network::NetworkError(
             std::string("setsockopt: ") + std::strerror(errno));
 
-    const zappy::server::posix::Address addr =
-        zappy::server::posix::Address::any(port);
+    const zappy::posix::Address addr =
+        zappy::posix::Address::any(port);
 
     if (::bind(sock.get(), addr.raw_generic(), addr.size()) < 0)
         throw zappy::server::network::NetworkError(
@@ -59,7 +59,7 @@ static zappy::server::posix::FileDescriptor makeListeningSocket(
  * @return std::uint16_t the port the kernel actually bound the socket to
  */
 static std::uint16_t resolvePort(
-    const zappy::server::posix::FileDescriptor &sock)
+    const zappy::posix::FileDescriptor &sock)
 {
     sockaddr_in addr{};
     socklen_t len = sizeof(addr);
@@ -104,10 +104,10 @@ std::uint16_t zappy::server::network::Listener::port() const noexcept
 /**
  * @brief Accept one pending connection without blocking.
  *
- * @return std::optional<zappy::server::posix::FileDescriptor> the accepted client
+ * @return std::optional<zappy::posix::FileDescriptor> the accepted client
  *         socket, or std::nullopt on EAGAIN/EWOULDBLOCK
  */
-std::optional<zappy::server::posix::FileDescriptor>
+std::optional<zappy::posix::FileDescriptor>
 zappy::server::network::Listener::accept_connection() const
 {
     const int client = ::accept4(_socket.get(), nullptr, nullptr, SOCK_NONBLOCK);
@@ -117,17 +117,17 @@ zappy::server::network::Listener::accept_connection() const
             return std::nullopt;
         throw NetworkError(std::string("accept: ") + std::strerror(errno));
     }
-    return zappy::server::posix::FileDescriptor(client);
+    return zappy::posix::FileDescriptor(client);
 }
 
 /**
  * @brief Resolve the peer address of an already-connected client socket.
  *
  * @param client an accepted client socket
- * @return zappy::server::posix::Address the remote address of the peer
+ * @return zappy::posix::Address the remote address of the peer
  */
-zappy::server::posix::Address zappy::server::network::Listener::peer_address(
-    const zappy::server::posix::FileDescriptor &client)
+zappy::posix::Address zappy::server::network::Listener::peer_address(
+    const zappy::posix::FileDescriptor &client)
 {
     sockaddr_in addr{};
     socklen_t len = sizeof(addr);
@@ -135,5 +135,5 @@ zappy::server::posix::Address zappy::server::network::Listener::peer_address(
     if (::getpeername(client.get(), reinterpret_cast<sockaddr *>(&addr),
             &len) < 0)
         throw NetworkError(std::string("getpeername: ") + std::strerror(errno));
-    return zappy::server::posix::Address(addr);
+    return zappy::posix::Address(addr);
 }

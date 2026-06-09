@@ -14,7 +14,7 @@
     #include "server/client/Client.hpp"
     #include "server/client/ClientState.hpp"
     #include "server/client/ClientStateError.hpp"
-    #include "server/posix/FileDescriptor.hpp"
+    #include "posix/FileDescriptor.hpp"
 
 namespace zappy::server::client {
 

@@ -16,7 +16,7 @@
 #include "server/client/ClientState.hpp"
 #include "server/game/TeamRegistry.hpp"
 #include "server/handshake/HandshakeHandler.hpp"
-#include "server/posix/FileDescriptor.hpp"
+#include "posix/FileDescriptor.hpp"
 
 using zappy::server::cli::ServerConfig;
 using zappy::server::client::Client;
@@ -24,7 +24,7 @@ using zappy::server::client::ClientState;
 using zappy::server::game::TeamRegistry;
 using zappy::server::handshake::HandshakeHandler;
 using zappy::server::handshake::HandshakeResult;
-using zappy::server::posix::FileDescriptor;
+using zappy::posix::FileDescriptor;
 
 /* ------------------------------------------------------------------ helpers */
 

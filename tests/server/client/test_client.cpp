@@ -14,12 +14,12 @@
 #include "server/client/ClientRegistry.hpp"
 #include "server/client/ClientState.hpp"
 #include "server/client/ClientStateError.hpp"
-#include "server/posix/FileDescriptor.hpp"
+#include "posix/FileDescriptor.hpp"
 
 static zappy::server::client::Client make_client(int fd)
 {
     return zappy::server::client::Client{
-        zappy::server::posix::FileDescriptor{fd}};
+        zappy::posix::FileDescriptor{fd}};
 }
 
 static int open_pair(int sv[2])
@@ -89,7 +89,7 @@ Test(client_registry, add_returns_handshake_client)
     close(sv[1]);
     zappy::server::client::ClientRegistry reg;
     zappy::server::client::Client &c =
-        reg.add(zappy::server::posix::FileDescriptor{sv[0]});
+        reg.add(zappy::posix::FileDescriptor{sv[0]});
     cr_assert_eq(c.state(), zappy::server::client::ClientState::HANDSHAKE);
 }
 
@@ -100,7 +100,7 @@ Test(client_registry, contains_true_after_add_false_after_remove)
     close(sv[1]);
     zappy::server::client::ClientRegistry reg;
     const int fd = sv[0];
-    reg.add(zappy::server::posix::FileDescriptor{fd});
+    reg.add(zappy::posix::FileDescriptor{fd});
     cr_assert(reg.contains(fd));
     reg.remove(fd);
     cr_assert_not(reg.contains(fd));
@@ -119,7 +119,7 @@ Test(client_registry, double_remove_is_safe)
     close(sv[1]);
     zappy::server::client::ClientRegistry reg;
     const int fd = sv[0];
-    reg.add(zappy::server::posix::FileDescriptor{fd});
+    reg.add(zappy::posix::FileDescriptor{fd});
     reg.remove(fd);
     reg.remove(fd);
     cr_assert_eq(reg.size(), 0U);
@@ -136,10 +136,10 @@ Test(client_registry, count_in_state_mixed)
     close(svc[1]);
 
     zappy::server::client::ClientRegistry reg;
-    reg.add(zappy::server::posix::FileDescriptor{sva[0]});
-    reg.add(zappy::server::posix::FileDescriptor{svb[0]})
+    reg.add(zappy::posix::FileDescriptor{sva[0]});
+    reg.add(zappy::posix::FileDescriptor{svb[0]})
         .promote(zappy::server::client::ClientState::AI);
-    reg.add(zappy::server::posix::FileDescriptor{svc[0]})
+    reg.add(zappy::posix::FileDescriptor{svc[0]})
         .promote(zappy::server::client::ClientState::GUI);
 
     cr_assert_eq(reg.countInState(zappy::server::client::ClientState::HANDSHAKE), 1U);
@@ -156,8 +156,8 @@ Test(client_registry, for_each_in_state_visits_only_matching)
     close(svb[1]);
 
     zappy::server::client::ClientRegistry reg;
-    reg.add(zappy::server::posix::FileDescriptor{sva[0]});
-    reg.add(zappy::server::posix::FileDescriptor{svb[0]})
+    reg.add(zappy::posix::FileDescriptor{sva[0]});
+    reg.add(zappy::posix::FileDescriptor{svb[0]})
         .promote(zappy::server::client::ClientState::AI);
 
     std::size_t visited = 0;
@@ -175,7 +175,7 @@ Test(client_registry, for_each_throwing_callback_leaves_registry_intact)
     socketpair(AF_UNIX, SOCK_STREAM, 0, sv);
     close(sv[1]);
     zappy::server::client::ClientRegistry reg;
-    reg.add(zappy::server::posix::FileDescriptor{sv[0]});
+    reg.add(zappy::posix::FileDescriptor{sv[0]});
 
     bool threw = false;
     try {

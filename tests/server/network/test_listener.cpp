@@ -17,7 +17,7 @@
 
 #include "server/network/Listener.hpp"
 #include "server/network/NetworkError.hpp"
-#include "server/posix/FileDescriptor.hpp"
+#include "posix/FileDescriptor.hpp"
 
 namespace {
 
@@ -37,11 +37,11 @@ int connect_loopback(std::uint16_t port)
 }
 
 /// @brief Poll accept_connection a few times to let the kernel settle.
-std::optional<zappy::server::posix::FileDescriptor> accept_retry(
+std::optional<zappy::posix::FileDescriptor> accept_retry(
     const zappy::server::network::Listener &listener)
 {
     for (int i = 0; i < 200; ++i) {
-        std::optional<zappy::server::posix::FileDescriptor> client =
+        std::optional<zappy::posix::FileDescriptor> client =
             listener.accept_connection();
 
         if (client)
@@ -73,7 +73,7 @@ Test(listener, accepts_a_client)
 {
     zappy::server::network::Listener listener(0);
     int client = connect_loopback(listener.port());
-    std::optional<zappy::server::posix::FileDescriptor> accepted =
+    std::optional<zappy::posix::FileDescriptor> accepted =
         accept_retry(listener);
 
     cr_assert(accepted.has_value(), "listener should accept the client");
@@ -85,12 +85,12 @@ Test(listener, peer_address_is_loopback)
 {
     zappy::server::network::Listener listener(0);
     int client = connect_loopback(listener.port());
-    std::optional<zappy::server::posix::FileDescriptor> accepted =
+    std::optional<zappy::posix::FileDescriptor> accepted =
         accept_retry(listener);
 
     cr_assert(accepted.has_value());
 
-    const zappy::server::posix::Address peer =
+    const zappy::posix::Address peer =
         zappy::server::network::Listener::peer_address(*accepted);
 
     cr_assert_str_eq(peer.ip().c_str(), "127.0.0.1");

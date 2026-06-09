@@ -11,8 +11,8 @@
     #include <cstdint>
     #include <optional>
 
-    #include "server/posix/Address.hpp"
-    #include "server/posix/FileDescriptor.hpp"
+    #include "posix/Address.hpp"
+    #include "posix/FileDescriptor.hpp"
 
 namespace zappy::server::network {
 
