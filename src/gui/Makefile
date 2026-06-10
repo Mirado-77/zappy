@@ -5,48 +5,55 @@
 ## GUI Makefile
 ##
 
-NAME			=	zappy_gui
+NAME = zappy_gui
 
-ROOT			=	../..
-BIN_DIR			=	$(ROOT)
-BUILD_DIR		=	$(ROOT)/build/gui
-OBJ_DIR			=	$(BUILD_DIR)/obj
-DBG_DIR			=	$(BUILD_DIR)/debug
-SRC_EXTENSION	=	.cpp
+ROOT = ../..
+BIN_DIR = $(ROOT)
+BUILD_DIR = $(ROOT)/build/gui
+OBJ_DIR = $(BUILD_DIR)/obj
+DBG_DIR = $(BUILD_DIR)/debug
+SRC_EXTENSION = .cpp
 
-SRC				=	$(wildcard *$(SRC_EXTENSION)) \
-					$(wildcard **/*$(SRC_EXTENSION)) \
-					$(wildcard **/**/*$(SRC_EXTENSION))
+PROTOCOL_LIB_DIR = $(ROOT)/libs/protocol
+PROTOCOL_LIB = $(PROTOCOL_LIB_DIR)/libzappy_protocol.a
 
-OBJ				=	$(SRC:%$(SRC_EXTENSION)=$(OBJ_DIR)/%.o)
-DEBUG_OBJ		=	$(SRC:%$(SRC_EXTENSION)=$(DBG_DIR)/%.debug.o)
+SRC = $(wildcard *$(SRC_EXTENSION)) \
+      $(wildcard **/*$(SRC_EXTENSION)) \
+      $(wildcard **/**/*$(SRC_EXTENSION))
 
-CXX				=	g++
-CXXFLAGS		=	-std=c++20 -Wall -Wextra
-CXXFLAGS		+=	-iquote $(ROOT)/include/
+OBJ = $(SRC:%$(SRC_EXTENSION)=$(OBJ_DIR)/%.o)
+DEBUG_OBJ = $(SRC:%$(SRC_EXTENSION)=$(DBG_DIR)/%.debug.o)
 
-LDFLAGS			=
+CXX = g++
+CXXFLAGS = -std=c++20 -Wall -Wextra
+CXXFLAGS += -iquote $(ROOT)/include/
+CXXFLAGS += -I$(PROTOCOL_LIB_DIR)/include
 
-DEBUG_CFLAGS	=	-g3 -fsanitize=address -DDEBUG
-DEBUG_LDFLAGS	=	-fsanitize=address
+LDFLAGS =
 
-all:	$(BIN_DIR)/$(NAME)
+DEBUG_CFLAGS = -g3 -fsanitize=address -DDEBUG
+DEBUG_LDFLAGS = -fsanitize=address
 
-$(BIN_DIR)/$(NAME):	$(OBJ)
+all: $(BIN_DIR)/$(NAME)
+
+$(PROTOCOL_LIB):
+	@$(MAKE) -C $(PROTOCOL_LIB_DIR)
+
+$(BIN_DIR)/$(NAME): $(OBJ) $(PROTOCOL_LIB)
 	@mkdir -p $(BIN_DIR)
-	$(CXX) -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $(OBJ) $(LDFLAGS)
 
 debug: CXXFLAGS += $(DEBUG_CFLAGS)
 debug: $(BIN_DIR)/$(NAME)-debug
 
-$(BIN_DIR)/$(NAME)-debug:	$(DEBUG_OBJ)
+$(BIN_DIR)/$(NAME)-debug: $(DEBUG_OBJ)
 	$(CXX) -o $(BIN_DIR)/$(NAME) $^ $(LDFLAGS) $(DEBUG_LDFLAGS)
 
-$(OBJ_DIR)/%.o:	%$(SRC_EXTENSION)
+$(OBJ_DIR)/%.o: %$(SRC_EXTENSION)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(DBG_DIR)/%.debug.o:	%$(SRC_EXTENSION)
+$(DBG_DIR)/%.debug.o: %$(SRC_EXTENSION)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 

@@ -5,38 +5,41 @@
 ## Server Makefile
 ##
 
-NAME			=	zappy_server
+NAME = zappy_server
 
-ROOT			=	../..
-BIN_DIR			=	$(ROOT)
-BUILD_DIR		=	$(ROOT)/build/server
-OBJ_DIR			=	$(BUILD_DIR)/obj
-DBG_DIR			=	$(BUILD_DIR)/debug
-SRC_EXTENSION	=	.cpp
+ROOT = ../..
+BIN_DIR = $(ROOT)
+BUILD_DIR =	$(ROOT)/build/server
+OBJ_DIR = $(BUILD_DIR)/obj
+DBG_DIR = $(BUILD_DIR)/debug
+SRC_EXTENSION = .cpp
 
-POSIX_LIB_DIR	=	$(ROOT)/libs/posix
-POSIX_LIB		=	$(POSIX_LIB_DIR)/libzappy_posix.a
+POSIX_LIB_DIR =	$(ROOT)/libs/posix
+POSIX_LIB =	$(POSIX_LIB_DIR)/libzappy_posix.a
 
-NET_LIB_DIR		=	$(ROOT)/libs/net
-NET_LIB			=	$(NET_LIB_DIR)/libzappy_net.a
+NET_LIB_DIR = $(ROOT)/libs/net
+NET_LIB = $(NET_LIB_DIR)/libzappy_net.a
 
-SRC				=	$(wildcard *$(SRC_EXTENSION)) \
-					$(wildcard **/*$(SRC_EXTENSION)) \
-					$(wildcard **/**/*$(SRC_EXTENSION))
+PROTOCOL_LIB_DIR = $(ROOT)/libs/protocol
 
-OBJ				=	$(SRC:%$(SRC_EXTENSION)=$(OBJ_DIR)/%.o)
-DEBUG_OBJ		=	$(SRC:%$(SRC_EXTENSION)=$(DBG_DIR)/%.debug.o)
+SRC = $(wildcard *$(SRC_EXTENSION)) \
+ 	$(wildcard **/*$(SRC_EXTENSION)) \
+ 	$(wildcard **/**/*$(SRC_EXTENSION))
 
-CXX				=	g++
-CXXFLAGS		=	-std=c++20 -Wall -Wextra
-CXXFLAGS		+=	-iquote $(ROOT)/include/
-CXXFLAGS		+=	-I$(POSIX_LIB_DIR)/include
-CXXFLAGS		+=	-I$(NET_LIB_DIR)/include
+OBJ = $(SRC:%$(SRC_EXTENSION)=$(OBJ_DIR)/%.o)
+DEBUG_OBJ =	$(SRC:%$(SRC_EXTENSION)=$(DBG_DIR)/%.debug.o)
 
-LDFLAGS			=	-L$(NET_LIB_DIR) -lzappy_net -L$(POSIX_LIB_DIR) -lzappy_posix
+CXX = g++
+CXXFLAGS = -std=c++20 -Wall -Wextra
+CXXFLAGS +=	-iquote $(ROOT)/include/
+CXXFLAGS +=	-I$(POSIX_LIB_DIR)/include
+CXXFLAGS +=	-I$(NET_LIB_DIR)/include
+CXXFLAGS +=	-I$(PROTOCOL_LIB_DIR)/include
 
-DEBUG_CFLAGS	=	-g3 -fsanitize=address -DDEBUG
-DEBUG_LDFLAGS	=	-fsanitize=address
+LDFLAGS = -L$(NET_LIB_DIR) -lzappy_net -L$(POSIX_LIB_DIR) -lzappy_posix
+
+DEBUG_CFLAGS = -g3 -fsanitize=address -DDEBUG
+DEBUG_LDFLAGS = -fsanitize=address
 
 all:	$(BIN_DIR)/$(NAME)
 

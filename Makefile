@@ -15,7 +15,8 @@ SERVER_DIR = src/server
 GUI_DIR = src/gui
 AI_DIR = src/ia
 POSIX_LIB_DIR = libs/posix
-NET_LIB_DIR   = libs/net
+NET_LIB_DIR = libs/net
+PROTOCOL_LIB_DIR = libs/protocol
 
 BUILD_DIR = build
 
@@ -58,6 +59,7 @@ clean:
 	@$(MAKE) -C $(AI_DIR) clean
 	@$(MAKE) -C $(POSIX_LIB_DIR) clean
 	@$(MAKE) -C $(NET_LIB_DIR) clean
+	@$(MAKE) -C $(PROTOCOL_LIB_DIR) clean
 	rm -rf $(BUILD_DIR)
 
 fclean: clean
