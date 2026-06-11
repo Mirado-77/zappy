@@ -10,7 +10,7 @@
 
     #include "server/cli/ServerConfig.hpp"
     #include "server/client/ClientRegistry.hpp"
-    #include "server/game/TeamRegistry.hpp"
+    #include "server/game/World.hpp"
     #include "server/handshake/HandshakeHandler.hpp"
     #include "net/Listener.hpp"
     #include "net/PollLoop.hpp"
@@ -92,7 +92,7 @@ private:
     cli::ServerConfig _config;
     net::Listener _listener;
     net::PollLoop _poll;
-    game::TeamRegistry _teams;
+    game::World _world;
     client::ClientRegistry _clients;
     handshake::HandshakeHandler _handshake;
 };
