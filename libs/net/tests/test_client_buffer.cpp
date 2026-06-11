@@ -207,7 +207,6 @@ Test(client_buffer, write_eagain_then_completes_after_drain, .timeout = 5)
     int sv[2];
     make_pair(sv);
 
-    // Fill sv[1]'s receive buffer by writing from sv[0] raw (before ClientBuffer owns it)
     {
         const std::vector<char> filler(4096, 'F');
         while (::write(sv[0], filler.data(), filler.size()) > 0) {}
@@ -217,11 +216,9 @@ Test(client_buffer, write_eagain_then_completes_after_drain, .timeout = 5)
     buf.queue_message("test");
     cr_assert(buf.has_pending_write());
 
-    // Receive buffer full → EAGAIN → OK (not ALL_SENT)
     cr_assert_eq(buf.on_writable(), zappy::net::WriteResult::OK);
     cr_assert(buf.has_pending_write());
 
-    // Drain sv[1]
     set_nonblocking(sv[1]);
     {
         char drain[65536];
@@ -242,10 +239,9 @@ Test(client_buffer, read_buffer_overflow_returns_error, .timeout = 10)
 
     auto buf = make_buf(sv[0]);
 
-    const std::vector<char> chunk(4096, 'X'); // no newline → accumulates in _read_buffer
+    const std::vector<char> chunk(4096, 'X');
     zappy::net::ReadResult result = zappy::net::ReadResult::OK;
 
-    // Fill socket buffer, drain into _read_buffer, repeat until 1 MB cap triggers
     while (result == zappy::net::ReadResult::OK) {
         while (::write(sv[1], chunk.data(), chunk.size()) > 0) {}
         result = buf.on_readable();

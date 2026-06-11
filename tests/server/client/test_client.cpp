@@ -29,7 +29,7 @@ static int open_pair(int sv[2])
     return sv[0];
 }
 
-/* ------------------------------------------------------------------ Client */
+/* Client */
 
 Test(client, default_state_is_handshake)
 {
@@ -80,7 +80,7 @@ Test(client, promote_twice_throws)
         zappy::server::client::ClientStateError);
 }
 
-/* ---------------------------------------------------------- ClientRegistry */
+/* ClientRegistry */
 
 Test(client_registry, add_returns_handshake_client)
 {

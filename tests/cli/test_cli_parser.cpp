@@ -29,7 +29,7 @@ std::optional<zappy::server::cli::ServerConfig> run(
 
 }
 
-/* ------------------------------------------------------------------ valid */
+/* valid */
 
 Test(cli_valid, minimal_command_line)
 {
@@ -89,7 +89,7 @@ Test(cli_valid, bonus_flags_default_to_disabled)
     cr_assert_str_empty(config->adminPassword().c_str());
 }
 
-/* ------------------------------------------------------------------- help */
+/* help */
 
 Test(cli_help, returns_nullopt)
 {
@@ -110,7 +110,7 @@ Test(cli_help, usage_message_matches_subject)
     cr_assert(usage.find("reciprocal of time unit") != std::string::npos);
 }
 
-/* ------------------------------------------------------------------ error */
+/* error */
 
 Test(cli_error, missing_required_port)
 {
