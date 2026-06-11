@@ -15,7 +15,7 @@ SERVER_DIR = src/server
 GUI_DIR = src/gui
 AI_DIR = src/ia
 POSIX_LIB_DIR = libs/posix
-NET_LIB_DIR   = libs/net
+NET_LIB_DIR = libs/net
 
 BUILD_DIR = build
 
@@ -29,8 +29,12 @@ TEST_SRC = src/server/cli/CliParser.cpp \
 			src/server/Server.cpp \
 			src/server/client/Client.cpp \
 			src/server/client/ClientRegistry.cpp \
-			src/server/game/TeamRegistry.cpp \
 			src/server/game/Position.cpp \
+			src/server/game/Tile.cpp \
+			src/server/game/Player.cpp \
+			src/server/game/Egg.cpp \
+			src/server/game/Team.cpp \
+			src/server/game/World.cpp \
 			src/server/handshake/HandshakeHandler.cpp \
 		    $(wildcard tests/cli/*.cpp) \
 			$(wildcard tests/server/client/*.cpp) \

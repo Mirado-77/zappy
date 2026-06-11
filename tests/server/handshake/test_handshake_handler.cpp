@@ -14,19 +14,19 @@
 #include "server/cli/ServerConfig.hpp"
 #include "server/client/Client.hpp"
 #include "server/client/ClientState.hpp"
-#include "server/game/TeamRegistry.hpp"
+#include "server/game/World.hpp"
 #include "server/handshake/HandshakeHandler.hpp"
 #include "posix/FileDescriptor.hpp"
 
 using zappy::server::cli::ServerConfig;
 using zappy::server::client::Client;
 using zappy::server::client::ClientState;
-using zappy::server::game::TeamRegistry;
+using zappy::server::game::World;
 using zappy::server::handshake::HandshakeHandler;
 using zappy::server::handshake::HandshakeResult;
 using zappy::posix::FileDescriptor;
 
-/* ------------------------------------------------------------------ helpers */
+/* helpers */
 
 static ServerConfig make_config(int slots = 2)
 {
@@ -51,13 +51,13 @@ static std::string drain_sent(Client &client, int peer_fd)
     return (n > 0) ? std::string(buf, static_cast<std::size_t>(n)) : std::string{};
 }
 
-/* --------------------------------------------------------- HandshakeHandler */
+/* HandshakeHandler */
 
 Test(handshake_handler, graphic_promotes_to_gui)
 {
     auto config = make_config();
-    TeamRegistry teams({"alpha"}, 2);
-    HandshakeHandler h(config, teams);
+    World world(10, 20, {"alpha"}, 2);
+    HandshakeHandler h(config, world);
     int peer = -1;
     auto client = make_client(peer);
 
@@ -70,8 +70,8 @@ Test(handshake_handler, graphic_promotes_to_gui)
 Test(handshake_handler, graphic_queues_no_extra_bytes)
 {
     auto config = make_config();
-    TeamRegistry teams({"alpha"}, 2);
-    HandshakeHandler h(config, teams);
+    World world(10, 20, {"alpha"}, 2);
+    HandshakeHandler h(config, world);
     int peer = -1;
     auto client = make_client(peer);
 
@@ -84,8 +84,8 @@ Test(handshake_handler, graphic_queues_no_extra_bytes)
 Test(handshake_handler, valid_team_promotes_to_ai)
 {
     auto config = make_config();
-    TeamRegistry teams({"alpha"}, 2);
-    HandshakeHandler h(config, teams);
+    World world(10, 20, {"alpha"}, 2);
+    HandshakeHandler h(config, world);
     int peer = -1;
     auto client = make_client(peer);
 
@@ -99,22 +99,22 @@ Test(handshake_handler, valid_team_promotes_to_ai)
 Test(handshake_handler, valid_team_queues_free_slots_and_dimensions)
 {
     auto config = make_config(3);
-    TeamRegistry teams({"alpha"}, 3);
-    HandshakeHandler h(config, teams);
+    World world(10, 20, {"alpha"}, 3);
+    HandshakeHandler h(config, world);
     int peer = -1;
     auto client = make_client(peer);
 
     (void)h.handle(client, "alpha");
     const std::string sent = drain_sent(client, peer);
-    cr_assert_str_eq(sent.c_str(), "2\n10 20\n");
+    cr_assert_str_eq(sent.c_str(), "3\n10 20\n");
     close(peer);
 }
 
 Test(handshake_handler, unknown_team_drops_with_ko)
 {
     auto config = make_config();
-    TeamRegistry teams({"alpha"}, 2);
-    HandshakeHandler h(config, teams);
+    World world(10, 20, {"alpha"}, 2);
+    HandshakeHandler h(config, world);
     int peer = -1;
     auto client = make_client(peer);
 
@@ -128,8 +128,8 @@ Test(handshake_handler, unknown_team_drops_with_ko)
 Test(handshake_handler, full_team_drops_with_ko)
 {
     auto config = make_config(1);
-    TeamRegistry teams({"alpha"}, 1);
-    HandshakeHandler h(config, teams);
+    World world(10, 20, {"alpha"}, 1);
+    HandshakeHandler h(config, world);
 
     int peer1 = -1;
     auto client1 = make_client(peer1);
@@ -148,8 +148,8 @@ Test(handshake_handler, full_team_drops_with_ko)
 Test(handshake_handler, empty_line_drops_with_ko)
 {
     auto config = make_config();
-    TeamRegistry teams({"alpha"}, 2);
-    HandshakeHandler h(config, teams);
+    World world(10, 20, {"alpha"}, 2);
+    HandshakeHandler h(config, world);
     int peer = -1;
     auto client = make_client(peer);
 
@@ -163,8 +163,8 @@ Test(handshake_handler, empty_line_drops_with_ko)
 Test(handshake_handler, whitespace_only_line_drops_with_ko)
 {
     auto config = make_config();
-    TeamRegistry teams({"alpha"}, 2);
-    HandshakeHandler h(config, teams);
+    World world(10, 20, {"alpha"}, 2);
+    HandshakeHandler h(config, world);
     int peer = -1;
     auto client = make_client(peer);
 
@@ -176,8 +176,8 @@ Test(handshake_handler, whitespace_only_line_drops_with_ko)
 Test(handshake_handler, leading_trailing_whitespace_tolerated_for_graphic)
 {
     auto config = make_config();
-    TeamRegistry teams({"alpha"}, 2);
-    HandshakeHandler h(config, teams);
+    World world(10, 20, {"alpha"}, 2);
+    HandshakeHandler h(config, world);
     int peer = -1;
     auto client = make_client(peer);
 
@@ -190,8 +190,8 @@ Test(handshake_handler, leading_trailing_whitespace_tolerated_for_graphic)
 Test(handshake_handler, leading_trailing_whitespace_tolerated_for_team)
 {
     auto config = make_config();
-    TeamRegistry teams({"alpha"}, 2);
-    HandshakeHandler h(config, teams);
+    World world(10, 20, {"alpha"}, 2);
+    HandshakeHandler h(config, world);
     int peer = -1;
     auto client = make_client(peer);
 

@@ -13,7 +13,7 @@
  * @brief Initialise all members from the validated configuration.
  *
  * Member order matches the declaration order in Server.hpp:
- * _config → _listener → _poll → _teams → _clients → _handshake.
+ * _config → _listener → _poll → _world → _clients → _handshake.
  *
  * @param config validated CLI configuration
  */
@@ -21,9 +21,10 @@ zappy::server::Server::Server(const cli::ServerConfig &config)
     : _config(config),
       _listener(_config.port()),
       _poll(),
-      _teams(_config.teamNames(), _config.clientsPerTeam()),
+      _world(_config.width(), _config.height(),
+          _config.teamNames(), _config.clientsPerTeam()),
       _clients(),
-      _handshake(_config, _teams)
+      _handshake(_config, _world)
 {}
 
 /**
@@ -128,7 +129,7 @@ void zappy::server::Server::dropClient(int clientFd)
 {
     if (_clients.contains(clientFd) &&
         _clients.get(clientFd).state() == client::ClientState::AI)
-        _teams.releaseSlot(_clients.get(clientFd).aiData().teamName);
+        _world.team(_clients.get(clientFd).aiData().teamName).releaseSlot();
     _poll.unregister_fd(clientFd);
     _clients.remove(clientFd);
 }

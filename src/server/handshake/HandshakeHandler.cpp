@@ -10,14 +10,14 @@
 #include "server/handshake/HandshakeHandler.hpp"
 
 /**
- * @brief Bind the handler to the server configuration and team registry.
+ * @brief Bind the handler to the server configuration and world.
  *
  * @param config immutable server configuration
- * @param teams mutable team slot registry
+ * @param world mutable game world
  */
 zappy::server::handshake::HandshakeHandler::HandshakeHandler(
-    const cli::ServerConfig &config, game::TeamRegistry &teams)
-    : _config(config), _teams(teams)
+    const cli::ServerConfig &config, game::World &world)
+    : _config(config), _world(world)
 {}
 
 /**
@@ -63,13 +63,15 @@ zappy::server::handshake::HandshakeHandler::promoteToAi(
     client::Client &client, const std::string &name)
 {
     HandshakeResult result = HandshakeResult::DROP;
-    if (!_teams.contains(name) || !_teams.hasSlot(name)) {
+    if (!_world.hasTeam(name) || !_world.team(name).hasFreeSlot()) {
         client.buffer().queue_message("ko");
     } else {
-        _teams.reserveSlot(name);
+        game::Team &owner = _world.team(name);
+        const int freeBefore = owner.slotsFree();
+        owner.reserveSlot();
         client.promote(client::ClientState::AI);
         client.aiData().teamName = name;
-        client.buffer().queue_message(std::to_string(_teams.freeSlots(name)));
+        client.buffer().queue_message(std::to_string(freeBefore));
         client.buffer().queue_message(
             std::to_string(_config.width()) + " " +
             std::to_string(_config.height()));

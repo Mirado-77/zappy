@@ -12,7 +12,7 @@
 
     #include "server/cli/ServerConfig.hpp"
     #include "server/client/Client.hpp"
-    #include "server/game/TeamRegistry.hpp"
+    #include "server/game/World.hpp"
 
 namespace zappy::server::handshake {
 
@@ -24,19 +24,19 @@ enum class HandshakeResult { PROMOTED, DROP };
 /**
  * @brief Stateless dispatcher for the initial client negotiation.
  *
- * Owns references to the server config and team registry; therefore
+ * Owns references to the server config and world; therefore
  * non-copyable and non-movable.
  */
 class HandshakeHandler {
 public:
     /**
-     * @brief Bind to the validated configuration and the live team registry.
+     * @brief Bind to the validated configuration and the live world.
      *
      * @param config immutable server configuration
-     * @param teams mutable team slot registry
+     * @param world mutable game world
      */
     HandshakeHandler(const cli::ServerConfig &config,
-        game::TeamRegistry &teams);
+        game::World &world);
 
     HandshakeHandler(const HandshakeHandler &) = delete;
     HandshakeHandler &operator=(const HandshakeHandler &) = delete;
@@ -77,7 +77,7 @@ private:
     [[nodiscard]] HandshakeResult promoteToGui(client::Client &client);
 
     /**
-     * @brief Validate @p name against the team registry and promote to AI.
+     * @brief Validate @p name against the world and promote to AI.
      *
      * Queues `ko\n` and returns DROP if the team is unknown or full.
      * Otherwise reserves a slot, promotes, queues the connection reply,
@@ -91,7 +91,7 @@ private:
         const std::string &name);
 
     const cli::ServerConfig &_config;
-    game::TeamRegistry &_teams;
+    game::World &_world;
 };
 
 } // namespace zappy::server::handshake
