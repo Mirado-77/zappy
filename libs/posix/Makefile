@@ -5,27 +5,27 @@
 ## POSIX library Makefile
 ##
 
-NAME		=	libzappy_posix.a
+NAME = libzappy_posix.a
 
-ROOT		=	../..
-BUILD_DIR	=	$(ROOT)/build/posix
-OBJ_DIR		=	$(BUILD_DIR)/obj
-SRC_EXTENSION	=	.cpp
+ROOT = ../..
+BUILD_DIR = $(ROOT)/build/posix
+OBJ_DIR = $(BUILD_DIR)/obj
+SRC_EXTENSION = .cpp
 
-SRC		=	$(wildcard src/*$(SRC_EXTENSION))
-OBJ		=	$(SRC:src/%$(SRC_EXTENSION)=$(OBJ_DIR)/%.o)
+SRC = $(wildcard src/*$(SRC_EXTENSION))
+OBJ = $(SRC:src/%$(SRC_EXTENSION)=$(OBJ_DIR)/%.o)
 
-CXX		=	g++
-CXXFLAGS	=	-std=c++20 -Wall -Wextra -Werror
-CXXFLAGS	+=	-I include/
+CXX = g++
+CXXFLAGS = -std=c++20 -Wall -Wextra -Werror
+CXXFLAGS += -I include/
 
-AR		=	ar
-ARFLAGS		=	rcs
+AR = ar
+ARFLAGS = rcs
 
-TEST_BIN	=	unit_tests_posix
-TEST_SRC	=	$(wildcard tests/*$(SRC_EXTENSION))
-TEST_CXXFLAGS	=	-std=c++20 -Wall -Wextra -I include/
-TEST_LDLIBS	=	-lcriterion
+TEST_BIN = unit_tests_posix
+TEST_SRC = $(wildcard tests/*$(SRC_EXTENSION))
+TEST_CXXFLAGS = -std=c++20 -Wall -Wextra -I include/
+TEST_LDLIBS = -lcriterion
 
 all:		$(NAME)
 
