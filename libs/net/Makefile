@@ -4,28 +4,28 @@
 ## File description:
 ## Network library Makefile
 ##
-NAME            =   libzappy_net.a
-ROOT            =   ../..
-BUILD_DIR       =   $(ROOT)/build/net
-OBJ_DIR         =   $(BUILD_DIR)/obj
-SRC_EXTENSION   =   .cpp
-SRC             =   $(wildcard src/*$(SRC_EXTENSION))
-OBJ             =   $(SRC:src/%$(SRC_EXTENSION)=$(OBJ_DIR)/%.o)
-CXX             =   g++
-CXXFLAGS        =   -std=c++20 -Wall -Wextra -Werror
-CXXFLAGS        +=  -I include/
-CXXFLAGS        +=  -I$(ROOT)/libs/posix/include
-POSIX_LIB_DIR   =   $(ROOT)/libs/posix
-AR              =   ar
-ARFLAGS         =   rcs
-TEST_BIN        =   unit_tests_net
-TEST_SRC        =   $(wildcard tests/*$(SRC_EXTENSION))
-TEST_CXXFLAGS   =   -std=c++20 -Wall -Wextra -I include/ -I$(ROOT)/libs/posix/include
-TEST_LDLIBS     =   -lcriterion
+NAME = libzappy_net.a
+ROOT = ../..
+BUILD_DIR = $(ROOT)/build/net
+OBJ_DIR = $(BUILD_DIR)/obj
+SRC_EXTENSION = .cpp
+SRC = $(wildcard src/*$(SRC_EXTENSION))
+OBJ = $(SRC:src/%$(SRC_EXTENSION)=$(OBJ_DIR)/%.o)
+CXX = g++
+CXXFLAGS = -std=c++20 -Wall -Wextra -Werror
+CXXFLAGS += -I include/
+CXXFLAGS += -I$(ROOT)/libs/posix/include
+POSIX_LIB_DIR = $(ROOT)/libs/posix
+AR = ar
+ARFLAGS = rcs
+TEST_BIN = unit_tests_net
+TEST_SRC = $(wildcard tests/*$(SRC_EXTENSION))
+TEST_CXXFLAGS = -std=c++20 -Wall -Wextra -I include/ -I$(ROOT)/libs/posix/include
+TEST_LDLIBS = -lcriterion
 
-all:            $(NAME)
+all:	$(NAME)
 
-$(NAME):        $(OBJ)
+$(NAME):	$(OBJ)
 	$(AR) $(ARFLAGS) $@ $^
 
 $(OBJ_DIR)/%.o: src/%$(SRC_EXTENSION)

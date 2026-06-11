@@ -5,30 +5,28 @@
 ## GUI Makefile
 ##
 
-NAME			=	zappy_gui
+NAME = zappy_gui
 
-ROOT			=	../..
-BIN_DIR			=	$(ROOT)
-BUILD_DIR		=	$(ROOT)/build/gui
-OBJ_DIR			=	$(BUILD_DIR)/obj
-DBG_DIR			=	$(BUILD_DIR)/debug
-SRC_EXTENSION	=	.cpp
+ROOT = ../..
+BIN_DIR = $(ROOT)
+BUILD_DIR = $(ROOT)/build/gui
+OBJ_DIR = $(BUILD_DIR)/obj
+DBG_DIR = $(BUILD_DIR)/debug
+SRC_EXTENSION = .cpp
 
-SRC				=	$(wildcard *$(SRC_EXTENSION)) \
-					$(wildcard **/*$(SRC_EXTENSION)) \
-					$(wildcard **/**/*$(SRC_EXTENSION))
+SRC = $(wildcard *$(SRC_EXTENSION)) \
+		$(wildcard **/*$(SRC_EXTENSION)) \
+		$(wildcard **/**/*$(SRC_EXTENSION))
 
-OBJ				=	$(SRC:%$(SRC_EXTENSION)=$(OBJ_DIR)/%.o)
-DEBUG_OBJ		=	$(SRC:%$(SRC_EXTENSION)=$(DBG_DIR)/%.debug.o)
+OBJ = $(SRC:%$(SRC_EXTENSION)=$(OBJ_DIR)/%.o)
+DEBUG_OBJ = $(SRC:%$(SRC_EXTENSION)=$(DBG_DIR)/%.debug.o)
 
-CXX				=	g++
-CXXFLAGS		=	-std=c++20 -Wall -Wextra
-CXXFLAGS		+=	-iquote $(ROOT)/include/
+CXX = g++
+CXXFLAGS = -std=c++20 -Wall -Wextra
+CXXFLAGS += -iquote $(ROOT)/include/
 
-LDFLAGS			=
-
-DEBUG_CFLAGS	=	-g3 -fsanitize=address -DDEBUG
-DEBUG_LDFLAGS	=	-fsanitize=address
+DEBUG_CFLAGS = -g3 -fsanitize=address -DDEBUG
+DEBUG_LDFLAGS = -fsanitize=address
 
 all:	$(BIN_DIR)/$(NAME)
 
