@@ -35,6 +35,7 @@ TEST_SRC = src/server/cli/CliParser.cpp \
 			src/server/game/Egg.cpp \
 			src/server/game/Team.cpp \
 			src/server/game/World.cpp \
+			src/server/game/ResourceSpawner.cpp \
 			src/server/handshake/HandshakeHandler.cpp \
 		    $(wildcard tests/cli/*.cpp) \
 			$(wildcard tests/server/client/*.cpp) \
