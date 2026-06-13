@@ -9,6 +9,8 @@
 #include <iostream>
 #include <optional>
 
+#include "server/game/ResourceSpawner.hpp"
+
 /**
  * @brief Initialise all members from the validated configuration.
  *
@@ -25,7 +27,10 @@ zappy::server::Server::Server(const cli::ServerConfig &config)
           _config.teamNames(), _config.clientsPerTeam()),
       _clients(),
       _handshake(_config, _world)
-{}
+{
+    game::ResourceSpawner spawner;
+    spawner.spawnInitial(_world);
+}
 
 /**
  * @brief Register the accept callback and enter the poll loop.
