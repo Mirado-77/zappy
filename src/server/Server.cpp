@@ -42,6 +42,10 @@ void zappy::server::Server::run()
     _poll.register_fd(_listener.fd(), POLLIN, [this](short) {
         acceptPendingClients();
     });
+    _poll.set_pre_wait_hook([this] {
+        _poll.set_next_timeout(_scheduler.nextTimeoutMs());
+    });
+    _poll.set_post_wait_hook([this] { _scheduler.tick(); });
     _poll.run();
     std::cout << "zappy_server shutting down\n";
 }

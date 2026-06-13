@@ -114,6 +114,22 @@ void zappy::net::PollLoop::set_next_timeout(int ms) noexcept
 }
 
 /**
+ * @brief Set the hook run before each poll() wait.
+ */
+void zappy::net::PollLoop::set_pre_wait_hook(PreWaitHook hook)
+{
+    _pre_wait_hook = std::move(hook);
+}
+
+/**
+ * @brief Set the hook run after each poll() wait.
+ */
+void zappy::net::PollLoop::set_post_wait_hook(PostWaitHook hook)
+{
+    _post_wait_hook = std::move(hook);
+}
+
+/**
  * @brief Drain the eventfd used to wake the loop.
  */
 void zappy::net::PollLoop::drain_wake_event() noexcept
@@ -168,6 +184,8 @@ void zappy::net::PollLoop::dispatch()
 void zappy::net::PollLoop::run()
 {
     while (!_stop_requested.load()) {
+        if (_pre_wait_hook)
+            _pre_wait_hook();
         const int ready = ::poll(_pollfds.data(),
             static_cast<nfds_t>(_pollfds.size()), _timeout_ms);
 
@@ -178,6 +196,8 @@ void zappy::net::PollLoop::run()
         }
         if (ready > 0)
             dispatch();
+        if (_post_wait_hook)
+            _post_wait_hook();
     }
 }
 

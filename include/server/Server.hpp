@@ -12,6 +12,8 @@
     #include "server/client/ClientRegistry.hpp"
     #include "server/game/World.hpp"
     #include "server/handshake/HandshakeHandler.hpp"
+    #include "server/scheduler/Clock.hpp"
+    #include "server/scheduler/Scheduler.hpp"
     #include "net/Listener.hpp"
     #include "net/PollLoop.hpp"
 
@@ -95,6 +97,8 @@ private:
     game::World _world;
     client::ClientRegistry _clients;
     handshake::HandshakeHandler _handshake;
+    scheduler::SteadyClock _clock;
+    scheduler::Scheduler _scheduler{_clock};
 };
 
 } // namespace zappy::server

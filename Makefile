@@ -36,10 +36,12 @@ TEST_SRC = src/server/cli/CliParser.cpp \
 			src/server/game/Team.cpp \
 			src/server/game/World.cpp \
 			src/server/game/ResourceSpawner.cpp \
+			src/server/scheduler/Scheduler.cpp \
 			src/server/handshake/HandshakeHandler.cpp \
 		    $(wildcard tests/cli/*.cpp) \
 			$(wildcard tests/server/client/*.cpp) \
 			$(wildcard tests/server/game/*.cpp) \
+			$(wildcard tests/server/scheduler/*.cpp) \
 			$(wildcard tests/server/handshake/*.cpp)
 
 all:	$(BINS)
