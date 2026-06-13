@@ -31,6 +31,16 @@ public:
     typedef std::function<void(short revents)> Callback;
 
     /**
+     * @brief Hook invoked once per loop iteration, right before poll() waits.
+     */
+    typedef std::function<void()> PreWaitHook;
+
+    /**
+     * @brief Hook invoked once per loop iteration, right after poll() returns.
+     */
+    typedef std::function<void()> PostWaitHook;
+
+    /**
      * @brief Build the loop and register the SIGINT signalfd and wake eventfd.
      */
     PollLoop();
@@ -70,6 +80,20 @@ public:
     void set_next_timeout(int ms) noexcept;
 
     /**
+     * @brief Set the hook run before each poll() wait (e.g. to set the timeout).
+     *
+     * @param hook function called at the top of every loop iteration
+     */
+    void set_pre_wait_hook(PreWaitHook hook);
+
+    /**
+     * @brief Set the hook run after each poll() wait (e.g. to fire timers).
+     *
+     * @param hook function called at the bottom of every loop iteration
+     */
+    void set_post_wait_hook(PostWaitHook hook);
+
+    /**
      * @brief Run the event loop until stop() or SIGINT.
      */
     void run();
@@ -96,6 +120,8 @@ private:
     SignalHandler _signals;
     posix::FileDescriptor _wake_event;
     int _timeout_ms;
+    PreWaitHook _pre_wait_hook;
+    PostWaitHook _post_wait_hook;
 };
 
 } // namespace zappy::net
