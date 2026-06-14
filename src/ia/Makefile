@@ -11,13 +11,15 @@ ROOT = ../..
 BIN_DIR = $(ROOT)
 BUILD_DIR = $(ROOT)/build/ia
 
-SRC = main.py
+SRC		=	main.py
+MODULES	=	connection.py
 
 all:	$(BIN_DIR)/$(NAME)
 
-$(BIN_DIR)/$(NAME):	$(SRC)
+$(BIN_DIR)/$(NAME):	$(SRC) $(MODULES)
 	@mkdir -p $(BIN_DIR) $(BUILD_DIR)
 	cp $(SRC) $(BIN_DIR)/$(NAME)
+	cp $(MODULES) $(BIN_DIR)/
 	chmod +x $(BIN_DIR)/$(NAME)
 
 debug:	all

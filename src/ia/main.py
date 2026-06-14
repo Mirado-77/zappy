@@ -8,6 +8,7 @@
 ##
 
 import sys
+from connection import open_connection
 
 USAGE = "USAGE: ./zappy_ai -p port -n name [-h machine]"
 ERROR = 84
@@ -129,4 +130,6 @@ def parse_args(argv: list[str]) -> tuple[int, str, str]:
 
 if __name__ == "__main__":
     port, name, machine = parse_args(sys.argv[1:])
-    print(f"port={port} name={name!r} machine={machine!r}")
+    sock = open_connection(machine, port)
+    print(f"connected to {machine}:{port}", file=sys.stderr)
+    sock.close()
