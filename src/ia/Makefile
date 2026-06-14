@@ -13,7 +13,8 @@ BUILD_DIR = $(ROOT)/build/ia
 
 SRC		=	main.py
 MODULES	=	connection.py \
-			handshake.py
+			handshake.py \
+			line_buffer.py
 
 all:	$(BIN_DIR)/$(NAME)
 
