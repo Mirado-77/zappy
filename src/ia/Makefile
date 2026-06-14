@@ -12,7 +12,8 @@ BIN_DIR = $(ROOT)
 BUILD_DIR = $(ROOT)/build/ia
 
 SRC		=	main.py
-MODULES	=	connection.py
+MODULES	=	connection.py \
+			handshake.py
 
 all:	$(BIN_DIR)/$(NAME)
 
