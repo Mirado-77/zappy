@@ -5,13 +5,13 @@
 ## AI Makefile
 ##
 
-NAME		=	zappy_ai
+NAME = zappy_ai
 
-ROOT		=	../..
-BIN_DIR		=	$(ROOT)
-BUILD_DIR	=	$(ROOT)/build/ia
+ROOT = ../..
+BIN_DIR = $(ROOT)
+BUILD_DIR = $(ROOT)/build/ia
 
-SRC			=	main.py
+SRC = main.py
 
 all:	$(BIN_DIR)/$(NAME)
 

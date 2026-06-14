@@ -1,0 +1,346 @@
+/*
+** EPITECH PROJECT, 2026
+** Zappy
+** File description:
+** Central authoritative game state
+*/
+
+#ifndef SERVER_GAME_WORLD_HPP_
+    #define SERVER_GAME_WORLD_HPP_
+
+    #include <cstddef>
+    #include <functional>
+    #include <string>
+    #include <unordered_map>
+    #include <vector>
+
+    #include "server/game/Constants.hpp"
+    #include "server/game/Egg.hpp"
+    #include "server/game/IWorldObserver.hpp"
+    #include "server/game/Player.hpp"
+    #include "server/game/Position.hpp"
+    #include "server/game/Team.hpp"
+    #include "server/game/Tile.hpp"
+
+namespace zappy::server::game {
+
+/**
+ * @brief Owns the grid, teams, players and eggs; notifies observers on change.
+ */
+class World {
+public:
+    /**
+     * @brief Build an empty world: grid of tiles plus the configured teams.
+     *
+     * @param width map width in tiles
+     * @param height map height in tiles
+     * @param teamNames configured team names
+     * @param slotsPerTeam slot capacity per team
+     */
+    World(int width, int height,
+        const std::vector<std::string> &teamNames, int slotsPerTeam);
+
+    World(const World &) = delete;
+    World &operator=(const World &) = delete;
+    World(World &&) = default;
+    World &operator=(World &&) = default;
+
+    /**
+     * @brief Map width in tiles.
+     *
+     * @return int the width
+     */
+    [[nodiscard]] int width() const noexcept;
+
+    /**
+     * @brief Map height in tiles.
+     *
+     * @return int the height
+     */
+    [[nodiscard]] int height() const noexcept;
+
+    /**
+     * @brief Tile at an already-normalized position.
+     *
+     * @param pos normalized position
+     * @return Tile& the tile
+     */
+    [[nodiscard]] Tile &tileAt(Position pos) noexcept;
+
+    /**
+     * @brief Tile at an already-normalized position.
+     *
+     * @param pos normalized position
+     * @return const Tile& the tile
+     */
+    [[nodiscard]] const Tile &tileAt(Position pos) const noexcept;
+
+    /**
+     * @brief Tile at any position, normalizing first.
+     *
+     * @param pos possibly out-of-range position
+     * @return Tile& the tile
+     */
+    [[nodiscard]] Tile &tileAtRaw(Position pos) noexcept;
+
+    /**
+     * @brief Tile at any position, normalizing first.
+     *
+     * @param pos possibly out-of-range position
+     * @return const Tile& the tile
+     */
+    [[nodiscard]] const Tile &tileAtRaw(Position pos) const noexcept;
+
+    /**
+     * @brief Whether @p name is a known team.
+     *
+     * @param name team name
+     * @return bool true if known
+     */
+    [[nodiscard]] bool hasTeam(const std::string &name) const noexcept;
+
+    /**
+     * @brief Mutable team by name.
+     *
+     * @param name team name
+     * @return Team& the team
+     * @throws WorldError if unknown
+     */
+    [[nodiscard]] Team &team(const std::string &name);
+
+    /**
+     * @brief Read-only team by name.
+     *
+     * @param name team name
+     * @return const Team& the team
+     * @throws WorldError if unknown
+     */
+    [[nodiscard]] const Team &team(const std::string &name) const;
+
+    /**
+     * @brief All teams in configuration order.
+     *
+     * @return const std::vector<Team>& the teams
+     */
+    [[nodiscard]] const std::vector<Team> &teams() const noexcept;
+
+    /**
+     * @brief Whether a player with @p id exists.
+     *
+     * @param id player id
+     * @return bool true if present
+     */
+    [[nodiscard]] bool hasPlayer(int id) const noexcept;
+
+    /**
+     * @brief Mutable player by id.
+     *
+     * @param id player id
+     * @return Player& the player
+     * @throws WorldError if unknown
+     */
+    [[nodiscard]] Player &player(int id);
+
+    /**
+     * @brief Read-only player by id.
+     *
+     * @param id player id
+     * @return const Player& the player
+     * @throws WorldError if unknown
+     */
+    [[nodiscard]] const Player &player(int id) const;
+
+    /**
+     * @brief Create a player, reserve a team slot, place it on its tile.
+     *
+     * @param team owning team name
+     * @param pos starting tile
+     * @param orient starting facing
+     * @return int the new player id
+     * @throws WorldError if the team is unknown or full
+     */
+    int addPlayer(const std::string &team, Position pos, Orientation orient);
+
+    /**
+     * @brief Remove a player; release its slot if still ALIVE.
+     *
+     * @param id player id
+     * @throws WorldError if unknown
+     */
+    void removePlayer(int id);
+
+    /**
+     * @brief Whether an egg with @p id exists.
+     *
+     * @param id egg id
+     * @return bool true if present
+     */
+    [[nodiscard]] bool hasEgg(int id) const noexcept;
+
+    /**
+     * @brief Mutable egg by id.
+     *
+     * @param id egg id
+     * @return Egg& the egg
+     * @throws WorldError if unknown
+     */
+    [[nodiscard]] Egg &egg(int id);
+
+    /**
+     * @brief Read-only egg by id.
+     *
+     * @param id egg id
+     * @return const Egg& the egg
+     * @throws WorldError if unknown
+     */
+    [[nodiscard]] const Egg &egg(int id) const;
+
+    /**
+     * @brief Create an egg and place it on its tile.
+     *
+     * @param team owning team name
+     * @param pos tile to lay the egg on
+     * @return int the new egg id
+     */
+    int addEgg(const std::string &team, Position pos);
+
+    /**
+     * @brief Remove an egg from the world and its tile.
+     *
+     * @param id egg id
+     * @throws WorldError if unknown
+     */
+    void removeEgg(int id);
+
+    /**
+     * @brief Move a player to @p newPos (assumed normalized).
+     *
+     * @param playerId player id
+     * @param newPos destination tile
+     * @throws WorldError if unknown
+     */
+    void movePlayer(int playerId, Position newPos);
+
+    /**
+     * @brief Rotate a player to @p newOrient.
+     *
+     * @param playerId player id
+     * @param newOrient new facing
+     * @throws WorldError if unknown
+     */
+    void rotatePlayer(int playerId, Orientation newOrient);
+
+    /**
+     * @brief Set a player's elevation level.
+     *
+     * @param playerId player id
+     * @param newLevel new level
+     * @throws WorldError if unknown
+     */
+    void setPlayerLevel(int playerId, int newLevel);
+
+    /**
+     * @brief Move one unit of @p type from the player's tile to its inventory.
+     *
+     * @param playerId player id
+     * @param type resource to take
+     * @return bool false if the tile has none
+     * @throws WorldError if unknown
+     */
+    bool takeResourceFromTile(int playerId, ResourceType type);
+
+    /**
+     * @brief Move one unit of @p type from the player's inventory to its tile.
+     *
+     * @param playerId player id
+     * @param type resource to drop
+     * @return bool false if the player has none
+     * @throws WorldError if unknown
+     */
+    bool dropResourceOnTile(int playerId, ResourceType type);
+
+    /**
+     * @brief Kill a player: mark DEAD, remove from tile, release its slot.
+     *
+     * @param playerId player id
+     * @throws WorldError if unknown
+     */
+    void killPlayer(int playerId);
+
+    /**
+     * @brief Hatch an egg (state HATCHED); the egg is not removed here.
+     *
+     * @param eggId egg id
+     * @throws WorldError if unknown
+     */
+    void hatchEgg(int eggId);
+
+    /**
+     * @brief Overwrite a tile's resource quantity.
+     *
+     * @param pos tile position
+     * @param type resource to set
+     * @param qty new quantity
+     */
+    void setTileResource(Position pos, ResourceType type, int qty);
+
+    /**
+     * @brief Add to a tile's resource quantity.
+     *
+     * @param pos tile position
+     * @param type resource to add
+     * @param qty quantity to add
+     */
+    void addTileResource(Position pos, ResourceType type, int qty);
+
+    /**
+     * @brief Register an observer for subsequent mutations.
+     *
+     * @param observer observer to add
+     */
+    void addObserver(IWorldObserver &observer);
+
+    /**
+     * @brief Unregister an observer; no-op if not registered.
+     *
+     * @param observer observer to remove
+     */
+    void removeObserver(IWorldObserver &observer);
+
+private:
+    /**
+     * @brief Row-major grid index of a normalized position.
+     *
+     * @param pos normalized position
+     * @return std::size_t the index into the grid
+     */
+    [[nodiscard]] std::size_t tileIndex(Position pos) const noexcept;
+
+    void notifyTileChanged(Position pos);
+    void notifyPlayerAdded(int id);
+    void notifyPlayerMoved(int id, Position oldPos, Position newPos);
+    void notifyPlayerRotated(int id);
+    void notifyPlayerLevelChanged(int id);
+    void notifyPlayerInventoryChanged(int id);
+    void notifyPlayerStateChanged(int id);
+    void notifyPlayerRemoved(int id);
+    void notifyEggAdded(int id);
+    void notifyEggHatched(int id);
+    void notifyEggRemoved(int id);
+    void notifyTeamSlotsChanged(const std::string &teamName);
+
+    int _width;
+    int _height;
+    std::vector<Tile> _grid;
+    std::vector<Team> _teams;
+    std::unordered_map<int, Player> _players;
+    std::unordered_map<int, Egg> _eggs;
+    int _nextPlayerId;
+    int _nextEggId;
+    std::vector<std::reference_wrapper<IWorldObserver>> _observers;
+    std::vector<int> _activeEffects;
+};
+
+} // namespace zappy::server::game
+
+#endif /* !SERVER_GAME_WORLD_HPP_ */
