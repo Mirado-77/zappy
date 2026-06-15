@@ -14,7 +14,7 @@
  *
  * Member order matches the declaration order in Server.hpp:
  * _config → _listener → _poll → _world → _resourceSpawner → _clients →
- * _handshake → _clock → _scheduler → _refillScheduler.
+ * _clock → _scheduler → _refillScheduler → _foodScheduler → _handshake.
  *
  * @param config validated CLI configuration
  */
@@ -26,9 +26,11 @@ zappy::server::Server::Server(const cli::ServerConfig &config)
           _config.teamNames(), _config.clientsPerTeam()),
       _resourceSpawner(),
       _clients(),
-      _handshake(_config, _world),
       _refillScheduler(_world, _resourceSpawner, _scheduler,
-          _config.frequency())
+          _config.frequency()),
+      _foodScheduler(_world, _scheduler, _config.frequency(),
+          [this](int playerId) { onPlayerStarved(playerId); }),
+      _handshake(_config, _world, _foodScheduler)
 {
     _resourceSpawner.spawnInitial(_world);
     _refillScheduler.start();
@@ -91,6 +93,9 @@ void zappy::server::Server::handleClientEvents(
         dropped = handlePollout(clientFd);
     if (!dropped)
         retunePollMask(clientFd);
+    if (!dropped && _clients.get(clientFd).isMarkedForDrop() &&
+        !_clients.get(clientFd).buffer().has_pending_write())
+        dropClient(clientFd);
 }
 
 /**
@@ -132,17 +137,45 @@ bool zappy::server::Server::handlePollout(int clientFd)
 }
 
 /**
- * @brief Release the team slot (if AI), unregister from poll, and erase from registry.
+ * @brief Kill the player (if AI and still alive), unregister and erase the client.
+ *
+ * Idempotent: a no-op when @p clientFd is already gone. Stops food consumption
+ * and kills the player only when it is still alive, avoiding double slot release.
  *
  * @param clientFd file descriptor to drop
  */
 void zappy::server::Server::dropClient(int clientFd)
 {
-    if (_clients.contains(clientFd) &&
-        _clients.get(clientFd).state() == client::ClientState::AI)
-        _world.team(_clients.get(clientFd).aiData().teamName).releaseSlot();
+    if (!_clients.contains(clientFd))
+        return;
+    client::Client &client = _clients.get(clientFd);
+    if (client.state() == client::ClientState::AI) {
+        const int playerId = client.aiData().playerId;
+        _foodScheduler.stopConsumption(playerId);
+        if (_world.hasPlayer(playerId) &&
+            _world.player(playerId).state() != game::PlayerState::DEAD)
+            _world.killPlayer(playerId);
+    }
     _poll.unregister_fd(clientFd);
     _clients.remove(clientFd);
+}
+
+/**
+ * @brief React to starvation: send "dead", flag for drop, kill and arm POLLOUT.
+ *
+ * @param playerId starving player id reported by the food scheduler
+ */
+void zappy::server::Server::onPlayerStarved(int playerId)
+{
+    const std::optional<int> fd = _clients.findFdByPlayerId(playerId);
+    if (!fd)
+        return;
+    client::Client &client = _clients.get(*fd);
+    client.buffer().queue_message("dead");
+    client.markForDrop();
+    if (_world.hasPlayer(playerId))
+        _world.killPlayer(playerId);
+    retunePollMask(*fd);
 }
 
 /**

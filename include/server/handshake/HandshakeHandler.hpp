@@ -8,10 +8,13 @@
 #ifndef HANDSHAKE_HANDSHAKEHANDLER_HPP_
     #define HANDSHAKE_HANDSHAKEHANDLER_HPP_
 
+    #include <array>
+    #include <random>
     #include <string>
 
     #include "server/cli/ServerConfig.hpp"
     #include "server/client/Client.hpp"
+    #include "server/game/FoodScheduler.hpp"
     #include "server/game/World.hpp"
 
 namespace zappy::server::handshake {
@@ -34,9 +37,10 @@ public:
      *
      * @param config immutable server configuration
      * @param world mutable game world
+     * @param foodScheduler per-player food consumption driver
      */
     HandshakeHandler(const cli::ServerConfig &config,
-        game::World &world);
+        game::World &world, game::FoodScheduler &foodScheduler);
 
     HandshakeHandler(const HandshakeHandler &) = delete;
     HandshakeHandler &operator=(const HandshakeHandler &) = delete;
@@ -90,8 +94,34 @@ private:
     [[nodiscard]] HandshakeResult promoteToAi(client::Client &client,
         const std::string &name);
 
+    /**
+     * @brief Reserve a slot, spawn the player and queue the AI reply.
+     *
+     * @param client client passing the team validation
+     * @param name validated team name with a free slot
+     * @return HandshakeResult always PROMOTED
+     */
+    [[nodiscard]] HandshakeResult promoteValidAi(client::Client &client,
+        const std::string &name);
+
+    /**
+     * @brief Draw a uniformly random tile position on the map.
+     *
+     * @return game::Position the spawn position
+     */
+    [[nodiscard]] game::Position randomPosition();
+
+    /**
+     * @brief Draw a uniformly random cardinal orientation.
+     *
+     * @return game::Orientation the spawn orientation
+     */
+    [[nodiscard]] game::Orientation randomOrientation();
+
     const cli::ServerConfig &_config;
     game::World &_world;
+    game::FoodScheduler &_foodScheduler;
+    std::mt19937_64 _rng{std::random_device{}()};
 };
 
 } // namespace zappy::server::handshake

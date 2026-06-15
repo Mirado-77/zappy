@@ -10,14 +10,16 @@
 #include "server/handshake/HandshakeHandler.hpp"
 
 /**
- * @brief Bind the handler to the server configuration and world.
+ * @brief Bind the handler to the configuration, world and food scheduler.
  *
  * @param config immutable server configuration
  * @param world mutable game world
+ * @param foodScheduler per-player food consumption driver
  */
 zappy::server::handshake::HandshakeHandler::HandshakeHandler(
-    const cli::ServerConfig &config, game::World &world)
-    : _config(config), _world(world)
+    const cli::ServerConfig &config, game::World &world,
+    game::FoodScheduler &foodScheduler)
+    : _config(config), _world(world), _foodScheduler(foodScheduler)
 {}
 
 /**
@@ -63,21 +65,64 @@ zappy::server::handshake::HandshakeHandler::promoteToAi(
     client::Client &client, const std::string &name)
 {
     HandshakeResult result = HandshakeResult::DROP;
-    if (!_world.hasTeam(name) || !_world.team(name).hasFreeSlot()) {
+    if (!_world.hasTeam(name) || !_world.team(name).hasFreeSlot())
         client.buffer().queue_message("ko");
-    } else {
-        game::Team &owner = _world.team(name);
-        const int freeBefore = owner.slotsFree();
-        owner.reserveSlot();
-        client.promote(client::ClientState::AI);
-        client.aiData().teamName = name;
-        client.buffer().queue_message(std::to_string(freeBefore));
-        client.buffer().queue_message(
-            std::to_string(_config.width()) + " " +
-            std::to_string(_config.height()));
-        result = HandshakeResult::PROMOTED;
-    }
+    else
+        result = promoteValidAi(client, name);
     return result;
+}
+
+/**
+ * @brief Reserve a slot, spawn the player and queue the connection reply.
+ *
+ * @param client client passing team validation
+ * @param name validated team name with a free slot
+ * @return HandshakeResult always PROMOTED
+ */
+zappy::server::handshake::HandshakeResult
+zappy::server::handshake::HandshakeHandler::promoteValidAi(
+    client::Client &client, const std::string &name)
+{
+    const int playerId =
+        _world.addPlayer(name, randomPosition(), randomOrientation());
+    client.promote(client::ClientState::AI);
+    client.aiData().teamName = name;
+    client.aiData().playerId = playerId;
+    _foodScheduler.startConsumption(playerId);
+    client.buffer().queue_message(
+        std::to_string(_world.team(name).slotsFree()));
+    client.buffer().queue_message(std::to_string(_config.width()) + " " +
+        std::to_string(_config.height()));
+    return HandshakeResult::PROMOTED;
+}
+
+/**
+ * @brief Draw a uniformly random tile position on the map.
+ *
+ * @return game::Position the spawn position
+ */
+zappy::server::game::Position
+zappy::server::handshake::HandshakeHandler::randomPosition()
+{
+    std::uniform_int_distribution<int> xDist(0, _config.width() - 1);
+    std::uniform_int_distribution<int> yDist(0, _config.height() - 1);
+    return game::Position(xDist(_rng), yDist(_rng));
+}
+
+/**
+ * @brief Draw a uniformly random cardinal orientation.
+ *
+ * @return game::Orientation the spawn orientation
+ */
+zappy::server::game::Orientation
+zappy::server::handshake::HandshakeHandler::randomOrientation()
+{
+    static constexpr std::array<game::Orientation, 4> orientations = {
+        game::Orientation::NORTH, game::Orientation::EAST,
+        game::Orientation::SOUTH, game::Orientation::WEST};
+    std::uniform_int_distribution<std::size_t> dist(
+        0, orientations.size() - 1);
+    return orientations[dist(_rng)];
 }
 
 /**

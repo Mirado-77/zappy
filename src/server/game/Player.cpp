@@ -23,7 +23,7 @@ zappy::server::game::Player::Player(int id, std::string team,
     : _id(id), _team(std::move(team)), _position(position),
         _orientation(orientation), _level(1), _state(PlayerState::ALIVE)
 {
-    _inventory[static_cast<std::size_t>(ResourceType::FOOD)] = 10;
+    _inventory[static_cast<std::size_t>(ResourceType::FOOD)] = INITIAL_FOOD;
 }
 
 /**

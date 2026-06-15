@@ -10,6 +10,7 @@
 
     #include "server/cli/ServerConfig.hpp"
     #include "server/client/ClientRegistry.hpp"
+    #include "server/game/FoodScheduler.hpp"
     #include "server/game/RefillScheduler.hpp"
     #include "server/game/ResourceSpawner.hpp"
     #include "server/game/World.hpp"
@@ -93,16 +94,24 @@ private:
      */
     bool dispatchReadyMessages(int clientFd);
 
+    /**
+     * @brief Handle a player reaching zero food: notify, kill and drop.
+     *
+     * @param playerId starving player id reported by the food scheduler
+     */
+    void onPlayerStarved(int playerId);
+
     cli::ServerConfig _config;
     net::Listener _listener;
     net::PollLoop _poll;
     game::World _world;
     game::ResourceSpawner _resourceSpawner;
     client::ClientRegistry _clients;
-    handshake::HandshakeHandler _handshake;
     scheduler::SteadyClock _clock;
     scheduler::Scheduler _scheduler{_clock};
     game::RefillScheduler _refillScheduler;
+    game::FoodScheduler _foodScheduler;
+    handshake::HandshakeHandler _handshake;
 };
 
 } // namespace zappy::server
