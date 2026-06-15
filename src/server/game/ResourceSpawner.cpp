@@ -28,6 +28,29 @@ void zappy::server::game::ResourceSpawner::spawnInitial(World &world)
     }
 }
 
+void zappy::server::game::ResourceSpawner::refillMissing(World &world)
+{
+    const int width = world.width();
+    const int height = world.height();
+    for (std::size_t i = 0; i < RESOURCE_COUNT; ++i) {
+        const ResourceType type = static_cast<ResourceType>(i);
+        const int target = targetCountFor(type, width, height);
+        const int missing = target - countResourceOnMap(world, type);
+        if (missing > 0)
+            spawnOne(world, type, missing);
+    }
+}
+
+int zappy::server::game::ResourceSpawner::countResourceOnMap(
+    const World &world, ResourceType type) const
+{
+    int total = 0;
+    for (int y = 0; y < world.height(); ++y)
+        for (int x = 0; x < world.width(); ++x)
+            total += world.tileAt(Position(x, y)).resource(type);
+    return total;
+}
+
 int zappy::server::game::ResourceSpawner::targetCountFor(
     ResourceType type, int width, int height) noexcept
 {

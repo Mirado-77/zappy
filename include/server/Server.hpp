@@ -10,6 +10,8 @@
 
     #include "server/cli/ServerConfig.hpp"
     #include "server/client/ClientRegistry.hpp"
+    #include "server/game/RefillScheduler.hpp"
+    #include "server/game/ResourceSpawner.hpp"
     #include "server/game/World.hpp"
     #include "server/handshake/HandshakeHandler.hpp"
     #include "server/scheduler/Clock.hpp"
@@ -95,10 +97,12 @@ private:
     net::Listener _listener;
     net::PollLoop _poll;
     game::World _world;
+    game::ResourceSpawner _resourceSpawner;
     client::ClientRegistry _clients;
     handshake::HandshakeHandler _handshake;
     scheduler::SteadyClock _clock;
     scheduler::Scheduler _scheduler{_clock};
+    game::RefillScheduler _refillScheduler;
 };
 
 } // namespace zappy::server
