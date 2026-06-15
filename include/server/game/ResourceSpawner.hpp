@@ -37,6 +37,13 @@ public:
     void spawnInitial(World &world);
 
     /**
+     * @brief Top up every resource short of its target, never removing surplus.
+     *
+     * @param world world to refill in place
+     */
+    void refillMissing(World &world);
+
+    /**
      * @brief Target unit count for a resource on a given map size.
      *
      * @param type resource to size
@@ -56,6 +63,16 @@ private:
      * @param count number of units to drop
      */
     void spawnOne(World &world, ResourceType type, int count);
+
+    /**
+     * @brief Total units of @p type currently present across all tiles.
+     *
+     * @param world world to scan
+     * @param type resource being counted
+     * @return int the summed quantity
+     */
+    [[nodiscard]] int countResourceOnMap(
+        const World &world, ResourceType type) const;
 
     std::mt19937_64 _rng;
 };

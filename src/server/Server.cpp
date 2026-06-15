@@ -9,13 +9,12 @@
 #include <iostream>
 #include <optional>
 
-#include "server/game/ResourceSpawner.hpp"
-
 /**
  * @brief Initialise all members from the validated configuration.
  *
  * Member order matches the declaration order in Server.hpp:
- * _config → _listener → _poll → _world → _clients → _handshake.
+ * _config → _listener → _poll → _world → _resourceSpawner → _clients →
+ * _handshake → _clock → _scheduler → _refillScheduler.
  *
  * @param config validated CLI configuration
  */
@@ -25,11 +24,14 @@ zappy::server::Server::Server(const cli::ServerConfig &config)
       _poll(),
       _world(_config.width(), _config.height(),
           _config.teamNames(), _config.clientsPerTeam()),
+      _resourceSpawner(),
       _clients(),
-      _handshake(_config, _world)
+      _handshake(_config, _world),
+      _refillScheduler(_world, _resourceSpawner, _scheduler,
+          _config.frequency())
 {
-    game::ResourceSpawner spawner;
-    spawner.spawnInitial(_world);
+    _resourceSpawner.spawnInitial(_world);
+    _refillScheduler.start();
 }
 
 /**
