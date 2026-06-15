@@ -100,10 +100,23 @@ public:
     /** @copydoc guiAdminData() */
     [[nodiscard]] const GuiAdminData &guiAdminData() const;
 
+    /**
+     * @brief Flag this client to be dropped once its write buffer drains.
+     */
+    void markForDrop() noexcept;
+
+    /**
+     * @brief Whether this client is pending a deferred drop.
+     *
+     * @return bool true if markForDrop() was called
+     */
+    [[nodiscard]] bool isMarkedForDrop() const noexcept;
+
 private:
     net::ClientBuffer _buffer;
     ClientState _state;
     ClientPayload _payload;
+    bool _markedForDrop = false;
 };
 
 } // namespace zappy::server::client

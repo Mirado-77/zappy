@@ -6,6 +6,7 @@
 */
 
 #include "server/client/ClientRegistry.hpp"
+#include <algorithm>
 #include <string>
 
 /**
@@ -100,4 +101,22 @@ zappy::server::client::ClientRegistry::countInState(ClientState s) const noexcep
             ++count;
     }
     return count;
+}
+
+/**
+ * @brief Return the fd of the AI client owning @p playerId, if any.
+ *
+ * @param playerId game player id to match
+ * @return std::optional<int> the fd, or nullopt when no AI client matches
+ */
+std::optional<int>
+zappy::server::client::ClientRegistry::findFdByPlayerId(int playerId) const
+{
+    const auto it = std::find_if(_clients.begin(), _clients.end(),
+        [playerId](const auto &entry) {
+            return entry.second.state() == ClientState::AI &&
+                entry.second.aiData().playerId == playerId;
+        });
+    return it == _clients.end()
+        ? std::nullopt : std::optional<int>(it->first);
 }

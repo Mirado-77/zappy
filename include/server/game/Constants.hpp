@@ -43,6 +43,10 @@ enum class EggState { WAITING, HATCHED };
 
 constexpr std::size_t RESOURCE_COUNT = 7;
 
+constexpr int FOOD_CONSUMPTION_INTERVAL_TIME_UNITS = 126;
+
+constexpr int INITIAL_FOOD = 10;
+
 using Inventory = std::array<int, RESOURCE_COUNT>;
 
 } // namespace zappy::server::game

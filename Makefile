@@ -37,6 +37,7 @@ TEST_SRC = src/server/cli/CliParser.cpp \
 			src/server/game/World.cpp \
 			src/server/game/ResourceSpawner.cpp \
 			src/server/game/RefillScheduler.cpp \
+			src/server/game/FoodScheduler.cpp \
 			src/server/scheduler/Scheduler.cpp \
 			src/server/handshake/HandshakeHandler.cpp \
 		    $(wildcard tests/cli/*.cpp) \
