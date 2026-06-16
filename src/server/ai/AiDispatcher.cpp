@@ -7,11 +7,13 @@
 
 #include <array>
 #include <cstddef>
+#include <string>
 #include <utility>
 
 #include "server/ai/AiDispatcher.hpp"
 #include "server/game/OrientationHelper.hpp"
 #include "protocol/ai/CommandInfo.hpp"
+#include "server/game/Constants.hpp"
 
 /**
  * @brief Bind the dispatcher to the world, scheduler and response sink.
@@ -204,14 +206,29 @@ std::string zappy::server::ai::AiDispatcher::executeLook(
 }
 
 /**
- * @brief Inventory command handler (stub; real effect lands in ZAP-26).
+ * @brief Format the player's inventory as "[food N, linemate N, ...]".
  *
- * @return std::string always "ok"
+ * @param playerId ID of the player whose inventory is queried
+ * @return Inventory string in the AI protocol format
  */
 std::string zappy::server::ai::AiDispatcher::executeInventory(
-    int, const std::string &)
+    int playerId, const std::string &)
 {
-    return "ok";
+    const server::game::Player &player = _world.player(playerId);
+    std::string out = "[";
+    bool first = true;
+
+    for (std::size_t index = 0; index < game::RESOURCE_COUNT; ++index) {
+        if (!first)
+            out.append(", ");
+        first = false;
+        out.append(game::RESOURCE_NAMES[index]);
+        out.append(" ");
+        out.append(std::to_string(player.resource(
+            static_cast<server::game::ResourceType>(index))));
+    }
+    out.append("]");
+    return out;
 }
 
 /**
