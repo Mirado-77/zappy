@@ -8,13 +8,15 @@
 #include "server/Server.hpp"
 #include <iostream>
 #include <optional>
+#include <utility>
 
 /**
  * @brief Initialise all members from the validated configuration.
  *
  * Member order matches the declaration order in Server.hpp:
  * _config → _listener → _poll → _world → _resourceSpawner → _clients →
- * _clock → _scheduler → _refillScheduler → _foodScheduler → _handshake.
+ * _clock → _scheduler → _refillScheduler → _foodScheduler → _aiDispatcher →
+ * _handshake.
  *
  * @param config validated CLI configuration
  */
@@ -30,6 +32,8 @@ zappy::server::Server::Server(const cli::ServerConfig &config)
           _config.frequency()),
       _foodScheduler(_world, _scheduler, _config.frequency(),
           [this](int playerId) { onPlayerStarved(playerId); }),
+      _aiDispatcher(_world, _scheduler, _config.frequency(),
+          [this](int id, std::string r) { onAiResponse(id, std::move(r)); }),
       _handshake(_config, _world, _foodScheduler)
 {
     _resourceSpawner.spawnInitial(_world);
@@ -151,6 +155,7 @@ void zappy::server::Server::dropClient(int clientFd)
     client::Client &client = _clients.get(clientFd);
     if (client.state() == client::ClientState::AI) {
         const int playerId = client.aiData().playerId;
+        _aiDispatcher.stopPlayer(playerId);
         _foodScheduler.stopConsumption(playerId);
         if (_world.hasPlayer(playerId) &&
             _world.player(playerId).state() != game::PlayerState::DEAD)
@@ -170,11 +175,27 @@ void zappy::server::Server::onPlayerStarved(int playerId)
     const std::optional<int> fd = _clients.findFdByPlayerId(playerId);
     if (!fd)
         return;
+    _aiDispatcher.stopPlayer(playerId);
     client::Client &client = _clients.get(*fd);
     client.buffer().queue_message("dead");
     client.markForDrop();
     if (_world.hasPlayer(playerId))
         _world.killPlayer(playerId);
+    retunePollMask(*fd);
+}
+
+/**
+ * @brief Deliver @p response to the AI client owning @p playerId, if present.
+ *
+ * @param playerId player the response is addressed to
+ * @param response response line (no trailing newline)
+ */
+void zappy::server::Server::onAiResponse(int playerId, std::string response)
+{
+    const std::optional<int> fd = _clients.findFdByPlayerId(playerId);
+    if (!fd)
+        return;
+    _clients.get(*fd).buffer().queue_message(std::move(response));
     retunePollMask(*fd);
 }
 
@@ -212,7 +233,8 @@ bool zappy::server::Server::dispatchReadyMessages(int clientFd)
             dropped = (res == handshake::HandshakeResult::DROP);
             if (dropped)
                 dropClient(clientFd);
-        }
+        } else if (c.state() == client::ClientState::AI)
+            _aiDispatcher.dispatch(c.aiData().playerId, *msg);
     }
     return dropped;
 }

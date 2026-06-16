@@ -8,6 +8,7 @@
 #ifndef SERVER_SERVER_HPP_
     #define SERVER_SERVER_HPP_
 
+    #include "server/ai/AiDispatcher.hpp"
     #include "server/cli/ServerConfig.hpp"
     #include "server/client/ClientRegistry.hpp"
     #include "server/game/FoodScheduler.hpp"
@@ -101,6 +102,14 @@ private:
      */
     void onPlayerStarved(int playerId);
 
+    /**
+     * @brief Deliver an AI command response to its client, if still connected.
+     *
+     * @param playerId player the response is addressed to
+     * @param response response line (no trailing newline)
+     */
+    void onAiResponse(int playerId, std::string response);
+
     cli::ServerConfig _config;
     net::Listener _listener;
     net::PollLoop _poll;
@@ -111,6 +120,7 @@ private:
     scheduler::Scheduler _scheduler{_clock};
     game::RefillScheduler _refillScheduler;
     game::FoodScheduler _foodScheduler;
+    ai::AiDispatcher _aiDispatcher;
     handshake::HandshakeHandler _handshake;
 };
 
