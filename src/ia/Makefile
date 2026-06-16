@@ -15,7 +15,9 @@ SRC		=	main.py
 MODULES	=	connection.py \
 			handshake.py \
 			line_buffer.py \
-			sender.py
+			sender.py \
+			dispatcher.py \
+			event_loop.py
 
 all:	$(BIN_DIR)/$(NAME)
 
