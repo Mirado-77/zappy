@@ -38,6 +38,17 @@ public:
     }
 
     /**
+     * @brief Move vector to the player's right for facing @p o.
+     *
+     * @param o the facing
+     * @return Position the (dx, dy) delta
+     */
+    [[nodiscard]] static constexpr Position rightDelta(Orientation o) noexcept
+    {
+        return forwardDelta(rotateRight(o));
+    }
+
+    /**
      * @brief Facing after a clockwise quarter turn.
      *
      * @param o the current facing

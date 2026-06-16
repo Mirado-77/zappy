@@ -24,7 +24,7 @@
 zappy::server::ai::AiDispatcher::AiDispatcher(game::World &world,
     scheduler::Scheduler &scheduler, int frequency, OnResponse onResponse)
     : _world(world), _scheduler(scheduler), _frequency(frequency),
-      _onResponse(std::move(onResponse))
+      _onResponse(std::move(onResponse)), _lookBuilder(_world)
 {}
 
 /**
@@ -192,14 +192,15 @@ std::string zappy::server::ai::AiDispatcher::executeLeft(
 }
 
 /**
- * @brief Look command handler (stub; real effect lands in ZAP-26).
+ * @brief Render the player's vision cone as the Look response.
  *
- * @return std::string always "ok"
+ * @param playerId player whose vision is rendered
+ * @return std::string the bracketed tile list
  */
 std::string zappy::server::ai::AiDispatcher::executeLook(
-    int, const std::string &)
+    int playerId, const std::string &)
 {
-    return "ok";
+    return _lookBuilder.buildFor(playerId);
 }
 
 /**
