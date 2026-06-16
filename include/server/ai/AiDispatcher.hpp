@@ -14,6 +14,7 @@
     #include <string_view>
     #include <unordered_map>
 
+    #include "server/ai/LookResponseBuilder.hpp"
     #include "server/game/World.hpp"
     #include "server/scheduler/Scheduler.hpp"
     #include "protocol/ai/CommandParser.hpp"
@@ -125,6 +126,7 @@ private:
     int _frequency;
     OnResponse _onResponse;
     std::unordered_map<int, PlayerState> _states;
+    LookResponseBuilder _lookBuilder;
 };
 
 } // namespace zappy::server::ai
