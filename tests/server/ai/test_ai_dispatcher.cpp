@@ -15,6 +15,8 @@
 #include "server/scheduler/Scheduler.hpp"
 
 using zappy::server::ai::AiDispatcher;
+using zappy::server::game::Orientation;
+using zappy::server::game::Position;
 using zappy::server::game::World;
 using zappy::server::scheduler::Duration;
 using zappy::server::scheduler::IClock;
@@ -35,7 +37,9 @@ private:
 
 static World makeWorld()
 {
-    return World(5, 5, {"team"}, 10);
+    World world(5, 5, {"team"}, 10);
+    world.addPlayer("team", Position(2, 2), Orientation::NORTH);
+    return world;
 }
 
 /* 1. unknown command -> immediate ko */

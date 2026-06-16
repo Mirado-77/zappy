@@ -10,6 +10,7 @@
 #include <utility>
 
 #include "server/ai/AiDispatcher.hpp"
+#include "server/game/OrientationHelper.hpp"
 #include "protocol/ai/CommandInfo.hpp"
 
 /**
@@ -142,35 +143,51 @@ std::string zappy::server::ai::AiDispatcher::executeCommand(int playerId,
 }
 
 /**
- * @brief Forward command handler (stub; real effect lands in ZAP-26).
+ * @brief Step one tile forward in the player's facing.
  *
+ * @param playerId player to move
  * @return std::string always "ok"
  */
 std::string zappy::server::ai::AiDispatcher::executeForward(
-    int, const std::string &)
+    int playerId, const std::string &)
 {
+    const game::Player &player = _world.player(playerId);
+    const game::Position delta =
+        game::OrientationHelper::forwardDelta(player.orientation());
+    const game::Position newPos =
+        (player.position() + delta).normalized(_world.width(),
+            _world.height());
+    _world.movePlayer(playerId, newPos);
     return "ok";
 }
 
 /**
- * @brief Right command handler (stub; real effect lands in ZAP-26).
+ * @brief Turn the player a clockwise quarter turn.
  *
+ * @param playerId player to rotate
  * @return std::string always "ok"
  */
 std::string zappy::server::ai::AiDispatcher::executeRight(
-    int, const std::string &)
+    int playerId, const std::string &)
 {
+    const game::Orientation newOrient = game::OrientationHelper::rotateRight(
+        _world.player(playerId).orientation());
+    _world.rotatePlayer(playerId, newOrient);
     return "ok";
 }
 
 /**
- * @brief Left command handler (stub; real effect lands in ZAP-26).
+ * @brief Turn the player a counter-clockwise quarter turn.
  *
+ * @param playerId player to rotate
  * @return std::string always "ok"
  */
 std::string zappy::server::ai::AiDispatcher::executeLeft(
-    int, const std::string &)
+    int playerId, const std::string &)
 {
+    const game::Orientation newOrient = game::OrientationHelper::rotateLeft(
+        _world.player(playerId).orientation());
+    _world.rotatePlayer(playerId, newOrient);
     return "ok";
 }
 
