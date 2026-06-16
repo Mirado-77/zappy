@@ -11,6 +11,7 @@ import sys
 from connection import open_connection
 from handshake import perform_handshake
 from line_buffer import LineBuffer
+from sender import CommandSender
 
 USAGE = "USAGE: ./zappy_ai -p port -n name [-h machine]"
 ERROR = 84
@@ -137,4 +138,5 @@ if __name__ == "__main__":
     print(f"connected to {machine}:{port} | slots={info.slots} map={info.width}x{info.height}",
           file=sys.stderr)
     buf = LineBuffer(sock)
+    sender = CommandSender(sock)
     sock.close()
