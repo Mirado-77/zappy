@@ -30,3 +30,8 @@ make re         # rebuild complet
 ```sh
 ./zappy_server -p 4242 -x 10 -y 10 -n team1 team2 -c 5 -f 100
 ```
+
+## Libraries
+- **libzappy_posix** : RAII wrappers for POSIX resources (FileDescriptor, Address).
+- **libzappy_net** : network layer, low level (Listener, ClientBuffer, PollLoop, SignalHandler).
+- **libzappy_protocol** : parsing/serialization Zappy protocol (AI & GUI), pure logic without any network dependancy.
