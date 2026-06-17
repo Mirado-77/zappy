@@ -108,6 +108,14 @@ private:
     [[nodiscard]] std::string executeCommand(int playerId,
         const protocol::ai::ParsedCommand &cmd);
 
+    /**
+     * @brief Route a broadcast to every other living player with its K value.
+     *
+     * @param senderId the broadcasting player
+     * @param text the broadcast text
+     */
+    void broadcastToOthers(int senderId, const std::string &text);
+
     std::string executeForward(int playerId, const std::string &arg);
     std::string executeRight(int playerId, const std::string &arg);
     std::string executeLeft(int playerId, const std::string &arg);

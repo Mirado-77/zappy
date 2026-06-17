@@ -106,6 +106,14 @@ public:
      * @param teamName the affected team
      */
     virtual void onTeamSlotsChanged(const std::string &teamName) = 0;
+
+    /**
+     * @brief A player broadcast a message to the world.
+     *
+     * @param id the broadcasting player id
+     * @param text the broadcast text
+     */
+    virtual void onPlayerBroadcast(int id, const std::string &text) = 0;
 };
 
 /**
@@ -125,6 +133,7 @@ public:
     void onEggHatched(int) override {}
     void onEggRemoved(int) override {}
     void onTeamSlotsChanged(const std::string &) override {}
+    void onPlayerBroadcast(int, const std::string &) override {}
 };
 
 } // namespace zappy::server::game
