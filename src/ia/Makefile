@@ -17,7 +17,8 @@ MODULES	=	connection.py \
 			line_buffer.py \
 			sender.py \
 			dispatcher.py \
-			event_loop.py
+			event_loop.py \
+			inventory.py
 
 all:	$(BIN_DIR)/$(NAME)
 
