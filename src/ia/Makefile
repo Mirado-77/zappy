@@ -18,7 +18,8 @@ MODULES	=	connection.py \
 			sender.py \
 			dispatcher.py \
 			event_loop.py \
-			inventory.py
+			inventory.py \
+			look.py
 
 all:	$(BIN_DIR)/$(NAME)
 
