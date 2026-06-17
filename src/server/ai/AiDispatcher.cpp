@@ -274,14 +274,17 @@ void zappy::server::ai::AiDispatcher::broadcastToOthers(
 }
 
 /**
- * @brief Connect_nbr command handler (stub; real effect lands in ZAP-26).
+ * @brief Report the number of free slots in the player's team.
  *
- * @return std::string always "ok"
+ * @param playerId the querying player
+ * @return std::string the free-slot count
  */
 std::string zappy::server::ai::AiDispatcher::executeConnectNbr(
-    int, const std::string &)
+    int playerId, const std::string &)
 {
-    return "ok";
+    const game::Player &player = _world.player(playerId);
+
+    return std::to_string(_world.team(player.team()).slotsFree());
 }
 
 /**
