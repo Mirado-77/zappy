@@ -15,6 +15,7 @@
 #include "protocol/ai/CommandInfo.hpp"
 #include "server/game/Constants.hpp"
 #include "server/game/ResourceNameResolver.hpp"
+#include "server/game/BroadcastDirection.hpp"
 
 /**
  * @brief Bind the dispatcher to the world, scheduler and response sink.
@@ -233,14 +234,43 @@ std::string zappy::server::ai::AiDispatcher::executeInventory(
 }
 
 /**
- * @brief Broadcast command handler (stub; real effect lands in ZAP-26).
+ * @brief Broadcast @p arg to every other living player, then notify the GUI.
  *
+ * @param playerId the broadcasting player
+ * @param arg the broadcast text
  * @return std::string always "ok"
  */
 std::string zappy::server::ai::AiDispatcher::executeBroadcast(
-    int, const std::string &)
+    int playerId, const std::string &arg)
 {
+    broadcastToOthers(playerId, arg);
     return "ok";
+}
+
+/**
+ * @brief Route a broadcast to every other living player with its K value.
+ *
+ * @param senderId the broadcasting player
+ * @param text the broadcast text
+ */
+void zappy::server::ai::AiDispatcher::broadcastToOthers(
+    int senderId, const std::string &text)
+{
+    const game::Player &sender = _world.player(senderId);
+    const game::Position senderPos = sender.position();
+    const int width = _world.width();
+    const int height = _world.height();
+
+    _world.forEachPlayer([&](int receiverId, const game::Player &receiver) {
+        if (receiverId == senderId
+            || receiver.state() == game::PlayerState::DEAD)
+            return;
+        const int k = game::BroadcastDirection::compute(senderPos,
+            receiver.position(), receiver.orientation(), width, height);
+        _onResponse(receiverId,
+            "message " + std::to_string(k) + ", " + text);
+    });
+    _world.notifyBroadcast(senderId, text);
 }
 
 /**

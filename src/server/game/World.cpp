@@ -626,3 +626,16 @@ void zappy::server::game::World::notifyTeamSlotsChanged(
     for (auto &observer : _observers)
         observer.get().onTeamSlotsChanged(teamName);
 }
+
+/**
+ * @brief Notify observers a player broadcast a message.
+ *
+ * @param id the broadcasting player id
+ * @param text the broadcast text
+ */
+void zappy::server::game::World::notifyBroadcast(
+    int id, const std::string &text)
+{
+    for (auto &observer : _observers)
+        observer.get().onPlayerBroadcast(id, text);
+}

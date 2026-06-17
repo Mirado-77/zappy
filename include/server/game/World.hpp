@@ -151,6 +151,18 @@ public:
     [[nodiscard]] const Player &player(int id) const;
 
     /**
+     * @brief Invoke @p callback for every (id, Player const &) in the world.
+     *
+     * @param callback callable receiving the player id and a const reference
+     */
+    template<typename F>
+    void forEachPlayer(F &&callback) const
+    {
+        for (const auto &entry : _players)
+            callback(entry.first, entry.second);
+    }
+
+    /**
      * @brief Create a player, reserve a team slot, place it on its tile.
      *
      * @param team owning team name
@@ -306,6 +318,14 @@ public:
      * @param observer observer to remove
      */
     void removeObserver(IWorldObserver &observer);
+
+    /**
+     * @brief Notify observers a player broadcast a message.
+     *
+     * @param id the broadcasting player id
+     * @param text the broadcast text
+     */
+    void notifyBroadcast(int id, const std::string &text);
 
 private:
     /**
