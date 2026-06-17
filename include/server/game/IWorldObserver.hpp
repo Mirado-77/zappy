@@ -114,6 +114,13 @@ public:
      * @param text the broadcast text
      */
     virtual void onPlayerBroadcast(int id, const std::string &text) = 0;
+
+    /**
+     * @brief A player started a Fork command.
+     *
+     * @param playerId the forking player id
+     */
+    virtual void onPlayerForkStarted(int playerId) = 0;
 };
 
 /**
@@ -134,6 +141,7 @@ public:
     void onEggRemoved(int) override {}
     void onTeamSlotsChanged(const std::string &) override {}
     void onPlayerBroadcast(int, const std::string &) override {}
+    void onPlayerForkStarted(int) override {}
 };
 
 } // namespace zappy::server::game

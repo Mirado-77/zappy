@@ -53,8 +53,8 @@ zappy::server::handshake::HandshakeHandler::promoteToGui(
 /**
  * @brief Attempt to promote @p client to AI for team @p name.
  *
- * Queues "ko" and returns DROP when the team is unknown or full.
- * Otherwise reserves a slot, promotes, and queues the two-line reply.
+ * Queues "ko" and returns DROP when the team is unknown.
+ * Otherwise delegates to the egg-consuming spawn path.
  *
  * @param client HANDSHAKE-state client
  * @param name trimmed team name
@@ -65,7 +65,7 @@ zappy::server::handshake::HandshakeHandler::promoteToAi(
     client::Client &client, const std::string &name)
 {
     HandshakeResult result = HandshakeResult::DROP;
-    if (!_world.hasTeam(name) || !_world.team(name).hasFreeSlot())
+    if (!_world.hasTeam(name))
         client.buffer().queue_message("ko");
     else
         result = promoteValidAi(client, name);
@@ -73,40 +73,52 @@ zappy::server::handshake::HandshakeHandler::promoteToAi(
 }
 
 /**
- * @brief Reserve a slot, spawn the player and queue the connection reply.
+ * @brief Consume a waiting egg, spawn the player and queue the reply.
+ *
+ * Queues "ko" and returns DROP when no egg of @p name is waiting.
  *
  * @param client client passing team validation
- * @param name validated team name with a free slot
- * @return HandshakeResult always PROMOTED
+ * @param name validated team name
+ * @return HandshakeResult PROMOTED or DROP
  */
 zappy::server::handshake::HandshakeResult
 zappy::server::handshake::HandshakeHandler::promoteValidAi(
     client::Client &client, const std::string &name)
 {
-    const int playerId =
-        _world.addPlayer(name, randomPosition(), randomOrientation());
+    const std::optional<int> eggId = _world.pickRandomWaitingEgg(name, _rng);
+    HandshakeResult result = HandshakeResult::DROP;
+    if (!eggId)
+        client.buffer().queue_message("ko");
+    else
+        result = spawnFromEgg(client, name, *eggId);
+    return result;
+}
+
+/**
+ * @brief Hatch and remove @p eggId, spawn the player and queue the reply.
+ *
+ * @param client client passing the egg lookup
+ * @param name validated team name
+ * @param eggId waiting egg to consume
+ * @return HandshakeResult always PROMOTED
+ */
+zappy::server::handshake::HandshakeResult
+zappy::server::handshake::HandshakeHandler::spawnFromEgg(
+    client::Client &client, const std::string &name, int eggId)
+{
+    const game::Position eggPos = _world.egg(eggId).position();
+    _world.hatchEgg(eggId);
+    _world.removeEgg(eggId);
+    const int playerId = _world.addPlayer(name, eggPos, randomOrientation());
     client.promote(client::ClientState::AI);
     client.aiData().teamName = name;
     client.aiData().playerId = playerId;
     _foodScheduler.startConsumption(playerId);
     client.buffer().queue_message(
-        std::to_string(_world.team(name).slotsFree()));
+        std::to_string(_world.waitingEggCount(name)));
     client.buffer().queue_message(std::to_string(_config.width()) + " " +
         std::to_string(_config.height()));
     return HandshakeResult::PROMOTED;
-}
-
-/**
- * @brief Draw a uniformly random tile position on the map.
- *
- * @return game::Position the spawn position
- */
-zappy::server::game::Position
-zappy::server::handshake::HandshakeHandler::randomPosition()
-{
-    std::uniform_int_distribution<int> xDist(0, _config.width() - 1);
-    std::uniform_int_distribution<int> yDist(0, _config.height() - 1);
-    return game::Position(xDist(_rng), yDist(_rng));
 }
 
 /**

@@ -64,6 +64,7 @@ public:
 
 private:
     using Handler = std::string (AiDispatcher::*)(int, const std::string &);
+    using PreHandler = void (AiDispatcher::*)(int);
 
     /**
      * @brief Per-player command queue plus its in-flight event id.
@@ -81,6 +82,38 @@ private:
      * @param playerId player whose queue is advanced
      */
     void startNextCommand(int playerId);
+
+    /**
+     * @brief Run the pre-execute handler bound to @p kind, if any.
+     *
+     * @param playerId player starting the command
+     * @param kind command about to be scheduled
+     */
+    void runPreHandler(int playerId, protocol::ai::CommandKind kind);
+
+    /**
+     * @brief Fire the fork-started notification at command scheduling time.
+     *
+     * @param playerId player starting the Fork
+     */
+    void preExecuteFork(int playerId);
+
+
+    static constexpr std::array<PreHandler,                 protocol::ai::COMMAND_KIND_COUNT>
+        PRE_HANDLERS = {
+            nullptr,                       // FORWARD
+            nullptr,                       // RIGHT
+            nullptr,                       // LEFT
+            nullptr,                       // LOOK
+            nullptr,                       // INVENTORY
+            nullptr,                       // BROADCAST
+            nullptr,                       // CONNECT_NBR
+            &AiDispatcher::preExecuteFork, // FORK
+            nullptr,                       // EJECT
+            nullptr,                       // TAKE
+            nullptr,                       // SET
+            nullptr                        // INCANTATION
+        };
 
     /**
      * @brief Finish a scheduled command then advance the queue.

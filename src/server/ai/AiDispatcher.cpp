@@ -82,6 +82,7 @@ void zappy::server::ai::AiDispatcher::startNextCommand(int playerId)
     while (state.currentEventId == 0 && !state.queue.empty()) {
         const protocol::ai::ParsedCommand cmd = state.queue.front();
         state.queue.pop_front();
+        runPreHandler(playerId, cmd.kind);
         const scheduler::Duration delay =
             protocol::ai::CommandInfo::duration(cmd.kind, _frequency);
         if (delay.count() > 0)
@@ -90,6 +91,30 @@ void zappy::server::ai::AiDispatcher::startNextCommand(int playerId)
         else
             respond(playerId, cmd);
     }
+}
+
+/**
+ * @brief Run the pre-execute handler bound to @p kind, if any.
+ *
+ * @param playerId player starting the command
+ * @param kind command about to be scheduled
+ */
+void zappy::server::ai::AiDispatcher::runPreHandler(
+    int playerId, protocol::ai::CommandKind kind)
+{
+    const PreHandler pre = PRE_HANDLERS[static_cast<std::size_t>(kind)];
+    if (pre)
+        (this->*pre)(playerId);
+}
+
+/**
+ * @brief Fire the fork-started notification at command scheduling time.
+ *
+ * @param playerId player starting the Fork
+ */
+void zappy::server::ai::AiDispatcher::preExecuteFork(int playerId)
+{
+    _world.notifyForkStarted(playerId);
 }
 
 /**
@@ -274,24 +299,30 @@ void zappy::server::ai::AiDispatcher::broadcastToOthers(
 }
 
 /**
- * @brief Connect_nbr command handler (stub; real effect lands in ZAP-26).
+ * @brief Report the number of waiting eggs for the player's team.
  *
- * @return std::string always "ok"
+ * @param playerId player issuing the command
+ * @return std::string the waiting egg count as text
  */
 std::string zappy::server::ai::AiDispatcher::executeConnectNbr(
-    int, const std::string &)
+    int playerId, const std::string &)
 {
-    return "ok";
+    const game::Player &player = _world.player(playerId);
+    return std::to_string(_world.waitingEggCount(player.team()));
 }
 
 /**
- * @brief Fork command handler (stub; real effect lands in ZAP-26).
+ * @brief Lay a new egg at the player's tile and grow its team capacity.
  *
+ * @param playerId player issuing the Fork
  * @return std::string always "ok"
  */
 std::string zappy::server::ai::AiDispatcher::executeFork(
-    int, const std::string &)
+    int playerId, const std::string &)
 {
+    const game::Player &player = _world.player(playerId);
+    _world.addEgg(player.team(), player.position());
+    _world.growTeam(player.team());
     return "ok";
 }
 

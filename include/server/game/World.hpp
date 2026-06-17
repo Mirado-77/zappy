@@ -10,6 +10,8 @@
 
     #include <cstddef>
     #include <functional>
+    #include <optional>
+    #include <random>
     #include <string>
     #include <unordered_map>
     #include <vector>
@@ -163,18 +165,18 @@ public:
     }
 
     /**
-     * @brief Create a player, reserve a team slot, place it on its tile.
+     * @brief Create a player and place it on its tile.
      *
      * @param team owning team name
      * @param pos starting tile
      * @param orient starting facing
      * @return int the new player id
-     * @throws WorldError if the team is unknown or full
+     * @throws WorldError if the team is unknown
      */
     int addPlayer(const std::string &team, Position pos, Orientation orient);
 
     /**
-     * @brief Remove a player; release its slot if still ALIVE.
+     * @brief Remove a player from the world and its tile.
      *
      * @param id player id
      * @throws WorldError if unknown
@@ -225,6 +227,33 @@ public:
     void removeEgg(int id);
 
     /**
+     * @brief Count WAITING eggs owned by @p teamName.
+     *
+     * @param teamName team to count for; unknown teams yield 0
+     * @return int the number of waiting eggs
+     */
+    [[nodiscard]] int waitingEggCount(
+        const std::string &teamName) const noexcept;
+
+    /**
+     * @brief Pick one WAITING egg of @p teamName uniformly at random.
+     *
+     * @param teamName team whose eggs are eligible
+     * @param rng random engine driving the choice
+     * @return std::optional<int> the chosen egg id, or nullopt if none
+     */
+    [[nodiscard]] std::optional<int> pickRandomWaitingEgg(
+        const std::string &teamName, std::mt19937_64 &rng) const;
+
+    /**
+     * @brief Grow a team's capacity by one slot and notify observers.
+     *
+     * @param teamName team to grow
+     * @throws WorldError if the team is unknown
+     */
+    void growTeam(const std::string &teamName);
+
+    /**
      * @brief Move a player to @p newPos (assumed normalized).
      *
      * @param playerId player id
@@ -272,7 +301,7 @@ public:
     bool dropResourceOnTile(int playerId, ResourceType type);
 
     /**
-     * @brief Kill a player: mark DEAD, remove from tile, release its slot.
+     * @brief Kill a player: mark DEAD and remove it from its tile.
      *
      * @param playerId player id
      * @throws WorldError if unknown
@@ -326,6 +355,13 @@ public:
      * @param text the broadcast text
      */
     void notifyBroadcast(int id, const std::string &text);
+
+    /**
+     * @brief Notify observers a player started a Fork command.
+     *
+     * @param playerId the forking player id
+     */
+    void notifyForkStarted(int playerId);
 
 private:
     /**

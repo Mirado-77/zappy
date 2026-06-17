@@ -212,29 +212,27 @@ zappy::server::game::World::player(int id) const
 }
 
 /**
- * @brief Create a player, reserve a team slot, place it on its tile.
+ * @brief Create a player and place it on its tile.
  *
  * @param team owning team name
  * @param pos starting tile
  * @param orient starting facing
  * @return int the new player id
- * @throws WorldError if the team is unknown or full
+ * @throws WorldError if the team is unknown
  */
 int zappy::server::game::World::addPlayer(
     const std::string &team, Position pos, Orientation orient)
 {
-    Team &owner = this->team(team);
-    owner.reserveSlot();
+    static_cast<void>(this->team(team));
     const int id = _nextPlayerId++;
     _players.emplace(id, Player(id, team, pos, orient));
     tileAt(pos).addPlayer(id);
     notifyPlayerAdded(id);
-    notifyTeamSlotsChanged(team);
     return id;
 }
 
 /**
- * @brief Remove a player; release its slot if still ALIVE.
+ * @brief Remove a player from the world and its tile.
  *
  * @param id player id
  * @throws WorldError if unknown
@@ -242,15 +240,9 @@ int zappy::server::game::World::addPlayer(
 void zappy::server::game::World::removePlayer(int id)
 {
     Player &target = player(id);
-    const std::string teamName = target.team();
-    const bool wasAlive = target.state() == PlayerState::ALIVE;
     tileAt(target.position()).removePlayer(id);
     _players.erase(id);
     notifyPlayerRemoved(id);
-    if (wasAlive) {
-        team(teamName).releaseSlot();
-        notifyTeamSlotsChanged(teamName);
-    }
 }
 
 /**
@@ -324,6 +316,56 @@ void zappy::server::game::World::removeEgg(int id)
     tileAt(target.position()).removeEgg(id);
     _eggs.erase(id);
     notifyEggRemoved(id);
+}
+
+/**
+ * @brief Count WAITING eggs owned by @p teamName.
+ *
+ * @param teamName team to count for; unknown teams yield 0
+ * @return int the number of waiting eggs
+ */
+int zappy::server::game::World::waitingEggCount(
+    const std::string &teamName) const noexcept
+{
+    int count = 0;
+    for (const auto &entry : _eggs)
+        if (entry.second.team() == teamName
+            && entry.second.state() == EggState::WAITING)
+            ++count;
+    return count;
+}
+
+/**
+ * @brief Pick one WAITING egg of @p teamName uniformly at random.
+ *
+ * @param teamName team whose eggs are eligible
+ * @param rng random engine driving the choice
+ * @return std::optional<int> the chosen egg id, or nullopt if none
+ */
+std::optional<int> zappy::server::game::World::pickRandomWaitingEgg(
+    const std::string &teamName, std::mt19937_64 &rng) const
+{
+    std::vector<int> candidates;
+    for (const auto &entry : _eggs)
+        if (entry.second.team() == teamName
+            && entry.second.state() == EggState::WAITING)
+            candidates.push_back(entry.first);
+    if (candidates.empty())
+        return std::nullopt;
+    std::uniform_int_distribution<std::size_t> dist(0, candidates.size() - 1);
+    return candidates[dist(rng)];
+}
+
+/**
+ * @brief Grow a team's capacity by one slot and notify observers.
+ *
+ * @param teamName team to grow
+ * @throws WorldError if the team is unknown
+ */
+void zappy::server::game::World::growTeam(const std::string &teamName)
+{
+    team(teamName).addSlot();
+    notifyTeamSlotsChanged(teamName);
 }
 
 /**
@@ -413,7 +455,7 @@ bool zappy::server::game::World::dropResourceOnTile(
 }
 
 /**
- * @brief Kill a player: mark DEAD, remove from tile, release its slot.
+ * @brief Kill a player: mark DEAD and remove it from its tile.
  *
  * @param playerId player id
  * @throws WorldError if unknown
@@ -423,7 +465,6 @@ void zappy::server::game::World::killPlayer(int playerId)
     Player &target = player(playerId);
     target.setState(PlayerState::DEAD);
     tileAt(target.position()).removePlayer(playerId);
-    team(target.team()).releaseSlot();
     notifyPlayerStateChanged(playerId);
     notifyPlayerRemoved(playerId);
 }
@@ -638,4 +679,15 @@ void zappy::server::game::World::notifyBroadcast(
 {
     for (auto &observer : _observers)
         observer.get().onPlayerBroadcast(id, text);
+}
+
+/**
+ * @brief Notify observers a player started a Fork command.
+ *
+ * @param playerId the forking player id
+ */
+void zappy::server::game::World::notifyForkStarted(int playerId)
+{
+    for (auto &observer : _observers)
+        observer.get().onPlayerForkStarted(playerId);
 }
