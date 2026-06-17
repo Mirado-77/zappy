@@ -23,7 +23,7 @@ DEBUG_OBJ = $(SRC:%$(SRC_EXTENSION)=$(DBG_DIR)/%.debug.o)
 
 CXX = g++
 CXXFLAGS = -std=c++20 -Wall -Wextra
-CXXFLAGS += -iquote $(ROOT)/include/
+CXXFLAGS += -iquote $(ROOT)/include/gui/
 
 DEBUG_CFLAGS = -g3 -fsanitize=address -DDEBUG
 DEBUG_LDFLAGS = -fsanitize=address
@@ -32,7 +32,7 @@ all:	$(BIN_DIR)/$(NAME)
 
 $(BIN_DIR)/$(NAME):	$(OBJ)
 	@mkdir -p $(BIN_DIR)
-	$(CXX) -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDFLAGS) -lraylib
 
 debug: CXXFLAGS += $(DEBUG_CFLAGS)
 debug: $(BIN_DIR)/$(NAME)-debug
