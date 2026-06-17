@@ -470,6 +470,30 @@ void zappy::server::game::World::killPlayer(int playerId)
 }
 
 /**
+ * @brief Freeze a player for an incantation (state INCANTING).
+ *
+ * @param playerId player id
+ * @throws WorldError if unknown
+ */
+void zappy::server::game::World::freezePlayer(int playerId)
+{
+    player(playerId).setState(PlayerState::INCANTING);
+    notifyPlayerStateChanged(playerId);
+}
+
+/**
+ * @brief Unfreeze a player back to ALIVE after an incantation.
+ *
+ * @param playerId player id
+ * @throws WorldError if unknown
+ */
+void zappy::server::game::World::unfreezePlayer(int playerId)
+{
+    player(playerId).setState(PlayerState::ALIVE);
+    notifyPlayerStateChanged(playerId);
+}
+
+/**
  * @brief Hatch an egg (state HATCHED); the egg is not removed here.
  *
  * @param eggId egg id
@@ -690,4 +714,32 @@ void zappy::server::game::World::notifyForkStarted(int playerId)
 {
     for (auto &observer : _observers)
         observer.get().onPlayerForkStarted(playerId);
+}
+
+/**
+ * @brief Notify observers an incantation ritual started.
+ *
+ * @param initiatorId the player who launched the incantation
+ * @param level the level being elevated from
+ * @param participants ids of every frozen player taking part
+ */
+void zappy::server::game::World::notifyIncantationStarted(int initiatorId,
+    int level, const std::vector<int> &participants)
+{
+    for (auto &observer : _observers)
+        observer.get().onIncantationStarted(initiatorId, level, participants);
+}
+
+/**
+ * @brief Notify observers an incantation ritual ended.
+ *
+ * @param initiatorId the player who launched the incantation
+ * @param success whether the elevation succeeded
+ * @param newLevel the resulting level on success, 0 on failure
+ */
+void zappy::server::game::World::notifyIncantationEnded(int initiatorId,
+    bool success, int newLevel)
+{
+    for (auto &observer : _observers)
+        observer.get().onIncantationEnded(initiatorId, success, newLevel);
 }

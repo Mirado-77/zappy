@@ -309,6 +309,22 @@ public:
     void killPlayer(int playerId);
 
     /**
+     * @brief Freeze a player for an incantation (state INCANTING).
+     *
+     * @param playerId player id
+     * @throws WorldError if unknown
+     */
+    void freezePlayer(int playerId);
+
+    /**
+     * @brief Unfreeze a player back to ALIVE after an incantation.
+     *
+     * @param playerId player id
+     * @throws WorldError if unknown
+     */
+    void unfreezePlayer(int playerId);
+
+    /**
      * @brief Hatch an egg (state HATCHED); the egg is not removed here.
      *
      * @param eggId egg id
@@ -362,6 +378,25 @@ public:
      * @param playerId the forking player id
      */
     void notifyForkStarted(int playerId);
+
+    /**
+     * @brief Notify observers an incantation ritual started.
+     *
+     * @param initiatorId the player who launched the incantation
+     * @param level the level being elevated from
+     * @param participants ids of every frozen player taking part
+     */
+    void notifyIncantationStarted(int initiatorId, int level,
+        const std::vector<int> &participants);
+
+    /**
+     * @brief Notify observers an incantation ritual ended.
+     *
+     * @param initiatorId the player who launched the incantation
+     * @param success whether the elevation succeeded
+     * @param newLevel the resulting level on success, 0 on failure
+     */
+    void notifyIncantationEnded(int initiatorId, bool success, int newLevel);
 
 private:
     /**

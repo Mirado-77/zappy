@@ -13,8 +13,10 @@
     #include <string>
     #include <string_view>
     #include <unordered_map>
+    #include <vector>
 
     #include "server/ai/LookResponseBuilder.hpp"
+    #include "server/game/ElevationRules.hpp"
     #include "server/game/World.hpp"
     #include "server/scheduler/Scheduler.hpp"
     #include "protocol/ai/CommandParser.hpp"
@@ -82,6 +84,140 @@ private:
      * @param playerId player whose queue is advanced
      */
     void startNextCommand(int playerId);
+
+    /**
+     * @brief Whether the next queued command may start now.
+     *
+     * @param playerId player whose queue is inspected
+     * @return bool true if a command is pending and the player is not frozen
+     */
+    [[nodiscard]] bool canStartNextCommand(int playerId) const;
+
+    /**
+     * @brief Pop the front command and route it to the right starter.
+     *
+     * @param playerId player whose queue advances
+     */
+    void processNextQueuedCommand(int playerId);
+
+    /**
+     * @brief Schedule (or instantly run) a non-incantation command.
+     *
+     * @param playerId player issuing the command
+     * @param cmd command to start
+     */
+    void startStandardCommand(int playerId,
+        const protocol::ai::ParsedCommand &cmd);
+
+    /**
+     * @brief Validate prerequisites then launch or reject an incantation.
+     *
+     * @param playerId the initiating player
+     */
+    void startIncantation(int playerId);
+
+    /**
+     * @brief Ids of every ALIVE player standing on the initiator's tile.
+     *
+     * @param playerId the initiating player
+     * @return std::vector<int> the participant ids (includes the initiator)
+     */
+    [[nodiscard]] std::vector<int> collectParticipants(int playerId) const;
+
+    /**
+     * @brief Whether @p playerId may elevate with @p participants right now.
+     *
+     * @param playerId the initiating player
+     * @param participants alive players on the tile
+     * @return bool true if level, headcount and stones all qualify
+     */
+    [[nodiscard]] bool checkPrerequisites(int playerId,
+        const std::vector<int> &participants) const;
+
+    /**
+     * @brief Whether the tile holds every stone @p rule demands.
+     *
+     * @param pos the tile position
+     * @param rule the elevation rule to satisfy
+     * @return bool true if all stones are present in sufficient quantity
+     */
+    [[nodiscard]] bool tileHasStones(game::Position pos,
+        const game::ElevationRule &rule) const;
+
+    /**
+     * @brief Whether the player exists and is not DEAD.
+     *
+     * @param playerId player to test
+     * @return bool true if alive or incanting
+     */
+    [[nodiscard]] bool isPlayerAlive(int playerId) const;
+
+    /**
+     * @brief Freeze participants, announce the ritual and schedule its end.
+     *
+     * @param playerId the initiating player
+     * @param participants alive players on the tile
+     */
+    void beginIncantationRitual(int playerId,
+        const std::vector<int> &participants);
+
+    /**
+     * @brief Re-check prerequisites and apply success or failure.
+     *
+     * @param initiatorId the initiating player
+     * @param participants the participants captured at ritual start
+     */
+    void finalizeIncantation(int initiatorId, std::vector<int> participants);
+
+    /**
+     * @brief Elevate every alive participant and consume the tile's stones.
+     *
+     * @param initiatorId the initiating player
+     * @param alive participants still alive at finalization
+     * @param newLevel the resulting level
+     */
+    void applySuccess(int initiatorId, const std::vector<int> &alive,
+        int newLevel);
+
+    /**
+     * @brief Reject the incantation: answer "ko" and unfreeze participants.
+     *
+     * @param initiatorId the initiating player
+     * @param alive participants still alive at finalization
+     */
+    void applyFailure(int initiatorId, const std::vector<int> &alive);
+
+    /**
+     * @brief Remove the stones @p rule demands from @p tilePos.
+     *
+     * @param tilePos the tile to deduct from
+     * @param rule the elevation rule that was satisfied
+     */
+    void consumeStones(game::Position tilePos, const game::ElevationRule &rule);
+
+    /**
+     * @brief Unfreeze every listed participant.
+     *
+     * @param participants players to unfreeze
+     */
+    void unfreezeAll(const std::vector<int> &participants);
+
+    /**
+     * @brief Resume each participant's queue after the ritual.
+     *
+     * @param participants players whose queues advance
+     */
+    void resumeParticipantQueues(const std::vector<int> &participants);
+
+    /**
+     * @brief Send @p response to every participant except the initiator.
+     *
+     * @param participants the participant ids
+     * @param initiatorId the player to skip
+     * @param response the line to deliver
+     */
+    void sendToAllExceptInitiator(const std::vector<int> &participants,
+        int initiatorId, const std::string &response);
 
     /**
      * @brief Run the pre-execute handler bound to @p kind, if any.
