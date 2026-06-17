@@ -14,6 +14,7 @@
 #include "server/game/OrientationHelper.hpp"
 #include "protocol/ai/CommandInfo.hpp"
 #include "server/game/Constants.hpp"
+#include "server/game/ResourceNameResolver.hpp"
 
 /**
  * @brief Bind the dispatcher to the world, scheduler and response sink.
@@ -276,25 +277,39 @@ std::string zappy::server::ai::AiDispatcher::executeEject(
 }
 
 /**
- * @brief Take command handler (stub; real effect lands in ZAP-26).
+ * @brief Pick up one unit of @p arg from the player's tile.
  *
- * @return std::string always "ok"
+ * @param playerId player taking the resource
+ * @param arg resource name to take
+ * @return std::string "ok" on success, "ko" on unknown name or empty tile
  */
 std::string zappy::server::ai::AiDispatcher::executeTake(
-    int, const std::string &)
+    int playerId, const std::string &arg)
 {
-    return "ok";
+    std::string response = "ko";
+    const auto type = game::ResourceNameResolver::resolve(arg);
+
+    if (type && _world.takeResourceFromTile(playerId, *type))
+        response = "ok";
+    return response;
 }
 
 /**
- * @brief Set command handler (stub; real effect lands in ZAP-26).
+ * @brief Drop one unit of @p arg from the player's inventory onto its tile.
  *
- * @return std::string always "ok"
+ * @param playerId player dropping the resource
+ * @param arg resource name to drop
+ * @return std::string "ok" on success, "ko" on unknown name or empty inventory
  */
 std::string zappy::server::ai::AiDispatcher::executeSet(
-    int, const std::string &)
+    int playerId, const std::string &arg)
 {
-    return "ok";
+    std::string response = "ko";
+    const auto type = game::ResourceNameResolver::resolve(arg);
+
+    if (type && _world.dropResourceOnTile(playerId, *type))
+        response = "ok";
+    return response;
 }
 
 /**
