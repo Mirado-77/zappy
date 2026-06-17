@@ -5,10 +5,13 @@
 ** AiDispatcher implementation
 */
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
+#include <iterator>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "server/ai/AiDispatcher.hpp"
 #include "server/game/OrientationHelper.hpp"
@@ -78,19 +81,293 @@ void zappy::server::ai::AiDispatcher::stopPlayer(int playerId) noexcept
  */
 void zappy::server::ai::AiDispatcher::startNextCommand(int playerId)
 {
+    while (canStartNextCommand(playerId))
+        processNextQueuedCommand(playerId);
+}
+
+/**
+ * @brief Whether the next queued command may start now.
+ *
+ * @param playerId player whose queue is inspected
+ * @return bool true if a command is pending and the player is not frozen
+ */
+bool zappy::server::ai::AiDispatcher::canStartNextCommand(int playerId) const
+{
+    const auto it = _states.find(playerId);
+    return it != _states.end()
+        && it->second.currentEventId == 0
+        && !it->second.queue.empty()
+        && _world.hasPlayer(playerId)
+        && _world.player(playerId).state() != game::PlayerState::INCANTING;
+}
+
+/**
+ * @brief Pop the front command and route it to the right starter.
+ *
+ * @param playerId player whose queue advances
+ */
+void zappy::server::ai::AiDispatcher::processNextQueuedCommand(int playerId)
+{
     PlayerState &state = _states[playerId];
-    while (state.currentEventId == 0 && !state.queue.empty()) {
-        const protocol::ai::ParsedCommand cmd = state.queue.front();
-        state.queue.pop_front();
-        runPreHandler(playerId, cmd.kind);
-        const scheduler::Duration delay =
-            protocol::ai::CommandInfo::duration(cmd.kind, _frequency);
-        if (delay.count() > 0)
-            state.currentEventId = _scheduler.schedule(delay,
-                [this, playerId, cmd] { onCommandComplete(playerId, cmd); });
-        else
-            respond(playerId, cmd);
+    const protocol::ai::ParsedCommand cmd = state.queue.front();
+    state.queue.pop_front();
+    if (cmd.kind == protocol::ai::CommandKind::INCANTATION)
+        startIncantation(playerId);
+    else
+        startStandardCommand(playerId, cmd);
+}
+
+/**
+ * @brief Schedule (or instantly run) a non-incantation command.
+ *
+ * @param playerId player issuing the command
+ * @param cmd command to start
+ */
+void zappy::server::ai::AiDispatcher::startStandardCommand(int playerId,
+    const protocol::ai::ParsedCommand &cmd)
+{
+    runPreHandler(playerId, cmd.kind);
+    const scheduler::Duration delay =
+        protocol::ai::CommandInfo::duration(cmd.kind, _frequency);
+    if (delay.count() > 0)
+        _states[playerId].currentEventId = _scheduler.schedule(delay,
+            [this, playerId, cmd] { onCommandComplete(playerId, cmd); });
+    else
+        respond(playerId, cmd);
+}
+
+/**
+ * @brief Validate prerequisites then launch or reject an incantation.
+ *
+ * @param playerId the initiating player
+ */
+void zappy::server::ai::AiDispatcher::startIncantation(int playerId)
+{
+    const std::vector<int> participants = collectParticipants(playerId);
+
+    if (checkPrerequisites(playerId, participants))
+        beginIncantationRitual(playerId, participants);
+    else {
+        _states[playerId].currentEventId = 0;
+        _onResponse(playerId, "ko");
     }
+}
+
+/**
+ * @brief Ids of every ALIVE player standing on the initiator's tile.
+ *
+ * @param playerId the initiating player
+ * @return std::vector<int> the participant ids (includes the initiator)
+ */
+std::vector<int> zappy::server::ai::AiDispatcher::collectParticipants(
+    int playerId) const
+{
+    std::vector<int> result;
+    const game::Position pos = _world.player(playerId).position();
+
+    for (int id : _world.tileAt(pos).playerIds())
+        if (isPlayerAlive(id))
+            result.push_back(id);
+    return result;
+}
+
+/**
+ * @brief Whether @p playerId may elevate with @p participants right now.
+ *
+ * @param playerId the initiating player
+ * @param participants alive players on the tile
+ * @return bool true if level, headcount and stones all qualify
+ */
+bool zappy::server::ai::AiDispatcher::checkPrerequisites(int playerId,
+    const std::vector<int> &participants) const
+{
+    const int level = _world.player(playerId).level();
+    const game::ElevationRule &rule = game::ElevationRules::forLevel(level);
+    const game::Position pos = _world.player(playerId).position();
+
+    return level < game::ElevationRules::maxLevel()
+        && static_cast<int>(participants.size()) >= rule.playersRequired
+        && tileHasStones(pos, rule);
+}
+
+/**
+ * @brief Whether the tile holds every stone @p rule demands.
+ *
+ * @param pos the tile position
+ * @param rule the elevation rule to satisfy
+ * @return bool true if all stones are present in sufficient quantity
+ */
+bool zappy::server::ai::AiDispatcher::tileHasStones(game::Position pos,
+    const game::ElevationRule &rule) const
+{
+    bool ok = true;
+
+    for (std::size_t i = 0; i < game::RESOURCE_COUNT; ++i)
+        if (_world.tileAt(pos).resource(static_cast<game::ResourceType>(i))
+            < rule.stonesRequired[i])
+            ok = false;
+    return ok;
+}
+
+/**
+ * @brief Whether the player exists and is not DEAD.
+ *
+ * @param playerId player to test
+ * @return bool true if alive or incanting
+ */
+bool zappy::server::ai::AiDispatcher::isPlayerAlive(int playerId) const
+{
+    return _world.hasPlayer(playerId)
+        && _world.player(playerId).state() != game::PlayerState::DEAD;
+}
+
+/**
+ * @brief Freeze participants, announce the ritual and schedule its end.
+ *
+ * @param playerId the initiating player
+ * @param participants alive players on the tile
+ */
+void zappy::server::ai::AiDispatcher::beginIncantationRitual(int playerId,
+    const std::vector<int> &participants)
+{
+    const int level = _world.player(playerId).level();
+
+    for (int id : participants)
+        _world.freezePlayer(id);
+    for (int id : participants)
+        _onResponse(id, "Elevation underway");
+    _world.notifyIncantationStarted(playerId, level, participants);
+    const scheduler::Duration delay = protocol::ai::CommandInfo::duration(
+        protocol::ai::CommandKind::INCANTATION, _frequency);
+    _states[playerId].currentEventId = _scheduler.schedule(delay,
+        [this, playerId, participants] {
+            finalizeIncantation(playerId, participants);
+        });
+}
+
+/**
+ * @brief Re-check prerequisites and apply success or failure.
+ *
+ * @param initiatorId the initiating player
+ * @param participants the participants captured at ritual start
+ */
+void zappy::server::ai::AiDispatcher::finalizeIncantation(int initiatorId,
+    std::vector<int> participants)
+{
+    std::vector<int> alive;
+
+    std::copy_if(participants.begin(), participants.end(),
+        std::back_inserter(alive),
+        [this](int id) { return isPlayerAlive(id); });
+    if (isPlayerAlive(initiatorId)
+        && checkPrerequisites(initiatorId, alive))
+        applySuccess(initiatorId, alive,
+            _world.player(initiatorId).level() + 1);
+    else
+        applyFailure(initiatorId, alive);
+    resumeParticipantQueues(alive);
+}
+
+/**
+ * @brief Elevate every alive participant and consume the tile's stones.
+ *
+ * @param initiatorId the initiating player
+ * @param alive participants still alive at finalization
+ * @param newLevel the resulting level
+ */
+void zappy::server::ai::AiDispatcher::applySuccess(int initiatorId,
+    const std::vector<int> &alive, int newLevel)
+{
+    const game::Position tilePos = _world.player(initiatorId).position();
+    const std::string line = "Current level: " + std::to_string(newLevel);
+
+    consumeStones(tilePos, game::ElevationRules::forLevel(newLevel - 1));
+    for (int id : alive)
+        _world.setPlayerLevel(id, newLevel);
+    sendToAllExceptInitiator(alive, initiatorId, line);
+    _world.notifyIncantationEnded(initiatorId, true, newLevel);
+    unfreezeAll(alive);
+    _states[initiatorId].currentEventId = 0;
+    _onResponse(initiatorId, line);
+}
+
+/**
+ * @brief Reject the incantation: answer "ko" and unfreeze participants.
+ *
+ * @param initiatorId the initiating player
+ * @param alive participants still alive at finalization
+ */
+void zappy::server::ai::AiDispatcher::applyFailure(int initiatorId,
+    const std::vector<int> &alive)
+{
+    const bool initiatorAlive =
+        std::find(alive.begin(), alive.end(), initiatorId) != alive.end();
+
+    sendToAllExceptInitiator(alive, initiatorId, "ko");
+    _world.notifyIncantationEnded(initiatorId, false, 0);
+    unfreezeAll(alive);
+    _states[initiatorId].currentEventId = 0;
+    if (initiatorAlive)
+        _onResponse(initiatorId, "ko");
+}
+
+/**
+ * @brief Remove the stones @p rule demands from @p tilePos.
+ *
+ * @param tilePos the tile to deduct from
+ * @param rule the elevation rule that was satisfied
+ */
+void zappy::server::ai::AiDispatcher::consumeStones(game::Position tilePos,
+    const game::ElevationRule &rule)
+{
+    for (std::size_t i = 0; i < game::RESOURCE_COUNT; ++i) {
+        if (rule.stonesRequired[i] <= 0)
+            continue;
+        const auto type = static_cast<game::ResourceType>(i);
+        const int current = _world.tileAt(tilePos).resource(type);
+        _world.setTileResource(tilePos, type,
+            current - rule.stonesRequired[i]);
+    }
+}
+
+/**
+ * @brief Unfreeze every listed participant.
+ *
+ * @param participants players to unfreeze
+ */
+void zappy::server::ai::AiDispatcher::unfreezeAll(
+    const std::vector<int> &participants)
+{
+    for (int id : participants)
+        _world.unfreezePlayer(id);
+}
+
+/**
+ * @brief Resume each participant's queue after the ritual.
+ *
+ * @param participants players whose queues advance
+ */
+void zappy::server::ai::AiDispatcher::resumeParticipantQueues(
+    const std::vector<int> &participants)
+{
+    for (int id : participants)
+        startNextCommand(id);
+}
+
+/**
+ * @brief Send @p response to every participant except the initiator.
+ *
+ * @param participants the participant ids
+ * @param initiatorId the player to skip
+ * @param response the line to deliver
+ */
+void zappy::server::ai::AiDispatcher::sendToAllExceptInitiator(
+    const std::vector<int> &participants, int initiatorId,
+    const std::string &response)
+{
+    for (int id : participants)
+        if (id != initiatorId)
+            _onResponse(id, response);
 }
 
 /**
