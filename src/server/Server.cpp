@@ -10,6 +10,8 @@
 #include <optional>
 #include <utility>
 
+#include "server/game/EggSpawner.hpp"
+
 /**
  * @brief Initialise all members from the validated configuration.
  *
@@ -37,6 +39,8 @@ zappy::server::Server::Server(const cli::ServerConfig &config)
       _handshake(_config, _world, _foodScheduler)
 {
     _resourceSpawner.spawnInitial(_world);
+    game::EggSpawner eggSpawner;
+    eggSpawner.spawnInitial(_world);
     _refillScheduler.start();
 }
 
@@ -144,7 +148,7 @@ bool zappy::server::Server::handlePollout(int clientFd)
  * @brief Kill the player (if AI and still alive), unregister and erase the client.
  *
  * Idempotent: a no-op when @p clientFd is already gone. Stops food consumption
- * and kills the player only when it is still alive, avoiding double slot release.
+ * and kills the player only when it is still alive.
  *
  * @param clientFd file descriptor to drop
  */
