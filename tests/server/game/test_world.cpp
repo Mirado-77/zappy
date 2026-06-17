@@ -6,6 +6,8 @@
 */
 
 #include <criterion/criterion.h>
+#include <optional>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -106,7 +108,6 @@ Test(world, add_player_happy_path)
     const int id = w.addPlayer("alpha", Position(1, 1), Orientation::NORTH);
     cr_assert(w.hasPlayer(id));
     cr_assert_eq(w.player(id).team().c_str()[0], 'a');
-    cr_assert_eq(w.team("alpha").slotsUsed(), 1);
     cr_assert_eq(w.tileAt(Position(1, 1)).playerIds()[0], id);
 }
 
@@ -117,21 +118,12 @@ Test(world, add_player_unknown_team_throws)
         WorldError);
 }
 
-Test(world, add_player_full_team_throws)
-{
-    World w = makeWorld(1);
-    w.addPlayer("alpha", Position(0, 0), Orientation::NORTH);
-    cr_assert_throw(w.addPlayer("alpha", Position(0, 0), Orientation::NORTH),
-        WorldError);
-}
-
-Test(world, remove_player_releases_slot)
+Test(world, remove_player_clears_tile)
 {
     World w = makeWorld(2);
     const int id = w.addPlayer("alpha", Position(1, 1), Orientation::NORTH);
     w.removePlayer(id);
     cr_assert_not(w.hasPlayer(id));
-    cr_assert_eq(w.team("alpha").slotsUsed(), 0);
     cr_assert_eq(w.tileAt(Position(1, 1)).playerIds().size(), 0U);
 }
 
@@ -199,7 +191,6 @@ Test(world, kill_player)
     cr_assert_eq(static_cast<int>(w.player(id).state()),
         static_cast<int>(zappy::server::game::PlayerState::DEAD));
     cr_assert_eq(w.tileAt(Position(5, 5)).playerIds().size(), 0U);
-    cr_assert_eq(w.team("alpha").slotsUsed(), 0);
 }
 
 /* eggs */
@@ -225,6 +216,80 @@ Test(world, hatch_egg_keeps_it)
         static_cast<int>(zappy::server::game::EggState::HATCHED));
 }
 
+Test(world, waiting_egg_count_counts_team_waiting)
+{
+    World w = makeWorld();
+    w.addEgg("alpha", Position(1, 1));
+    w.addEgg("alpha", Position(2, 2));
+    w.addEgg("beta", Position(3, 3));
+    cr_assert_eq(w.waitingEggCount("alpha"), 2);
+    cr_assert_eq(w.waitingEggCount("beta"), 1);
+}
+
+Test(world, waiting_egg_count_ignores_hatched)
+{
+    World w = makeWorld();
+    const int id = w.addEgg("alpha", Position(1, 1));
+    w.hatchEgg(id);
+    cr_assert_eq(w.waitingEggCount("alpha"), 0);
+}
+
+Test(world, waiting_egg_count_unknown_team_is_zero)
+{
+    World w = makeWorld();
+    w.addEgg("alpha", Position(1, 1));
+    cr_assert_eq(w.waitingEggCount("ghost"), 0);
+}
+
+Test(world, pick_random_waiting_egg_none_returns_nullopt)
+{
+    const World w = makeWorld();
+    std::mt19937_64 rng(42);
+    cr_assert_not(w.pickRandomWaitingEgg("alpha", rng).has_value());
+}
+
+Test(world, pick_random_waiting_egg_seeded_is_deterministic)
+{
+    World w = makeWorld();
+    w.addEgg("alpha", Position(1, 1));
+    w.addEgg("alpha", Position(2, 2));
+    w.addEgg("alpha", Position(3, 3));
+    std::mt19937_64 rngA(123);
+    std::mt19937_64 rngB(123);
+    const std::optional<int> a = w.pickRandomWaitingEgg("alpha", rngA);
+    const std::optional<int> b = w.pickRandomWaitingEgg("alpha", rngB);
+    cr_assert(a.has_value());
+    cr_assert_eq(*a, *b);
+}
+
+Test(world, pick_random_waiting_egg_only_matching_team)
+{
+    World w = makeWorld();
+    const int egg = w.addEgg("alpha", Position(4, 4));
+    w.addEgg("beta", Position(5, 5));
+    std::mt19937_64 rng(7);
+    const std::optional<int> picked = w.pickRandomWaitingEgg("alpha", rng);
+    cr_assert(picked.has_value());
+    cr_assert_eq(*picked, egg);
+}
+
+Test(world, grow_team_increments_slots_and_notifies)
+{
+    World w = makeWorld(2);
+    MockObserver obs;
+    w.addObserver(obs);
+    w.growTeam("alpha");
+    cr_assert_eq(w.team("alpha").slotsTotal(), 3);
+    cr_assert_eq(obs.events.size(), 1U);
+    cr_assert_str_eq(obs.events[0].c_str(), "slots:alpha");
+}
+
+Test(world, grow_team_unknown_throws)
+{
+    World w = makeWorld();
+    cr_assert_throw(w.growTeam("ghost"), WorldError);
+}
+
 /* observer */
 
 Test(world, observer_receives_events_in_order)
@@ -235,11 +300,10 @@ Test(world, observer_receives_events_in_order)
     const int id = w.addPlayer("alpha", Position(1, 1), Orientation::NORTH);
     w.movePlayer(id, Position(2, 2));
     w.rotatePlayer(id, Orientation::EAST);
-    cr_assert_eq(obs.events.size(), 4U);
+    cr_assert_eq(obs.events.size(), 3U);
     cr_assert_str_eq(obs.events[0].c_str(), "padd:1");
-    cr_assert_str_eq(obs.events[1].c_str(), "slots:alpha");
-    cr_assert_str_eq(obs.events[2].c_str(), "pmove:1");
-    cr_assert_str_eq(obs.events[3].c_str(), "prot:1");
+    cr_assert_str_eq(obs.events[1].c_str(), "pmove:1");
+    cr_assert_str_eq(obs.events[2].c_str(), "prot:1");
 }
 
 Test(world, observer_take_resource_fires_tile_and_inventory)

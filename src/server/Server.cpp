@@ -8,14 +8,17 @@
 #include "server/Server.hpp"
 #include <iostream>
 #include <optional>
+#include <utility>
 
-#include "server/game/ResourceSpawner.hpp"
+#include "server/game/EggSpawner.hpp"
 
 /**
  * @brief Initialise all members from the validated configuration.
  *
  * Member order matches the declaration order in Server.hpp:
- * _config → _listener → _poll → _world → _clients → _handshake.
+ * _config → _listener → _poll → _world → _resourceSpawner → _clients →
+ * _clock → _scheduler → _refillScheduler → _foodScheduler → _aiDispatcher →
+ * _handshake.
  *
  * @param config validated CLI configuration
  */
@@ -25,11 +28,20 @@ zappy::server::Server::Server(const cli::ServerConfig &config)
       _poll(),
       _world(_config.width(), _config.height(),
           _config.teamNames(), _config.clientsPerTeam()),
+      _resourceSpawner(),
       _clients(),
-      _handshake(_config, _world)
+      _refillScheduler(_world, _resourceSpawner, _scheduler,
+          _config.frequency()),
+      _foodScheduler(_world, _scheduler, _config.frequency(),
+          [this](int playerId) { onPlayerStarved(playerId); }),
+      _aiDispatcher(_world, _scheduler, _config.frequency(),
+          [this](int id, std::string r) { onAiResponse(id, std::move(r)); }),
+      _handshake(_config, _world, _foodScheduler)
 {
-    game::ResourceSpawner spawner;
-    spawner.spawnInitial(_world);
+    _resourceSpawner.spawnInitial(_world);
+    game::EggSpawner eggSpawner;
+    eggSpawner.spawnInitial(_world);
+    _refillScheduler.start();
 }
 
 /**
@@ -89,6 +101,9 @@ void zappy::server::Server::handleClientEvents(
         dropped = handlePollout(clientFd);
     if (!dropped)
         retunePollMask(clientFd);
+    if (!dropped && _clients.get(clientFd).isMarkedForDrop() &&
+        !_clients.get(clientFd).buffer().has_pending_write())
+        dropClient(clientFd);
 }
 
 /**
@@ -130,17 +145,62 @@ bool zappy::server::Server::handlePollout(int clientFd)
 }
 
 /**
- * @brief Release the team slot (if AI), unregister from poll, and erase from registry.
+ * @brief Kill the player (if AI and still alive), unregister and erase the client.
+ *
+ * Idempotent: a no-op when @p clientFd is already gone. Stops food consumption
+ * and kills the player only when it is still alive.
  *
  * @param clientFd file descriptor to drop
  */
 void zappy::server::Server::dropClient(int clientFd)
 {
-    if (_clients.contains(clientFd) &&
-        _clients.get(clientFd).state() == client::ClientState::AI)
-        _world.team(_clients.get(clientFd).aiData().teamName).releaseSlot();
+    if (!_clients.contains(clientFd))
+        return;
+    client::Client &client = _clients.get(clientFd);
+    if (client.state() == client::ClientState::AI) {
+        const int playerId = client.aiData().playerId;
+        _aiDispatcher.stopPlayer(playerId);
+        _foodScheduler.stopConsumption(playerId);
+        if (_world.hasPlayer(playerId) &&
+            _world.player(playerId).state() != game::PlayerState::DEAD)
+            _world.killPlayer(playerId);
+    }
     _poll.unregister_fd(clientFd);
     _clients.remove(clientFd);
+}
+
+/**
+ * @brief React to starvation: send "dead", flag for drop, kill and arm POLLOUT.
+ *
+ * @param playerId starving player id reported by the food scheduler
+ */
+void zappy::server::Server::onPlayerStarved(int playerId)
+{
+    const std::optional<int> fd = _clients.findFdByPlayerId(playerId);
+    if (!fd)
+        return;
+    _aiDispatcher.stopPlayer(playerId);
+    client::Client &client = _clients.get(*fd);
+    client.buffer().queue_message("dead");
+    client.markForDrop();
+    if (_world.hasPlayer(playerId))
+        _world.killPlayer(playerId);
+    retunePollMask(*fd);
+}
+
+/**
+ * @brief Deliver @p response to the AI client owning @p playerId, if present.
+ *
+ * @param playerId player the response is addressed to
+ * @param response response line (no trailing newline)
+ */
+void zappy::server::Server::onAiResponse(int playerId, std::string response)
+{
+    const std::optional<int> fd = _clients.findFdByPlayerId(playerId);
+    if (!fd)
+        return;
+    _clients.get(*fd).buffer().queue_message(std::move(response));
+    retunePollMask(*fd);
 }
 
 /**
@@ -177,7 +237,8 @@ bool zappy::server::Server::dispatchReadyMessages(int clientFd)
             dropped = (res == handshake::HandshakeResult::DROP);
             if (dropped)
                 dropClient(clientFd);
-        }
+        } else if (c.state() == client::ClientState::AI)
+            _aiDispatcher.dispatch(c.aiData().playerId, *msg);
     }
     return dropped;
 }

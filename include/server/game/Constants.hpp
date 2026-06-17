@@ -10,6 +10,7 @@
 
     #include <array>
     #include <cstddef>
+    #include <string_view>
 
 namespace zappy::server::game {
 
@@ -42,6 +43,17 @@ enum class PlayerState { ALIVE, INCANTING, DEAD };
 enum class EggState { WAITING, HATCHED };
 
 constexpr std::size_t RESOURCE_COUNT = 7;
+
+/**
+ * @brief Resource names indexed by static_cast<size_t>(ResourceType).
+ */
+inline constexpr std::array<std::string_view, RESOURCE_COUNT> RESOURCE_NAMES = {
+    "food", "linemate", "deraumere", "sibur", "mendiane", "phiras", "thystame"
+};
+
+constexpr int FOOD_CONSUMPTION_INTERVAL_TIME_UNITS = 126;
+
+constexpr int INITIAL_FOOD = 10;
 
 using Inventory = std::array<int, RESOURCE_COUNT>;
 

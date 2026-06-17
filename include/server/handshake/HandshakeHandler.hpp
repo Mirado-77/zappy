@@ -8,10 +8,13 @@
 #ifndef HANDSHAKE_HANDSHAKEHANDLER_HPP_
     #define HANDSHAKE_HANDSHAKEHANDLER_HPP_
 
+    #include <array>
+    #include <random>
     #include <string>
 
     #include "server/cli/ServerConfig.hpp"
     #include "server/client/Client.hpp"
+    #include "server/game/FoodScheduler.hpp"
     #include "server/game/World.hpp"
 
 namespace zappy::server::handshake {
@@ -34,9 +37,10 @@ public:
      *
      * @param config immutable server configuration
      * @param world mutable game world
+     * @param foodScheduler per-player food consumption driver
      */
     HandshakeHandler(const cli::ServerConfig &config,
-        game::World &world);
+        game::World &world, game::FoodScheduler &foodScheduler);
 
     HandshakeHandler(const HandshakeHandler &) = delete;
     HandshakeHandler &operator=(const HandshakeHandler &) = delete;
@@ -48,8 +52,8 @@ public:
      *
      * Trims leading/trailing whitespace, then:
      * - "GRAPHIC" → promotes to GUI, returns PROMOTED.
-     * - Known team with a free slot → reserves slot, promotes to AI,
-     *   queues `<free-slots>\n` and `<w> <h>\n`, returns PROMOTED.
+     * - Known team with a waiting egg → consumes the egg, promotes to AI,
+     *   queues `<waiting-eggs>\n` and `<w> <h>\n`, returns PROMOTED.
      * - Anything else → queues `ko\n`, returns DROP.
      *
      * @param client HANDSHAKE-state client (mutated in place)
@@ -79,9 +83,8 @@ private:
     /**
      * @brief Validate @p name against the world and promote to AI.
      *
-     * Queues `ko\n` and returns DROP if the team is unknown or full.
-     * Otherwise reserves a slot, promotes, queues the connection reply,
-     * and returns PROMOTED.
+     * Queues `ko\n` and returns DROP if the team is unknown.
+     * Otherwise delegates to the egg-consuming spawn path.
      *
      * @param client client to promote
      * @param name trimmed team name supplied by the client
@@ -90,8 +93,40 @@ private:
     [[nodiscard]] HandshakeResult promoteToAi(client::Client &client,
         const std::string &name);
 
+    /**
+     * @brief Pick a waiting egg, spawn the player and queue the AI reply.
+     *
+     * Queues `ko\n` and returns DROP if no egg of @p name is waiting.
+     *
+     * @param client client passing the team validation
+     * @param name validated team name
+     * @return HandshakeResult PROMOTED or DROP
+     */
+    [[nodiscard]] HandshakeResult promoteValidAi(client::Client &client,
+        const std::string &name);
+
+    /**
+     * @brief Hatch and remove an egg, spawn the player and queue the reply.
+     *
+     * @param client client passing the egg lookup
+     * @param name validated team name
+     * @param eggId waiting egg to consume
+     * @return HandshakeResult always PROMOTED
+     */
+    [[nodiscard]] HandshakeResult spawnFromEgg(client::Client &client,
+        const std::string &name, int eggId);
+
+    /**
+     * @brief Draw a uniformly random cardinal orientation.
+     *
+     * @return game::Orientation the spawn orientation
+     */
+    [[nodiscard]] game::Orientation randomOrientation();
+
     const cli::ServerConfig &_config;
     game::World &_world;
+    game::FoodScheduler &_foodScheduler;
+    std::mt19937_64 _rng{std::random_device{}()};
 };
 
 } // namespace zappy::server::handshake

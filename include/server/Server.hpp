@@ -8,8 +8,12 @@
 #ifndef SERVER_SERVER_HPP_
     #define SERVER_SERVER_HPP_
 
+    #include "server/ai/AiDispatcher.hpp"
     #include "server/cli/ServerConfig.hpp"
     #include "server/client/ClientRegistry.hpp"
+    #include "server/game/FoodScheduler.hpp"
+    #include "server/game/RefillScheduler.hpp"
+    #include "server/game/ResourceSpawner.hpp"
     #include "server/game/World.hpp"
     #include "server/handshake/HandshakeHandler.hpp"
     #include "server/scheduler/Clock.hpp"
@@ -91,14 +95,33 @@ private:
      */
     bool dispatchReadyMessages(int clientFd);
 
+    /**
+     * @brief Handle a player reaching zero food: notify, kill and drop.
+     *
+     * @param playerId starving player id reported by the food scheduler
+     */
+    void onPlayerStarved(int playerId);
+
+    /**
+     * @brief Deliver an AI command response to its client, if still connected.
+     *
+     * @param playerId player the response is addressed to
+     * @param response response line (no trailing newline)
+     */
+    void onAiResponse(int playerId, std::string response);
+
     cli::ServerConfig _config;
     net::Listener _listener;
     net::PollLoop _poll;
     game::World _world;
+    game::ResourceSpawner _resourceSpawner;
     client::ClientRegistry _clients;
-    handshake::HandshakeHandler _handshake;
     scheduler::SteadyClock _clock;
     scheduler::Scheduler _scheduler{_clock};
+    game::RefillScheduler _refillScheduler;
+    game::FoodScheduler _foodScheduler;
+    ai::AiDispatcher _aiDispatcher;
+    handshake::HandshakeHandler _handshake;
 };
 
 } // namespace zappy::server

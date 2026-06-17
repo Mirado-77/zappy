@@ -166,3 +166,21 @@ zappy::server::client::Client::guiAdminData() const
         throw ClientStateError("guiAdminData() requires GUI_ADMIN state");
     return std::get<GuiAdminData>(_payload);
 }
+
+/**
+ * @brief Flag this client for a deferred drop once its buffer drains.
+ */
+void zappy::server::client::Client::markForDrop() noexcept
+{
+    _markedForDrop = true;
+}
+
+/**
+ * @brief Whether a deferred drop was requested.
+ *
+ * @return bool true if markForDrop() was called
+ */
+bool zappy::server::client::Client::isMarkedForDrop() const noexcept
+{
+    return _markedForDrop;
+}
