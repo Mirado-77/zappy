@@ -47,6 +47,14 @@ public:
      */
     void dispatch(int fd, std::string_view line);
 
+    /**
+     * @brief Send the complete initial state sync to a promoted GUI client.
+     *
+     * @param fd client file descriptor
+     * @param frequency current server clock frequency
+     */
+    void sendInitialSync(int fd, int frequency);
+
 private:
     using Handler = std::string (GuiDispatcher::*)(const std::vector<int> &);
 
@@ -54,6 +62,15 @@ private:
     std::function<void(int, std::string)> _onResponse;
 
     void sendError(int fd, protocol::gui::GuiParseError err);
+    void sendSyncMapSize(int fd);
+    void sendSyncTiles(int fd);
+    void sendSyncTile(int fd, int x, int y);
+    void sendSyncTeams(int fd);
+    void sendSyncPlayers(int fd);
+    void sendSyncPlayer(int fd, const game::Player &player);
+    void sendSyncPlayerInventory(int fd, const game::Player &player);
+    void sendSyncEggs(int fd);
+    void sendSyncTime(int fd, int frequency);
 
     [[nodiscard]] std::string handleMsz(const std::vector<int> &args);
     [[nodiscard]] std::string handleBct(const std::vector<int> &args);

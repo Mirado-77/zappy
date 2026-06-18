@@ -165,6 +165,18 @@ public:
     }
 
     /**
+     * @brief Invoke @p callback for every (id, Egg const &) in the world.
+     *
+     * @param callback callable receiving the egg id and a const reference
+     */
+    template<typename F>
+    void forEachEgg(F &&callback) const
+    {
+        for (const auto &entry : _eggs)
+            callback(entry.first, entry.second);
+    }
+
+    /**
      * @brief Create a player and place it on its tile.
      *
      * @param team owning team name

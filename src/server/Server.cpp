@@ -251,8 +251,11 @@ bool zappy::server::Server::dispatchReadyMessages(int clientFd)
         if (c.state() == client::ClientState::HANDSHAKE) {
             const auto res = _handshake.handle(c, *msg);
             dropped = (res == handshake::HandshakeResult::DROP);
-            if (dropped)
+            if (dropped) {
                 dropClient(clientFd);
+            } else if (c.state() == client::ClientState::GUI) {
+                _guiDispatcher.sendInitialSync(clientFd, _config.frequency());
+            }
         } else if (c.state() == client::ClientState::AI)
             _aiDispatcher.dispatch(c.aiData().playerId, *msg);
         else if (c.state() == client::ClientState::GUI
