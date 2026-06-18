@@ -235,20 +235,20 @@ private:
     void preExecuteFork(int playerId);
 
 
-    static constexpr std::array<PreHandler,                 protocol::ai::COMMAND_KIND_COUNT>
+    static constexpr std::array<PreHandler, protocol::ai::COMMAND_KIND_COUNT>
         PRE_HANDLERS = {
-            nullptr,                       // FORWARD
-            nullptr,                       // RIGHT
-            nullptr,                       // LEFT
-            nullptr,                       // LOOK
-            nullptr,                       // INVENTORY
-            nullptr,                       // BROADCAST
-            nullptr,                       // CONNECT_NBR
-            &AiDispatcher::preExecuteFork, // FORK
-            nullptr,                       // EJECT
-            nullptr,                       // TAKE
-            nullptr,                       // SET
-            nullptr                        // INCANTATION
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            &AiDispatcher::preExecuteFork,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr
         };
 
     /**
