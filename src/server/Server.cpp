@@ -38,12 +38,14 @@ zappy::server::Server::Server(const cli::ServerConfig &config)
           [this](int id, std::string r) { onAiResponse(id, std::move(r)); }),
       _guiDispatcher(_world,
           [this](int fd, std::string r) { onGuiResponse(fd, std::move(r)); }),
+      _guiNotifier(_clients, _world, [this](int fd) { retunePollMask(fd); }),
       _handshake(_config, _world, _foodScheduler)
 {
     _resourceSpawner.spawnInitial(_world);
     game::EggSpawner eggSpawner;
     eggSpawner.spawnInitial(_world);
     _refillScheduler.start();
+    _world.addObserver(_guiNotifier);
 }
 
 /**

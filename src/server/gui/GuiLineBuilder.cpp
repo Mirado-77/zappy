@@ -1,0 +1,86 @@
+/*
+** EPITECH PROJECT, 2026
+** Zappy
+** File description:
+** GuiLineBuilder implementation
+*/
+
+#include "server/gui/GuiLineBuilder.hpp"
+
+/**
+ * @brief Construct a new Gui Line Builder object.
+ *
+ * @param world read-only reference to the game world
+ */
+zappy::server::gui::GuiLineBuilder::GuiLineBuilder(
+    const game::World &world) noexcept
+    : _world(world)
+{
+}
+
+/**
+ * @brief Build the bct protocol string for a tile.
+ *
+ * @param x tile horizontal coordinate
+ * @param y tile vertical coordinate
+ * @return std::string the formatted "bct X Y q0..q6" line
+ */
+std::string zappy::server::gui::GuiLineBuilder::bct(int x, int y) const
+{
+    const game::Tile &tile = _world.tileAt(game::Position(x, y));
+    std::string line = "bct " + std::to_string(x) + " " + std::to_string(y);
+
+    for (std::size_t i = 0; i < game::RESOURCE_COUNT; ++i) {
+        line += " " + std::to_string(
+            tile.resource(static_cast<game::ResourceType>(i)));
+    }
+    return line;
+}
+
+/**
+ * @brief Build the ppo protocol string for a player.
+ *
+ * @param playerId player ID
+ * @return std::string the formatted "ppo #n X Y O" line
+ */
+std::string zappy::server::gui::GuiLineBuilder::ppo(int playerId) const
+{
+    const game::Player &player = _world.player(playerId);
+
+    return "ppo #" + std::to_string(playerId) + " "
+        + std::to_string(player.position().x()) + " "
+        + std::to_string(player.position().y()) + " "
+        + std::to_string(static_cast<int>(player.orientation()));
+}
+
+/**
+ * @brief Build the plv protocol string for a player.
+ *
+ * @param playerId player ID
+ * @return std::string the formatted "plv #n L" line
+ */
+std::string zappy::server::gui::GuiLineBuilder::plv(int playerId) const
+{
+    return "plv #" + std::to_string(playerId) + " "
+        + std::to_string(_world.player(playerId).level());
+}
+
+/**
+ * @brief Build the pin protocol string for a player.
+ *
+ * @param playerId player ID
+ * @return std::string the formatted "pin #n X Y q0..q6" line
+ */
+std::string zappy::server::gui::GuiLineBuilder::pin(int playerId) const
+{
+    const game::Player &player = _world.player(playerId);
+    std::string line = "pin #" + std::to_string(playerId) + " "
+        + std::to_string(player.position().x()) + " "
+        + std::to_string(player.position().y());
+
+    for (std::size_t i = 0; i < game::RESOURCE_COUNT; ++i) {
+        line += " " + std::to_string(
+            player.resource(static_cast<game::ResourceType>(i)));
+    }
+    return line;
+}
