@@ -429,6 +429,7 @@ bool zappy::server::game::World::takeResourceFromTile(
         target.addResource(type, 1);
         notifyTileChanged(target.position());
         notifyPlayerInventoryChanged(playerId);
+        notifyPlayerPickedUpResource(playerId, type);
     }
     return ok;
 }
@@ -450,6 +451,7 @@ bool zappy::server::game::World::dropResourceOnTile(
         tileAt(target.position()).addResource(type, 1);
         notifyTileChanged(target.position());
         notifyPlayerInventoryChanged(playerId);
+        notifyPlayerDroppedResource(playerId, type);
     }
     return ok;
 }
@@ -742,4 +744,31 @@ void zappy::server::game::World::notifyIncantationEnded(int initiatorId,
 {
     for (auto &observer : _observers)
         observer.get().onIncantationEnded(initiatorId, success, newLevel);
+}
+
+void zappy::server::game::World::consumePlayerFood(int playerId)
+{
+    Player &target = player(playerId);
+    target.removeResource(ResourceType::FOOD, 1);
+    notifyPlayerInventoryChanged(playerId);
+}
+
+void zappy::server::game::World::notifyPlayerEjected(int playerId)
+{
+    for (auto &observer : _observers)
+        observer.get().onPlayerEjected(playerId);
+}
+
+void zappy::server::game::World::notifyPlayerDroppedResource(
+    int playerId, ResourceType type)
+{
+    for (auto &observer : _observers)
+        observer.get().onPlayerDroppedResource(playerId, type);
+}
+
+void zappy::server::game::World::notifyPlayerPickedUpResource(
+    int playerId, ResourceType type)
+{
+    for (auto &observer : _observers)
+        observer.get().onPlayerPickedUpResource(playerId, type);
 }

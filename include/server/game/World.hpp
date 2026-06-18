@@ -321,6 +321,21 @@ public:
     void killPlayer(int playerId);
 
     /**
+     * @brief Consume one unit of food from player's inventory and notify.
+     *
+     * @param playerId player id
+     * @throws WorldError if unknown
+     */
+    void consumePlayerFood(int playerId);
+
+    /**
+     * @brief Notify observers a player ejected others.
+     *
+     * @param playerId player id
+     */
+    void notifyPlayerEjected(int playerId);
+
+    /**
      * @brief Freeze a player for an incantation (state INCANTING).
      *
      * @param playerId player id
@@ -425,6 +440,8 @@ private:
     void notifyPlayerRotated(int id);
     void notifyPlayerLevelChanged(int id);
     void notifyPlayerInventoryChanged(int id);
+    void notifyPlayerDroppedResource(int playerId, ResourceType type);
+    void notifyPlayerPickedUpResource(int playerId, ResourceType type);
     void notifyPlayerStateChanged(int id);
     void notifyPlayerRemoved(int id);
     void notifyEggAdded(int id);

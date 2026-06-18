@@ -20,6 +20,7 @@ zappy::server::gui::GuiNotifier::GuiNotifier(
     const game::World &world,
     std::function<void(int fd)> retunePollMask) noexcept
     : _clients(clients),
+      _world(world),
       _lineBuilder(world),
       _retunePollMask(std::move(retunePollMask))
 {
@@ -49,4 +50,81 @@ void zappy::server::gui::GuiNotifier::broadcast(const std::string &line)
 void zappy::server::gui::GuiNotifier::onTileChanged(game::Position pos)
 {
     broadcast(_lineBuilder.bct(pos.x(), pos.y()));
+}
+
+void zappy::server::gui::GuiNotifier::onPlayerAdded(int id)
+{
+    broadcast(_lineBuilder.pnw(id));
+}
+
+void zappy::server::gui::GuiNotifier::onPlayerMoved(int id,
+    game::Position, game::Position)
+{
+    broadcast(_lineBuilder.ppo(id));
+}
+
+void zappy::server::gui::GuiNotifier::onPlayerRotated(int id)
+{
+    broadcast(_lineBuilder.ppo(id));
+}
+
+void zappy::server::gui::GuiNotifier::onPlayerLevelChanged(int id)
+{
+    broadcast(_lineBuilder.plv(id));
+}
+
+void zappy::server::gui::GuiNotifier::onPlayerInventoryChanged(int id)
+{
+    broadcast(_lineBuilder.pin(id));
+}
+
+void zappy::server::gui::GuiNotifier::onPlayerRemoved(int id)
+{
+    if (_world.hasPlayer(id) &&
+        _world.player(id).state() == game::PlayerState::DEAD) {
+        broadcast(_lineBuilder.pdi(id));
+    }
+}
+
+void zappy::server::gui::GuiNotifier::onPlayerBroadcast(int id,
+    const std::string &text)
+{
+    broadcast(_lineBuilder.pbc(id, text));
+}
+
+void zappy::server::gui::GuiNotifier::onPlayerForkStarted(int playerId)
+{
+    broadcast(_lineBuilder.pfk(playerId));
+}
+
+void zappy::server::gui::GuiNotifier::onIncantationStarted(int initiatorId,
+    int level, const std::vector<int> &participants)
+{
+    broadcast(_lineBuilder.pic(initiatorId, level, participants));
+}
+
+void zappy::server::gui::GuiNotifier::onIncantationEnded(int initiatorId,
+    bool success, int)
+{
+    if (_world.hasPlayer(initiatorId)) {
+        broadcast(_lineBuilder.pie(
+            _world.player(initiatorId).position(), success));
+    }
+}
+
+void zappy::server::gui::GuiNotifier::onPlayerEjected(int id)
+{
+    broadcast(_lineBuilder.pex(id));
+}
+
+void zappy::server::gui::GuiNotifier::onPlayerDroppedResource(int id,
+    game::ResourceType type)
+{
+    broadcast(_lineBuilder.pdr(id, type));
+}
+
+void zappy::server::gui::GuiNotifier::onPlayerPickedUpResource(int id,
+    game::ResourceType type)
+{
+    broadcast(_lineBuilder.pgt(id, type));
 }

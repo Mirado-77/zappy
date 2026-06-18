@@ -84,3 +84,73 @@ std::string zappy::server::gui::GuiLineBuilder::pin(int playerId) const
     }
     return line;
 }
+
+std::string zappy::server::gui::GuiLineBuilder::pnw(int playerId) const
+{
+    const game::Player &player = _world.player(playerId);
+
+    return "pnw #" + std::to_string(playerId) + " "
+        + std::to_string(player.position().x()) + " "
+        + std::to_string(player.position().y()) + " "
+        + std::to_string(static_cast<int>(player.orientation())) + " "
+        + std::to_string(player.level()) + " "
+        + player.team();
+}
+
+std::string zappy::server::gui::GuiLineBuilder::pex(int playerId) const
+{
+    return "pex #" + std::to_string(playerId);
+}
+
+std::string zappy::server::gui::GuiLineBuilder::pbc(
+    int playerId, const std::string &message) const
+{
+    return "pbc #" + std::to_string(playerId) + " " + message;
+}
+
+std::string zappy::server::gui::GuiLineBuilder::pic(int initiatorId, int level,
+    const std::vector<int> &participants) const
+{
+    const game::Player &initiator = _world.player(initiatorId);
+    std::string line = "pic "
+        + std::to_string(initiator.position().x()) + " "
+        + std::to_string(initiator.position().y()) + " "
+        + std::to_string(level + 1);
+
+    for (int id : participants) {
+        line += " #" + std::to_string(id);
+    }
+    return line;
+}
+
+std::string zappy::server::gui::GuiLineBuilder::pie(
+    game::Position pos, bool success) const
+{
+    return "pie " + std::to_string(pos.x()) + " "
+        + std::to_string(pos.y()) + " "
+        + (success ? "1" : "0");
+}
+
+std::string zappy::server::gui::GuiLineBuilder::pfk(int playerId) const
+{
+    return "pfk #" + std::to_string(playerId);
+}
+
+std::string zappy::server::gui::GuiLineBuilder::pdr(
+    int playerId, game::ResourceType resource) const
+{
+    return "pdr #" + std::to_string(playerId) + " "
+        + std::to_string(static_cast<int>(resource));
+}
+
+std::string zappy::server::gui::GuiLineBuilder::pgt(
+    int playerId, game::ResourceType resource) const
+{
+    return "pgt #" + std::to_string(playerId) + " "
+        + std::to_string(static_cast<int>(resource));
+}
+
+std::string zappy::server::gui::GuiLineBuilder::pdi(int playerId) const
+{
+    return "pdi #" + std::to_string(playerId);
+}

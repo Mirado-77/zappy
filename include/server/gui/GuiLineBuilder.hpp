@@ -9,6 +9,7 @@
     #define SERVER_GUI_GUILINEBUILDER_HPP_
 
     #include <string>
+    #include <vector>
     #include "server/game/World.hpp"
 
 namespace zappy::server::gui {
@@ -65,6 +66,85 @@ public:
      * @return std::string the formatted line
      */
     [[nodiscard]] std::string pin(int playerId) const;
+
+    /**
+     * @brief Build the "pnw #n X Y O L N" line for player n.
+     *
+     * @param playerId player ID
+     * @return std::string the formatted line
+     */
+    [[nodiscard]] std::string pnw(int playerId) const;
+
+    /**
+     * @brief Build the "pex #n" line for player ejection.
+     *
+     * @param playerId player ID
+     * @return std::string the formatted line
+     */
+    [[nodiscard]] std::string pex(int playerId) const;
+
+    /**
+     * @brief Build the "pbc #n M" line for player broadcast.
+     *
+     * @param playerId player ID
+     * @param message broadcast text
+     * @return std::string the formatted line
+     */
+    [[nodiscard]] std::string pbc(int playerId, const std::string &message) const;
+
+    /**
+     * @brief Build the "pic X Y L #n #n ..." line for incantation start.
+     *
+     * @param initiatorId initiator player ID
+     * @param level current level
+     * @param participants participating players
+     * @return std::string the formatted line
+     */
+    [[nodiscard]] std::string pic(int initiatorId, int level,
+        const std::vector<int> &participants) const;
+
+    /**
+     * @brief Build the "pie X Y R" line for incantation end.
+     *
+     * @param pos tile position
+     * @param success whether it succeeded
+     * @return std::string the formatted line
+     */
+    [[nodiscard]] std::string pie(game::Position pos, bool success) const;
+
+    /**
+     * @brief Build the "pfk #n" line for player fork start.
+     *
+     * @param playerId player ID
+     * @return std::string the formatted line
+     */
+    [[nodiscard]] std::string pfk(int playerId) const;
+
+    /**
+     * @brief Build the "pdr #n i" line for player dropping a resource.
+     *
+     * @param playerId player ID
+     * @param resource type of resource dropped
+     * @return std::string the formatted line
+     */
+    [[nodiscard]] std::string pdr(int playerId, game::ResourceType resource) const;
+
+    /**
+     * @brief Build the "pgt #n i" line for player picking up a resource.
+     *
+     * @param playerId player ID
+     * @param resource type of resource picked up
+     * @return std::string the formatted line
+     */
+    [[nodiscard]] std::string pgt(int playerId, game::ResourceType resource) const;
+
+    /**
+     * @brief Build the "pdi #n" line for player death.
+     *
+     * @param playerId player ID
+     * @return std::string the formatted line
+     */
+    [[nodiscard]] std::string pdi(int playerId) const;
 
 private:
     const game::World &_world;

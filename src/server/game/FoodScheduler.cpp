@@ -52,12 +52,11 @@ void zappy::server::game::FoodScheduler::onConsume(int playerId)
         _events.erase(playerId);
         return;
     }
-    Player &player = _world.player(playerId);
-    player.removeResource(ResourceType::FOOD, 1);
-    if (player.resource(ResourceType::FOOD) > 0)
+    _world.consumePlayerFood(playerId);
+    if (_world.player(playerId).resource(ResourceType::FOOD) > 0) {
         _events[playerId] = _scheduler.schedule(consumptionInterval(),
             [this, playerId] { onConsume(playerId); });
-    else {
+    } else {
         _events.erase(playerId);
         _onDeath(playerId);
     }
