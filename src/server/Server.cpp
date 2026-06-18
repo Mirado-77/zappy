@@ -36,6 +36,8 @@ zappy::server::Server::Server(const cli::ServerConfig &config)
           [this](int playerId) { onPlayerStarved(playerId); }),
       _aiDispatcher(_world, _scheduler, _config.frequency(),
           [this](int id, std::string r) { onAiResponse(id, std::move(r)); }),
+      _guiDispatcher(_world,
+          [this](int fd, std::string r) { onGuiResponse(fd, std::move(r)); }),
       _handshake(_config, _world, _foodScheduler)
 {
     _resourceSpawner.spawnInitial(_world);
@@ -204,6 +206,20 @@ void zappy::server::Server::onAiResponse(int playerId, std::string response)
 }
 
 /**
+ * @brief Deliver a GUI command response to its client, if still connected.
+ *
+ * @param fd client file descriptor
+ * @param response response line (no trailing newline)
+ */
+void zappy::server::Server::onGuiResponse(int fd, std::string response)
+{
+    if (_clients.contains(fd)) {
+        _clients.get(fd).buffer().queue_message(std::move(response));
+        retunePollMask(fd);
+    }
+}
+
+/**
  * @brief Recompute POLLOUT need and update the poll mask for @p clientFd.
  *
  * @param clientFd file descriptor to retune
@@ -239,6 +255,9 @@ bool zappy::server::Server::dispatchReadyMessages(int clientFd)
                 dropClient(clientFd);
         } else if (c.state() == client::ClientState::AI)
             _aiDispatcher.dispatch(c.aiData().playerId, *msg);
+        else if (c.state() == client::ClientState::GUI
+            || c.state() == client::ClientState::GUI_ADMIN)
+            _guiDispatcher.dispatch(clientFd, *msg);
     }
     return dropped;
 }

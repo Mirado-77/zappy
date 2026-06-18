@@ -46,13 +46,16 @@ TEST_SRC = src/server/cli/CliParser.cpp \
 			src/server/handshake/HandshakeHandler.cpp \
 			src/server/ai/AiDispatcher.cpp \
 			src/server/ai/LookResponseBuilder.cpp \
+			src/server/gui/GuiDispatcher.cpp \
 		    $(wildcard tests/cli/*.cpp) \
 			$(wildcard tests/server/client/*.cpp) \
 			$(wildcard tests/server/game/*.cpp) \
 			$(wildcard tests/server/scheduler/*.cpp) \
 			$(wildcard tests/server/handshake/*.cpp) \
 			$(wildcard tests/server/ai/*.cpp) \
-			$(wildcard tests/protocol/ai/*.cpp)
+			$(wildcard tests/server/gui/*.cpp) \
+			$(wildcard tests/protocol/ai/*.cpp) \
+			$(wildcard tests/protocol/gui/*.cpp)
 
 all:	$(BINS)
 

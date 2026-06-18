@@ -9,6 +9,7 @@
     #define SERVER_SERVER_HPP_
 
     #include "server/ai/AiDispatcher.hpp"
+    #include "server/gui/GuiDispatcher.hpp"
     #include "server/cli/ServerConfig.hpp"
     #include "server/client/ClientRegistry.hpp"
     #include "server/game/FoodScheduler.hpp"
@@ -110,6 +111,14 @@ private:
      */
     void onAiResponse(int playerId, std::string response);
 
+    /**
+     * @brief Deliver a GUI command response to its client, if still connected.
+     *
+     * @param fd client file descriptor
+     * @param response response line (no trailing newline)
+     */
+    void onGuiResponse(int fd, std::string response);
+
     cli::ServerConfig _config;
     net::Listener _listener;
     net::PollLoop _poll;
@@ -121,6 +130,7 @@ private:
     game::RefillScheduler _refillScheduler;
     game::FoodScheduler _foodScheduler;
     ai::AiDispatcher _aiDispatcher;
+    gui::GuiDispatcher _guiDispatcher;
     handshake::HandshakeHandler _handshake;
 };
 
