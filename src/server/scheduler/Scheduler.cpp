@@ -88,3 +88,30 @@ void zappy::server::scheduler::Scheduler::runCallback(
         std::cerr << "scheduler callback error: " << e.what() << "\n";
     }
 }
+
+/**
+ * @brief Rescale the remaining delays of all active events by a factor.
+ *
+ * @param factor multiplier applied to remaining durations
+ */
+void zappy::server::scheduler::Scheduler::rescaleDelays(
+    double factor) noexcept
+{
+    const TimePoint now = _clock.now();
+    std::multiset<Event, EventComparator> newEvents;
+
+    for (const auto &event : _events) {
+        if (event.cancelled)
+            continue;
+        Duration remaining = std::chrono::duration_cast<Duration>(
+            event.when - now);
+        if (remaining < Duration::zero())
+            remaining = Duration::zero();
+        double ms = static_cast<double>(remaining.count()) * factor;
+        Duration newRemaining(static_cast<Duration::rep>(ms));
+        Event updated = event;
+        updated.when = now + newRemaining;
+        newEvents.insert(updated);
+    }
+    _events = std::move(newEvents);
+}

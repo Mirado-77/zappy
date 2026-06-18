@@ -75,6 +75,16 @@ void zappy::server::ai::AiDispatcher::stopPlayer(int playerId) noexcept
 }
 
 /**
+ * @brief Update the time frequency.
+ *
+ * @param frequency new time frequency
+ */
+void zappy::server::ai::AiDispatcher::setFrequency(int frequency) noexcept
+{
+    _frequency = frequency;
+}
+
+/**
  * @brief Resolve instantaneous commands now, schedule the first timed one.
  *
  * @param playerId player whose queue is advanced

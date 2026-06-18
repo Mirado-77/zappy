@@ -28,9 +28,14 @@ struct SyncReply {
 struct SyncFixture {
     World world{2, 2, {"team1", "team2"}, 2};
     std::vector<SyncReply> replies;
-    GuiDispatcher disp{world, [this](int fd, std::string r) {
-        replies.push_back({fd, std::move(r)});
-    }};
+    int frequency = 100;
+    GuiDispatcher disp{world,
+        [this](int fd, std::string r) {
+            replies.push_back({fd, std::move(r)});
+        },
+        [this] { return frequency; },
+        [this](int f) { frequency = f; }
+    };
 };
 
 Test(gui_initial_sync, sends_entire_state_in_order)

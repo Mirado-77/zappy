@@ -30,14 +30,17 @@ zappy::server::Server::Server(const cli::ServerConfig &config)
           _config.teamNames(), _config.clientsPerTeam()),
       _resourceSpawner(),
       _clients(),
-      _refillScheduler(_world, _resourceSpawner, _scheduler,
-          _config.frequency()),
-      _foodScheduler(_world, _scheduler, _config.frequency(),
+      _scheduler(_clock),
+      _frequency(_config.frequency()),
+      _refillScheduler(_world, _resourceSpawner, _scheduler, _frequency),
+      _foodScheduler(_world, _scheduler, _frequency,
           [this](int playerId) { onPlayerStarved(playerId); }),
-      _aiDispatcher(_world, _scheduler, _config.frequency(),
+      _aiDispatcher(_world, _scheduler, _frequency,
           [this](int id, std::string r) { onAiResponse(id, std::move(r)); }),
       _guiDispatcher(_world,
-          [this](int fd, std::string r) { onGuiResponse(fd, std::move(r)); }),
+          [this](int fd, std::string r) { onGuiResponse(fd, std::move(r)); },
+          [this] { return _frequency; },
+          [this](int freq) { updateFrequency(freq); }),
       _guiNotifier(_clients, _world, [this](int fd) { retunePollMask(fd); }),
       _handshake(_config, _world, _foodScheduler)
 {
@@ -256,7 +259,7 @@ bool zappy::server::Server::dispatchReadyMessages(int clientFd)
             if (dropped) {
                 dropClient(clientFd);
             } else if (c.state() == client::ClientState::GUI) {
-                _guiDispatcher.sendInitialSync(clientFd, _config.frequency());
+                _guiDispatcher.sendInitialSync(clientFd, _frequency);
             }
         } else if (c.state() == client::ClientState::AI)
             _aiDispatcher.dispatch(c.aiData().playerId, *msg);
@@ -265,4 +268,22 @@ bool zappy::server::Server::dispatchReadyMessages(int clientFd)
             _guiDispatcher.dispatch(clientFd, *msg);
     }
     return dropped;
+}
+
+/**
+ * @brief Update the server time frequency dynamically and scale active timers.
+ *
+ * @param newFrequency new reciprocal of the time unit
+ */
+void zappy::server::Server::updateFrequency(int newFrequency)
+{
+    if (newFrequency <= 0)
+        return;
+    const double factor = static_cast<double>(_frequency) / newFrequency;
+    _frequency = newFrequency;
+    _refillScheduler.setFrequency(newFrequency);
+    _foodScheduler.setFrequency(newFrequency);
+    _aiDispatcher.setFrequency(newFrequency);
+    _scheduler.rescaleDelays(factor);
+    _guiNotifier.broadcast("sst " + std::to_string(newFrequency));
 }

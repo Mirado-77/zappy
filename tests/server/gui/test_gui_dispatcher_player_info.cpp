@@ -26,9 +26,14 @@ using Reply = std::pair<int, std::string>;
 struct PlayerInfoFixture {
     World world{10, 10, {"team"}, 5};
     std::vector<Reply> replies;
-    GuiDispatcher disp{world, [this](int fd, std::string r) {
-        replies.push_back({fd, std::move(r)});
-    }};
+    int frequency = 100;
+    GuiDispatcher disp{world,
+        [this](int fd, std::string r) {
+            replies.push_back({fd, std::move(r)});
+        },
+        [this] { return frequency; },
+        [this](int f) { frequency = f; }
+    };
     int id = world.addPlayer("team", Position(3, 4), Orientation::EAST);
 };
 

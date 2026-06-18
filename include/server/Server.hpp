@@ -120,6 +120,13 @@ private:
      */
     void onGuiResponse(int fd, std::string response);
 
+    /**
+     * @brief Update the server time frequency dynamically and scale active timers.
+     *
+     * @param newFrequency new reciprocal of the time unit
+     */
+    void updateFrequency(int newFrequency);
+
     cli::ServerConfig _config;
     net::Listener _listener;
     net::PollLoop _poll;
@@ -128,6 +135,7 @@ private:
     client::ClientRegistry _clients;
     scheduler::SteadyClock _clock;
     scheduler::Scheduler _scheduler{_clock};
+    int _frequency;
     game::RefillScheduler _refillScheduler;
     game::FoodScheduler _foodScheduler;
     ai::AiDispatcher _aiDispatcher;

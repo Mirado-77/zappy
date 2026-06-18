@@ -27,13 +27,17 @@ namespace zappy::server::gui {
 class GuiDispatcher {
 public:
     /**
-     * @brief Wire the dispatcher to the world and response callback.
+     * @brief Wire the dispatcher to the world, response and frequency callbacks.
      *
      * @param world game world details
      * @param onResponse callback delivering a response message to a client fd
+     * @param getFrequency callback to query the current frequency
+     * @param setFrequency callback to update the time frequency
      */
     GuiDispatcher(game::World &world,
-        std::function<void(int fd, std::string)> onResponse);
+        std::function<void(int fd, std::string)> onResponse,
+        std::function<int()> getFrequency,
+        std::function<void(int)> setFrequency);
 
     GuiDispatcher(const GuiDispatcher &) = delete;
     GuiDispatcher &operator=(const GuiDispatcher &) = delete;
@@ -63,6 +67,8 @@ private:
     game::World &_world;
     std::function<void(int, std::string)> _onResponse;
     GuiLineBuilder _lineBuilder;
+    std::function<int()> _getFrequency;
+    std::function<void(int)> _setFrequency;
 
     void sendError(int fd, protocol::gui::GuiParseError err);
 

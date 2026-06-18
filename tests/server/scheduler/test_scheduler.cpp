@@ -193,3 +193,28 @@ Test(scheduler, callback_can_reschedule)
     sched.tick();
     cr_assert_eq(fired, 2);
 }
+
+Test(scheduler, rescale_delays_adjusts_timeouts)
+{
+    FakeClock clock;
+    Scheduler sched(clock);
+    int fired_count = 0;
+    (void)sched.schedule(ms(100), [&fired_count]{ ++fired_count; });
+
+    clock.advance(ms(20));
+    cr_assert_eq(sched.nextTimeoutMs(), 80);
+
+    sched.rescaleDelays(0.5);
+    cr_assert_eq(sched.nextTimeoutMs(), 40);
+
+    clock.advance(ms(20));
+    cr_assert_eq(sched.nextTimeoutMs(), 20);
+
+    sched.rescaleDelays(2.0);
+    cr_assert_eq(sched.nextTimeoutMs(), 40);
+
+    clock.advance(ms(40));
+    cr_assert_eq(sched.nextTimeoutMs(), 0);
+    sched.tick();
+    cr_assert_eq(fired_count, 1);
+}
