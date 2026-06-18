@@ -44,6 +44,17 @@ void zappy::server::gui::GuiNotifier::broadcast(const std::string &line)
 }
 
 /**
+ * @brief Broadcast a server message to all GUI clients.
+ *
+ * @param message the message string
+ */
+void zappy::server::gui::GuiNotifier::broadcastMessage(
+    const std::string &message)
+{
+    broadcast(_lineBuilder.smg(message));
+}
+
+/**
  * @brief Translate onTileChanged world events into GUI bct updates.
  *
  * @param pos coordinate of the affected tile

@@ -9,6 +9,8 @@
 #include <iostream>
 #include <optional>
 #include <utility>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "server/game/EggSpawner.hpp"
 
@@ -60,6 +62,10 @@ void zappy::server::Server::run()
               << _listener.port() << "\n";
     _poll.register_fd(_listener.fd(), POLLIN, [this](short) {
         acceptPendingClients();
+    });
+    fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK);
+    _poll.register_fd(0, POLLIN, [this](short) {
+        handleStdin();
     });
     _poll.set_pre_wait_hook([this] {
         _poll.set_next_timeout(_scheduler.nextTimeoutMs());
@@ -286,4 +292,24 @@ void zappy::server::Server::updateFrequency(int newFrequency)
     _aiDispatcher.setFrequency(newFrequency);
     _scheduler.rescaleDelays(factor);
     _guiNotifier.broadcast("sst " + std::to_string(newFrequency));
+}
+
+/**
+ * @brief Read lines from standard input and broadcast them to all GUI clients.
+ */
+void zappy::server::Server::handleStdin()
+{
+    char buf[1024];
+    const ssize_t n = read(0, buf, sizeof(buf) - 1);
+
+    if (n <= 0) {
+        _poll.unregister_fd(0);
+        return;
+    }
+    buf[n] = '\0';
+    std::string line(buf);
+    while (!line.empty() && (line.back() == '\n' || line.back() == '\r'))
+        line.pop_back();
+    if (!line.empty())
+        _guiNotifier.broadcastMessage(line);
 }
