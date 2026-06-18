@@ -562,3 +562,63 @@ Test(gui_notifier, test_on_egg_removed_waiting_broadcasts_edi)
     cr_assert_neq(received.find(expected), std::string::npos);
 }
 
+Test(gui_notifier, test_victory_detection_sends_seg)
+{
+    World world{10, 10, {"winning_team"}, 10};
+    ClientRegistry clients;
+    std::vector<int> retunedFds;
+
+    GuiNotifier notifier{clients, world, [&retunedFds](int fd) {
+        retunedFds.push_back(fd);
+    }};
+    world.addObserver(notifier);
+
+    int sv[2];
+    cr_assert_eq(socketpair(AF_UNIX, SOCK_STREAM, 0, sv), 0);
+    fcntl(sv[0], F_SETFL, fcntl(sv[0], F_GETFL) | O_NONBLOCK);
+    fcntl(sv[1], F_SETFL, fcntl(sv[1], F_GETFL) | O_NONBLOCK);
+
+    Client &c = clients.add(FileDescriptor{sv[0]});
+    c.promote(ClientState::GUI);
+
+    std::vector<int> players;
+    for (int i = 0; i < 6; ++i) {
+        players.push_back(world.addPlayer("winning_team", Position(i, 0),
+            zappy::server::game::Orientation::NORTH));
+    }
+
+    for (int i = 0; i < 5; ++i) {
+        world.setPlayerLevel(players[i], 8);
+    }
+
+    clients.forEach([](Client &cl) { cl.buffer().on_writable(); });
+    char dump[4096];
+    while (read(sv[1], dump, sizeof(dump)) > 0);
+
+    world.setPlayerLevel(players[5], 8);
+
+    clients.forEach([](Client &cl) { cl.buffer().on_writable(); });
+
+    char buf[1024] = {0};
+    cr_assert_gt(read(sv[1], buf, sizeof(buf) - 1), 0);
+    std::string received(buf);
+
+    cr_assert_neq(received.find("plv #" + std::to_string(players[5]) + " 8\n"),
+        std::string::npos);
+    cr_assert_neq(received.find("seg winning_team\n"), std::string::npos);
+
+    std::memset(buf, 0, sizeof(buf));
+    int extraPlayer = world.addPlayer("winning_team", Position(7, 0),
+        zappy::server::game::Orientation::NORTH);
+    world.setPlayerLevel(extraPlayer, 8);
+    clients.forEach([](Client &cl) { cl.buffer().on_writable(); });
+
+    cr_assert_gt(read(sv[1], buf, sizeof(buf) - 1), 0);
+    received = buf;
+    cr_assert_neq(received.find("plv #" + std::to_string(extraPlayer) + " 8\n"),
+        std::string::npos);
+    cr_assert_eq(received.find("seg winning_team\n"), std::string::npos);
+
+    close(sv[1]);
+}
+
