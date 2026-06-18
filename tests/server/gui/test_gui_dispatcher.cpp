@@ -49,29 +49,32 @@ Test(gui_dispatcher, bad_parameter_returns_sbp)
     cr_assert_str_eq(fx.replies[1].second.c_str(), "sbp");
 }
 
-Test(gui_dispatcher, all_commands_route_to_handlers)
+Test(gui_dispatcher, map_info_commands_produce_real_output)
 {
     Fixture fx;
     fx.disp.dispatch(42, "msz");
+    cr_assert_str_eq(fx.replies.back().second.c_str(), "msz 10 10");
     fx.disp.dispatch(42, "bct 3 5");
-    fx.disp.dispatch(42, "mct");
+    cr_assert_str_eq(fx.replies.back().second.c_str(), "bct 3 5 0 0 0 0 0 0 0");
     fx.disp.dispatch(42, "tna");
+    cr_assert_str_eq(fx.replies.back().second.c_str(), "tna team");
+}
+
+Test(gui_dispatcher, stub_commands_still_route_to_handlers)
+{
+    Fixture fx;
     fx.disp.dispatch(42, "ppo 1");
     fx.disp.dispatch(42, "plv 1");
     fx.disp.dispatch(42, "pin 1");
     fx.disp.dispatch(42, "sgt");
     fx.disp.dispatch(42, "sst 100");
 
-    cr_assert_eq(fx.replies.size(), 9U);
-    cr_assert_str_eq(fx.replies[0].second.c_str(), "stub-msz");
-    cr_assert_str_eq(fx.replies[1].second.c_str(), "stub-bct");
-    cr_assert_str_eq(fx.replies[2].second.c_str(), "stub-mct");
-    cr_assert_str_eq(fx.replies[3].second.c_str(), "stub-tna");
-    cr_assert_str_eq(fx.replies[4].second.c_str(), "stub-ppo");
-    cr_assert_str_eq(fx.replies[5].second.c_str(), "stub-plv");
-    cr_assert_str_eq(fx.replies[6].second.c_str(), "stub-pin");
-    cr_assert_str_eq(fx.replies[7].second.c_str(), "stub-sgt");
-    cr_assert_str_eq(fx.replies[8].second.c_str(), "stub-sst");
+    cr_assert_eq(fx.replies.size(), 5U);
+    cr_assert_str_eq(fx.replies[0].second.c_str(), "stub-ppo");
+    cr_assert_str_eq(fx.replies[1].second.c_str(), "stub-plv");
+    cr_assert_str_eq(fx.replies[2].second.c_str(), "stub-pin");
+    cr_assert_str_eq(fx.replies[3].second.c_str(), "stub-sgt");
+    cr_assert_str_eq(fx.replies[4].second.c_str(), "stub-sst");
 }
 
 Test(gui_dispatcher, dispatch_is_instant)
@@ -81,5 +84,5 @@ Test(gui_dispatcher, dispatch_is_instant)
     fx.disp.dispatch(100, "msz");
     cr_assert_eq(fx.replies.size(), 1U);
     cr_assert_eq(fx.replies[0].first, 100);
-    cr_assert_str_eq(fx.replies[0].second.c_str(), "stub-msz");
+    cr_assert_str_eq(fx.replies[0].second.c_str(), "msz 10 10");
 }
