@@ -138,13 +138,31 @@ public:
      */
     [[nodiscard]] std::string pgt(int playerId, game::ResourceType resource) const;
 
+    [[nodiscard]] std::string pdi(int playerId) const;
+
     /**
-     * @brief Build the "pdi #n" line for player death.
+     * @brief Build the "enw #e #n X Y" line for a laid egg.
      *
-     * @param playerId player ID
+     * @param eggId egg ID
      * @return std::string the formatted line
      */
-    [[nodiscard]] std::string pdi(int playerId) const;
+    [[nodiscard]] std::string enw(int eggId) const;
+
+    /**
+     * @brief Build the "ebo #e" line for egg used by AI connection.
+     *
+     * @param eggId egg ID
+     * @return std::string the formatted line
+     */
+    [[nodiscard]] std::string ebo(int eggId) const;
+
+    /**
+     * @brief Build the "edi #e" line for egg death.
+     *
+     * @param eggId egg ID
+     * @return std::string the formatted line
+     */
+    [[nodiscard]] std::string edi(int eggId) const;
 
 private:
     const game::World &_world;

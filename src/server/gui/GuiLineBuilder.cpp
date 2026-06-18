@@ -154,3 +154,42 @@ std::string zappy::server::gui::GuiLineBuilder::pdi(int playerId) const
 {
     return "pdi #" + std::to_string(playerId);
 }
+
+/**
+ * @brief Build the "enw #e #n X Y" line for a laid egg.
+ *
+ * @param eggId egg ID
+ * @return std::string the formatted line
+ */
+std::string zappy::server::gui::GuiLineBuilder::enw(int eggId) const
+{
+    const game::Egg &egg = _world.egg(eggId);
+    std::string playerStr = (egg.layingPlayerId() >= 0) ?
+        ("#" + std::to_string(egg.layingPlayerId())) : "-1";
+
+    return "enw #" + std::to_string(eggId) + " " + playerStr + " "
+        + std::to_string(egg.position().x()) + " "
+        + std::to_string(egg.position().y());
+}
+
+/**
+ * @brief Build the "ebo #e" line for egg used by AI connection.
+ *
+ * @param eggId egg ID
+ * @return std::string the formatted line
+ */
+std::string zappy::server::gui::GuiLineBuilder::ebo(int eggId) const
+{
+    return "ebo #" + std::to_string(eggId);
+}
+
+/**
+ * @brief Build the "edi #e" line for egg death.
+ *
+ * @param eggId egg ID
+ * @return std::string the formatted line
+ */
+std::string zappy::server::gui::GuiLineBuilder::edi(int eggId) const
+{
+    return "edi #" + std::to_string(eggId);
+}

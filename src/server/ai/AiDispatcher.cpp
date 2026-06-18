@@ -598,7 +598,7 @@ std::string zappy::server::ai::AiDispatcher::executeFork(
     int playerId, const std::string &)
 {
     const game::Player &player = _world.player(playerId);
-    _world.addEgg(player.team(), player.position());
+    _world.addEgg(player.team(), player.position(), playerId);
     _world.growTeam(player.team());
     return "ok";
 }

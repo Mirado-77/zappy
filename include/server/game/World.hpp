@@ -226,9 +226,10 @@ public:
      *
      * @param team owning team name
      * @param pos tile to lay the egg on
+     * @param layingPlayerId ID of the player laying the egg
      * @return int the new egg id
      */
-    int addEgg(const std::string &team, Position pos);
+    int addEgg(const std::string &team, Position pos, int layingPlayerId = -1);
 
     /**
      * @brief Remove an egg from the world and its tile.

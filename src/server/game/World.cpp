@@ -295,10 +295,10 @@ zappy::server::game::World::egg(int id) const
  * @return int the new egg id
  */
 int zappy::server::game::World::addEgg(
-    const std::string &team, Position pos)
+    const std::string &team, Position pos, int layingPlayerId)
 {
     const int id = _nextEggId++;
-    _eggs.emplace(id, Egg(id, team, pos));
+    _eggs.emplace(id, Egg(id, team, pos, layingPlayerId));
     tileAt(pos).addEgg(id);
     notifyEggAdded(id);
     return id;
@@ -314,8 +314,8 @@ void zappy::server::game::World::removeEgg(int id)
 {
     Egg &target = egg(id);
     tileAt(target.position()).removeEgg(id);
-    _eggs.erase(id);
     notifyEggRemoved(id);
+    _eggs.erase(id);
 }
 
 /**
