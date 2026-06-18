@@ -70,6 +70,8 @@ public:
     void onPlayerEjected(int id) override;
     void onPlayerDroppedResource(int id, game::ResourceType type) override;
     void onPlayerPickedUpResource(int id, game::ResourceType type) override;
+    void onEggAdded(int id) override;
+    void onEggRemoved(int id) override;
 
 private:
     client::ClientRegistry &_clients;

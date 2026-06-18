@@ -350,11 +350,8 @@ void zappy::server::gui::GuiDispatcher::sendSyncPlayerInventory(
  */
 void zappy::server::gui::GuiDispatcher::sendSyncEggs(int fd)
 {
-    _world.forEachEgg([this, fd](int id, const game::Egg &egg) {
-        const std::string msg = "enw " + std::to_string(id) + " -1 "
-            + std::to_string(egg.position().x()) + " "
-            + std::to_string(egg.position().y());
-        _onResponse(fd, msg);
+    _world.forEachEgg([this, fd](int id, const game::Egg &) {
+        _onResponse(fd, _lineBuilder.enw(id));
     });
 }
 

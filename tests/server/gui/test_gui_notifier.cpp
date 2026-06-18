@@ -480,3 +480,85 @@ Test(gui_notifier, test_on_player_picked_up_resource_broadcasts_pgt)
     cr_assert_neq(received.find(expected), std::string::npos);
 }
 
+Test(gui_notifier, test_on_egg_added_system_broadcasts_enw)
+{
+    NotifierFixture f;
+    f.world.addObserver(f.notifier);
+    int guiPeer = f.addClient(ClientState::GUI);
+
+    int eggId = f.world.addEgg("team1", Position(3, 4));
+
+    f.clients.forEach([](Client &c) {
+        c.buffer().on_writable();
+    });
+
+    char buf[256] = {0};
+    cr_assert_gt(read(guiPeer, buf, sizeof(buf) - 1), 0);
+    std::string received(buf);
+    std::string expected = "enw #" + std::to_string(eggId) + " -1 3 4\n";
+    cr_assert_neq(received.find(expected), std::string::npos);
+}
+
+Test(gui_notifier, test_on_egg_added_player_broadcasts_enw)
+{
+    NotifierFixture f;
+    f.world.addObserver(f.notifier);
+    int guiPeer = f.addClient(ClientState::GUI);
+
+    int playerId = f.world.addPlayer(
+        "team1", Position(1, 2), zappy::server::game::Orientation::EAST);
+    int eggId = f.world.addEgg("team1", Position(1, 2), playerId);
+
+    f.clients.forEach([](Client &c) {
+        c.buffer().on_writable();
+    });
+
+    char buf[256] = {0};
+    cr_assert_gt(read(guiPeer, buf, sizeof(buf) - 1), 0);
+    std::string received(buf);
+    std::string expected = "enw #" + std::to_string(eggId) + " #"
+        + std::to_string(playerId) + " 1 2\n";
+    cr_assert_neq(received.find(expected), std::string::npos);
+}
+
+Test(gui_notifier, test_on_egg_removed_hatched_broadcasts_ebo)
+{
+    NotifierFixture f;
+    f.world.addObserver(f.notifier);
+    int guiPeer = f.addClient(ClientState::GUI);
+
+    int eggId = f.world.addEgg("team1", Position(3, 4));
+    f.world.hatchEgg(eggId);
+    f.world.removeEgg(eggId);
+
+    f.clients.forEach([](Client &c) {
+        c.buffer().on_writable();
+    });
+
+    char buf[256] = {0};
+    cr_assert_gt(read(guiPeer, buf, sizeof(buf) - 1), 0);
+    std::string received(buf);
+    std::string expected = "ebo #" + std::to_string(eggId) + "\n";
+    cr_assert_neq(received.find(expected), std::string::npos);
+}
+
+Test(gui_notifier, test_on_egg_removed_waiting_broadcasts_edi)
+{
+    NotifierFixture f;
+    f.world.addObserver(f.notifier);
+    int guiPeer = f.addClient(ClientState::GUI);
+
+    int eggId = f.world.addEgg("team1", Position(3, 4));
+    f.world.removeEgg(eggId);
+
+    f.clients.forEach([](Client &c) {
+        c.buffer().on_writable();
+    });
+
+    char buf[256] = {0};
+    cr_assert_gt(read(guiPeer, buf, sizeof(buf) - 1), 0);
+    std::string received(buf);
+    std::string expected = "edi #" + std::to_string(eggId) + "\n";
+    cr_assert_neq(received.find(expected), std::string::npos);
+}
+

@@ -93,7 +93,7 @@ Test(gui_initial_sync, sends_entire_state_in_order)
     cr_assert_str_eq(f.replies[9].response.c_str(), expectedPin.c_str());
 
     // Egg:
-    const std::string expectedEnw = "enw " + std::to_string(eggId) + " -1 0 1";
+    const std::string expectedEnw = "enw #" + std::to_string(eggId) + " -1 0 1";
     cr_assert_str_eq(f.replies[10].response.c_str(), expectedEnw.c_str());
 
     // Time:

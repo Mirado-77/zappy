@@ -128,3 +128,29 @@ void zappy::server::gui::GuiNotifier::onPlayerPickedUpResource(int id,
 {
     broadcast(_lineBuilder.pgt(id, type));
 }
+
+/**
+ * @brief Triggered when a new egg is added to the world.
+ *
+ * @param id egg ID
+ */
+void zappy::server::gui::GuiNotifier::onEggAdded(int id)
+{
+    broadcast(_lineBuilder.enw(id));
+}
+
+/**
+ * @brief Triggered when an egg is removed from the world.
+ *
+ * @param id egg ID
+ */
+void zappy::server::gui::GuiNotifier::onEggRemoved(int id)
+{
+    if (_world.hasEgg(id)) {
+        if (_world.egg(id).state() == game::EggState::HATCHED) {
+            broadcast(_lineBuilder.ebo(id));
+        } else {
+            broadcast(_lineBuilder.edi(id));
+        }
+    }
+}

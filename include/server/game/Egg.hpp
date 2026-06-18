@@ -26,8 +26,9 @@ public:
      * @param id unique egg id
      * @param team owning team name
      * @param position tile the egg lies on
+     * @param layingPlayerId ID of the player who laid the egg
      */
-    Egg(int id, std::string team, Position position);
+    Egg(int id, std::string team, Position position, int layingPlayerId = -1);
 
     /**
      * @brief Unique egg id.
@@ -64,11 +65,19 @@ public:
      */
     void setState(EggState state) noexcept;
 
+    /**
+     * @brief Get the ID of the player who laid the egg.
+     *
+     * @return int player ID, or -1 if system/initial egg
+     */
+    [[nodiscard]] int layingPlayerId() const noexcept;
+
 private:
     int _id;
     std::string _team;
     Position _position;
     EggState _state;
+    int _layingPlayerId;
 };
 
 } // namespace zappy::server::game
