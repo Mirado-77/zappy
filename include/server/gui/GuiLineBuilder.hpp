@@ -172,6 +172,14 @@ public:
      */
     [[nodiscard]] std::string seg(const std::string &teamName) const;
 
+    /**
+     * @brief Build the "smg M" line for a server message.
+     *
+     * @param message the message string
+     * @return std::string the formatted line
+     */
+    [[nodiscard]] std::string smg(const std::string &message) const;
+
 private:
     const game::World &_world;
 };

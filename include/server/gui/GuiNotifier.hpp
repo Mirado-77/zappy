@@ -48,6 +48,13 @@ public:
     void broadcast(const std::string &line);
 
     /**
+     * @brief Broadcast a server message to all GUI clients.
+     *
+     * @param message the message string
+     */
+    void broadcastMessage(const std::string &message);
+
+    /**
      * @brief Triggered when a tile's resource layout is modified.
      *
      * @param pos coordinate of the affected tile

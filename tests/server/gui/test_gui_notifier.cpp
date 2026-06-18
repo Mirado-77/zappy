@@ -622,3 +622,19 @@ Test(gui_notifier, test_victory_detection_sends_seg)
     close(sv[1]);
 }
 
+Test(gui_notifier, test_broadcast_message_sends_smg)
+{
+    NotifierFixture f;
+    int guiPeer = f.addClient(ClientState::GUI);
+
+    f.notifier.broadcastMessage("Hello GUI!");
+
+    f.clients.forEach([](Client &c) {
+        c.buffer().on_writable();
+    });
+
+    char buf[128] = {0};
+    cr_assert_gt(read(guiPeer, buf, sizeof(buf) - 1), 0);
+    cr_assert_str_eq(buf, "smg Hello GUI!\n");
+}
+

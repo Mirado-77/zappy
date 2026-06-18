@@ -127,6 +127,11 @@ private:
      */
     void updateFrequency(int newFrequency);
 
+    /**
+     * @brief Read lines from standard input and broadcast them to all GUI clients.
+     */
+    void handleStdin();
+
     cli::ServerConfig _config;
     net::Listener _listener;
     net::PollLoop _poll;

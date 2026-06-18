@@ -205,3 +205,15 @@ std::string zappy::server::gui::GuiLineBuilder::seg(
 {
     return "seg " + teamName;
 }
+
+/**
+ * @brief Build the "smg M" line for a server message.
+ *
+ * @param message the message string
+ * @return std::string the formatted line
+ */
+std::string zappy::server::gui::GuiLineBuilder::smg(
+    const std::string &message) const
+{
+    return "smg " + message;
+}
