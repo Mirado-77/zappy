@@ -56,12 +56,30 @@ public:
     void sendInitialSync(int fd, int frequency);
 
 private:
-    using Handler = std::string (GuiDispatcher::*)(const std::vector<int> &);
+    using Handler =
+        std::vector<std::string> (GuiDispatcher::*)(const std::vector<int> &);
 
     game::World &_world;
     std::function<void(int, std::string)> _onResponse;
 
     void sendError(int fd, protocol::gui::GuiParseError err);
+
+    /**
+     * @brief Build the "msz <width> <height>" line for the current world.
+     *
+     * @return std::string the formatted map-size line
+     */
+    [[nodiscard]] std::string buildMszLine() const;
+
+    /**
+     * @brief Build the "bct <x> <y> <q0>..<q6>" line for tile (x, y).
+     *
+     * @param x tile horizontal coordinate
+     * @param y tile vertical coordinate
+     * @return std::string the formatted tile-content line
+     */
+    [[nodiscard]] std::string buildBctLine(int x, int y) const;
+
     void sendSyncMapSize(int fd);
     void sendSyncTiles(int fd);
     void sendSyncTile(int fd, int x, int y);
@@ -72,15 +90,24 @@ private:
     void sendSyncEggs(int fd);
     void sendSyncTime(int fd, int frequency);
 
-    [[nodiscard]] std::string handleMsz(const std::vector<int> &args);
-    [[nodiscard]] std::string handleBct(const std::vector<int> &args);
-    [[nodiscard]] std::string handleMct(const std::vector<int> &args);
-    [[nodiscard]] std::string handleTna(const std::vector<int> &args);
-    [[nodiscard]] std::string handlePpo(const std::vector<int> &args);
-    [[nodiscard]] std::string handlePlv(const std::vector<int> &args);
-    [[nodiscard]] std::string handlePin(const std::vector<int> &args);
-    [[nodiscard]] std::string handleSgt(const std::vector<int> &args);
-    [[nodiscard]] std::string handleSst(const std::vector<int> &args);
+    [[nodiscard]] std::vector<std::string> handleMsz(
+        const std::vector<int> &args);
+    [[nodiscard]] std::vector<std::string> handleBct(
+        const std::vector<int> &args);
+    [[nodiscard]] std::vector<std::string> handleMct(
+        const std::vector<int> &args);
+    [[nodiscard]] std::vector<std::string> handleTna(
+        const std::vector<int> &args);
+    [[nodiscard]] std::vector<std::string> handlePpo(
+        const std::vector<int> &args);
+    [[nodiscard]] std::vector<std::string> handlePlv(
+        const std::vector<int> &args);
+    [[nodiscard]] std::vector<std::string> handlePin(
+        const std::vector<int> &args);
+    [[nodiscard]] std::vector<std::string> handleSgt(
+        const std::vector<int> &args);
+    [[nodiscard]] std::vector<std::string> handleSst(
+        const std::vector<int> &args);
 };
 
 } // namespace zappy::server::gui
