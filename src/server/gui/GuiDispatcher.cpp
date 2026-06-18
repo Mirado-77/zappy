@@ -181,3 +181,169 @@ std::string zappy::server::gui::GuiDispatcher::handleSst(
     (void)args;
     return "stub-sst";
 }
+
+/**
+ * @brief Send the complete initial state sync to a promoted GUI client.
+ *
+ * @param fd client file descriptor
+ * @param frequency current server clock frequency
+ */
+void zappy::server::gui::GuiDispatcher::sendInitialSync(
+    int fd, int frequency)
+{
+    sendSyncMapSize(fd);
+    sendSyncTiles(fd);
+    sendSyncTeams(fd);
+    sendSyncPlayers(fd);
+    sendSyncEggs(fd);
+    sendSyncTime(fd, frequency);
+}
+
+/**
+ * @brief Send the map size to the client.
+ *
+ * @param fd client file descriptor
+ */
+void zappy::server::gui::GuiDispatcher::sendSyncMapSize(int fd)
+{
+    const std::string msg = "msz " + std::to_string(_world.width()) + " "
+        + std::to_string(_world.height());
+    _onResponse(fd, msg);
+}
+
+/**
+ * @brief Send all tiles to the client.
+ *
+ * @param fd client file descriptor
+ */
+void zappy::server::gui::GuiDispatcher::sendSyncTiles(int fd)
+{
+    for (int y = 0; y < _world.height(); ++y) {
+        for (int x = 0; x < _world.width(); ++x) {
+            sendSyncTile(fd, x, y);
+        }
+    }
+}
+
+/**
+ * @brief Send content of a single tile.
+ *
+ * @param fd client file descriptor
+ * @param x tile horizontal coordinate
+ * @param y tile vertical coordinate
+ */
+void zappy::server::gui::GuiDispatcher::sendSyncTile(
+    int fd, int x, int y)
+{
+    const game::Position pos(x, y);
+    const game::Tile &tile = _world.tileAt(pos);
+    const std::string msg = "bct " + std::to_string(x) + " "
+        + std::to_string(y) + " "
+        + std::to_string(tile.resource(game::ResourceType::FOOD)) + " "
+        + std::to_string(tile.resource(game::ResourceType::LINEMATE)) + " "
+        + std::to_string(tile.resource(game::ResourceType::DERAUMERE)) + " "
+        + std::to_string(tile.resource(game::ResourceType::SIBUR)) + " "
+        + std::to_string(tile.resource(game::ResourceType::MENDIANE)) + " "
+        + std::to_string(tile.resource(game::ResourceType::PHIRAS)) + " "
+        + std::to_string(tile.resource(game::ResourceType::THYSTAME));
+    _onResponse(fd, msg);
+}
+
+/**
+ * @brief Send all team names to the client.
+ *
+ * @param fd client file descriptor
+ */
+void zappy::server::gui::GuiDispatcher::sendSyncTeams(int fd)
+{
+    for (const auto &team : _world.teams()) {
+        _onResponse(fd, "tna " + team.name());
+    }
+}
+
+/**
+ * @brief Send all player details to the client.
+ *
+ * @param fd client file descriptor
+ */
+void zappy::server::gui::GuiDispatcher::sendSyncPlayers(int fd)
+{
+    _world.forEachPlayer([this, fd](int id, const game::Player &player) {
+        (void)id;
+        sendSyncPlayer(fd, player);
+    });
+}
+
+/**
+ * @brief Send details of a single player.
+ *
+ * @param fd client file descriptor
+ * @param player player to sync
+ */
+void zappy::server::gui::GuiDispatcher::sendSyncPlayer(
+    int fd, const game::Player &player)
+{
+    const int pid = player.id();
+    const int px = player.position().x();
+    const int py = player.position().y();
+    const int orient = static_cast<int>(player.orientation());
+    const int lvl = player.level();
+    const std::string pnw = "pnw " + std::to_string(pid) + " "
+        + std::to_string(px) + " " + std::to_string(py) + " "
+        + std::to_string(orient) + " " + std::to_string(lvl) + " "
+        + player.team();
+    _onResponse(fd, pnw);
+    _onResponse(fd, "plv " + std::to_string(pid) + " " + std::to_string(lvl));
+    sendSyncPlayerInventory(fd, player);
+}
+
+/**
+ * @brief Send a player's inventory content.
+ *
+ * @param fd client file descriptor
+ * @param player player to sync inventory for
+ */
+void zappy::server::gui::GuiDispatcher::sendSyncPlayerInventory(
+    int fd, const game::Player &player)
+{
+    const int pid = player.id();
+    const int px = player.position().x();
+    const int py = player.position().y();
+    const std::string msg = "pin " + std::to_string(pid) + " "
+        + std::to_string(px) + " " + std::to_string(py) + " "
+        + std::to_string(player.resource(game::ResourceType::FOOD)) + " "
+        + std::to_string(player.resource(game::ResourceType::LINEMATE)) + " "
+        + std::to_string(player.resource(game::ResourceType::DERAUMERE)) + " "
+        + std::to_string(player.resource(game::ResourceType::SIBUR)) + " "
+        + std::to_string(player.resource(game::ResourceType::MENDIANE)) + " "
+        + std::to_string(player.resource(game::ResourceType::PHIRAS)) + " "
+        + std::to_string(player.resource(game::ResourceType::THYSTAME));
+    _onResponse(fd, msg);
+}
+
+/**
+ * @brief Send all eggs to the client.
+ *
+ * @param fd client file descriptor
+ */
+void zappy::server::gui::GuiDispatcher::sendSyncEggs(int fd)
+{
+    _world.forEachEgg([this, fd](int id, const game::Egg &egg) {
+        const std::string msg = "enw " + std::to_string(id) + " -1 "
+            + std::to_string(egg.position().x()) + " "
+            + std::to_string(egg.position().y());
+        _onResponse(fd, msg);
+    });
+}
+
+/**
+ * @brief Send time frequency to the client.
+ *
+ * @param fd client file descriptor
+ * @param frequency clock frequency of the server
+ */
+void zappy::server::gui::GuiDispatcher::sendSyncTime(
+    int fd, int frequency)
+{
+    _onResponse(fd, "sgt " + std::to_string(frequency));
+}
