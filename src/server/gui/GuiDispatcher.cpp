@@ -18,7 +18,9 @@
 zappy::server::gui::GuiDispatcher::GuiDispatcher(
     game::World &world,
     std::function<void(int fd, std::string)> onResponse)
-    : _world(world), _onResponse(std::move(onResponse))
+    : _world(world),
+      _onResponse(std::move(onResponse)),
+      _lineBuilder(world)
 {
 }
 
@@ -77,24 +79,6 @@ std::string zappy::server::gui::GuiDispatcher::buildMszLine() const
 }
 
 /**
- * @brief Build the "bct <x> <y> <q0>..<q6>" line for tile (x, y).
- *
- * @param x tile horizontal coordinate
- * @param y tile vertical coordinate
- * @return std::string the formatted tile-content line
- */
-std::string zappy::server::gui::GuiDispatcher::buildBctLine(int x, int y) const
-{
-    const game::Tile &tile = _world.tileAt(game::Position(x, y));
-    std::string line = "bct " + std::to_string(x) + " " + std::to_string(y);
-
-    for (std::size_t i = 0; i < game::RESOURCE_COUNT; ++i)
-        line += " "
-            + std::to_string(tile.resource(static_cast<game::ResourceType>(i)));
-    return line;
-}
-
-/**
  * @brief Handle the msz command: report the map size.
  *
  * @param args command arguments (unused)
@@ -121,7 +105,7 @@ std::vector<std::string> zappy::server::gui::GuiDispatcher::handleBct(
     const bool outOfBounds = (x >= _world.width() || y >= _world.height());
 
     return outOfBounds ? std::vector<std::string>{"sbp"}
-        : std::vector<std::string>{buildBctLine(x, y)};
+        : std::vector<std::string>{_lineBuilder.bct(x, y)};
 }
 
 /**
@@ -138,7 +122,7 @@ std::vector<std::string> zappy::server::gui::GuiDispatcher::handleMct(
     (void)args;
     for (int y = 0; y < _world.height(); ++y)
         for (int x = 0; x < _world.width(); ++x)
-            lines.push_back(buildBctLine(x, y));
+            lines.push_back(_lineBuilder.bct(x, y));
     return lines;
 }
 
@@ -160,53 +144,6 @@ std::vector<std::string> zappy::server::gui::GuiDispatcher::handleTna(
 }
 
 /**
- * @brief Build the "ppo #<id> <x> <y> <orientation>" line for a player.
- *
- * @param id player id (assumed to exist)
- * @return std::string the formatted position line
- */
-std::string zappy::server::gui::GuiDispatcher::buildPpoLine(int id) const
-{
-    const game::Player &player = _world.player(id);
-
-    return "ppo #" + std::to_string(id) + " "
-        + std::to_string(player.position().x()) + " "
-        + std::to_string(player.position().y()) + " "
-        + std::to_string(static_cast<int>(player.orientation()));
-}
-
-/**
- * @brief Build the "plv #<id> <level>" line for a player.
- *
- * @param id player id (assumed to exist)
- * @return std::string the formatted level line
- */
-std::string zappy::server::gui::GuiDispatcher::buildPlvLine(int id) const
-{
-    return "plv #" + std::to_string(id) + " "
-        + std::to_string(_world.player(id).level());
-}
-
-/**
- * @brief Build the "pin #<id> <x> <y> <q0>..<q6>" line for a player.
- *
- * @param id player id (assumed to exist)
- * @return std::string the formatted inventory line
- */
-std::string zappy::server::gui::GuiDispatcher::buildPinLine(int id) const
-{
-    const game::Player &player = _world.player(id);
-    std::string line = "pin #" + std::to_string(id) + " "
-        + std::to_string(player.position().x()) + " "
-        + std::to_string(player.position().y());
-
-    for (std::size_t i = 0; i < game::RESOURCE_COUNT; ++i)
-        line += " " + std::to_string(
-            player.resource(static_cast<game::ResourceType>(i)));
-    return line;
-}
-
-/**
  * @brief Handle the ppo command: report a player's position and orientation.
  *
  * @param args command arguments: the player id
@@ -217,7 +154,8 @@ std::vector<std::string> zappy::server::gui::GuiDispatcher::handlePpo(
 {
     const int id = args[0];
 
-    return _world.hasPlayer(id) ? std::vector<std::string>{buildPpoLine(id)}
+    return _world.hasPlayer(id) ?
+        std::vector<std::string>{_lineBuilder.ppo(id)}
         : std::vector<std::string>{"sbp"};
 }
 
@@ -232,7 +170,8 @@ std::vector<std::string> zappy::server::gui::GuiDispatcher::handlePlv(
 {
     const int id = args[0];
 
-    return _world.hasPlayer(id) ? std::vector<std::string>{buildPlvLine(id)}
+    return _world.hasPlayer(id) ?
+        std::vector<std::string>{_lineBuilder.plv(id)}
         : std::vector<std::string>{"sbp"};
 }
 
@@ -247,7 +186,8 @@ std::vector<std::string> zappy::server::gui::GuiDispatcher::handlePin(
 {
     const int id = args[0];
 
-    return _world.hasPlayer(id) ? std::vector<std::string>{buildPinLine(id)}
+    return _world.hasPlayer(id) ?
+        std::vector<std::string>{_lineBuilder.pin(id)}
         : std::vector<std::string>{"sbp"};
 }
 
@@ -328,7 +268,7 @@ void zappy::server::gui::GuiDispatcher::sendSyncTiles(int fd)
 void zappy::server::gui::GuiDispatcher::sendSyncTile(
     int fd, int x, int y)
 {
-    _onResponse(fd, buildBctLine(x, y));
+    _onResponse(fd, _lineBuilder.bct(x, y));
 }
 
 /**

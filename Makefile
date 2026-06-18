@@ -47,6 +47,8 @@ TEST_SRC = src/server/cli/CliParser.cpp \
 			src/server/ai/AiDispatcher.cpp \
 			src/server/ai/LookResponseBuilder.cpp \
 			src/server/gui/GuiDispatcher.cpp \
+			src/server/gui/GuiLineBuilder.cpp \
+			src/server/gui/GuiNotifier.cpp \
 		    $(wildcard tests/cli/*.cpp) \
 			$(wildcard tests/server/client/*.cpp) \
 			$(wildcard tests/server/game/*.cpp) \

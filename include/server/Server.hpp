@@ -10,6 +10,7 @@
 
     #include "server/ai/AiDispatcher.hpp"
     #include "server/gui/GuiDispatcher.hpp"
+    #include "server/gui/GuiNotifier.hpp"
     #include "server/cli/ServerConfig.hpp"
     #include "server/client/ClientRegistry.hpp"
     #include "server/game/FoodScheduler.hpp"
@@ -131,6 +132,7 @@ private:
     game::FoodScheduler _foodScheduler;
     ai::AiDispatcher _aiDispatcher;
     gui::GuiDispatcher _guiDispatcher;
+    gui::GuiNotifier _guiNotifier;
     handshake::HandshakeHandler _handshake;
 };
 
