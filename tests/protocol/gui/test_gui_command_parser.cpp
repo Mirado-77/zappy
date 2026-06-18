@@ -113,6 +113,35 @@ Test(gui_command_parser, negative_integer_gives_bad_parameter_error)
     }
 }
 
+Test(gui_command_parser, hash_prefix_is_stripped_on_numeric_args)
+{
+    auto res_ppo = GuiCommandParser::parse("ppo #5");
+    cr_assert(std::holds_alternative<ParsedGuiCommand>(res_ppo));
+    cr_assert(std::get<ParsedGuiCommand>(res_ppo).kind == GuiCommandKind::PPO);
+    cr_assert_eq(std::get<ParsedGuiCommand>(res_ppo).arguments[0], 5);
+
+    auto res_plain = GuiCommandParser::parse("ppo 5");
+    cr_assert(std::holds_alternative<ParsedGuiCommand>(res_plain));
+    cr_assert_eq(std::get<ParsedGuiCommand>(res_plain).arguments[0], 5);
+
+    auto res_bct = GuiCommandParser::parse("bct #3 #5");
+    cr_assert(std::holds_alternative<ParsedGuiCommand>(res_bct));
+    cr_assert(std::get<ParsedGuiCommand>(res_bct).kind == GuiCommandKind::BCT);
+    cr_assert_eq(std::get<ParsedGuiCommand>(res_bct).arguments[0], 3);
+    cr_assert_eq(std::get<ParsedGuiCommand>(res_bct).arguments[1], 5);
+}
+
+Test(gui_command_parser, malformed_hash_prefix_gives_bad_parameter_error)
+{
+    std::vector<std::string_view> cases = {"ppo #abc", "ppo #", "ppo ##5",
+        "ppo #-1"};
+    for (const auto &c : cases) {
+        auto res = GuiCommandParser::parse(c);
+        cr_assert(std::holds_alternative<GuiParseError>(res));
+        cr_assert(std::get<GuiParseError>(res) == GuiParseError::BAD_PARAMETER);
+    }
+}
+
 Test(gui_command_parser, whitespace_is_tolerated)
 {
     auto res_msz = GuiCommandParser::parse("  msz  ");

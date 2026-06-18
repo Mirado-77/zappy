@@ -63,18 +63,12 @@ Test(gui_dispatcher, map_info_commands_produce_real_output)
 Test(gui_dispatcher, stub_commands_still_route_to_handlers)
 {
     Fixture fx;
-    fx.disp.dispatch(42, "ppo 1");
-    fx.disp.dispatch(42, "plv 1");
-    fx.disp.dispatch(42, "pin 1");
     fx.disp.dispatch(42, "sgt");
     fx.disp.dispatch(42, "sst 100");
 
-    cr_assert_eq(fx.replies.size(), 5U);
-    cr_assert_str_eq(fx.replies[0].second.c_str(), "stub-ppo");
-    cr_assert_str_eq(fx.replies[1].second.c_str(), "stub-plv");
-    cr_assert_str_eq(fx.replies[2].second.c_str(), "stub-pin");
-    cr_assert_str_eq(fx.replies[3].second.c_str(), "stub-sgt");
-    cr_assert_str_eq(fx.replies[4].second.c_str(), "stub-sst");
+    cr_assert_eq(fx.replies.size(), 2U);
+    cr_assert_str_eq(fx.replies[0].second.c_str(), "stub-sgt");
+    cr_assert_str_eq(fx.replies[1].second.c_str(), "stub-sst");
 }
 
 Test(gui_dispatcher, dispatch_is_instant)

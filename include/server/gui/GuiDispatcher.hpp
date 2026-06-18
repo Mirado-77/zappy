@@ -80,6 +80,30 @@ private:
      */
     [[nodiscard]] std::string buildBctLine(int x, int y) const;
 
+    /**
+     * @brief Build the "ppo #<id> <x> <y> <orientation>" line for a player.
+     *
+     * @param id player id (assumed to exist)
+     * @return std::string the formatted position line
+     */
+    [[nodiscard]] std::string buildPpoLine(int id) const;
+
+    /**
+     * @brief Build the "plv #<id> <level>" line for a player.
+     *
+     * @param id player id (assumed to exist)
+     * @return std::string the formatted level line
+     */
+    [[nodiscard]] std::string buildPlvLine(int id) const;
+
+    /**
+     * @brief Build the "pin #<id> <x> <y> <q0>..<q6>" line for a player.
+     *
+     * @param id player id (assumed to exist)
+     * @return std::string the formatted inventory line
+     */
+    [[nodiscard]] std::string buildPinLine(int id) const;
+
     void sendSyncMapSize(int fd);
     void sendSyncTiles(int fd);
     void sendSyncTile(int fd, int x, int y);
