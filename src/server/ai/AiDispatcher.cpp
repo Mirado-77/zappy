@@ -609,8 +609,9 @@ std::string zappy::server::ai::AiDispatcher::executeFork(
  * @return std::string always "ok"
  */
 std::string zappy::server::ai::AiDispatcher::executeEject(
-    int, const std::string &)
+    int playerId, const std::string &)
 {
+    _world.notifyPlayerEjected(playerId);
     return "ok";
 }
 

@@ -54,8 +54,26 @@ public:
      */
     void onTileChanged(game::Position pos) override;
 
+    void onPlayerAdded(int id) override;
+    void onPlayerMoved(int id, game::Position oldPos,
+        game::Position newPos) override;
+    void onPlayerRotated(int id) override;
+    void onPlayerLevelChanged(int id) override;
+    void onPlayerInventoryChanged(int id) override;
+    void onPlayerRemoved(int id) override;
+    void onPlayerBroadcast(int id, const std::string &text) override;
+    void onPlayerForkStarted(int playerId) override;
+    void onIncantationStarted(int initiatorId, int level,
+        const std::vector<int> &participants) override;
+    void onIncantationEnded(int initiatorId, bool success,
+        int newLevel) override;
+    void onPlayerEjected(int id) override;
+    void onPlayerDroppedResource(int id, game::ResourceType type) override;
+    void onPlayerPickedUpResource(int id, game::ResourceType type) override;
+
 private:
     client::ClientRegistry &_clients;
+    const game::World &_world;
     GuiLineBuilder _lineBuilder;
     std::function<void(int fd)> _retunePollMask;
 };

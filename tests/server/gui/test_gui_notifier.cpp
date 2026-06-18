@@ -203,3 +203,280 @@ Test(gui_notifier, test_empty_buffer_state_before_broadcast)
     cr_assert_gt(read(guiPeer, buf, sizeof(buf) - 1), 0);
     cr_assert_str_eq(buf, "bct 0 0 1 0 0 0 0 0 0\n");
 }
+
+Test(gui_notifier, test_on_player_added_broadcasts_pnw)
+{
+    NotifierFixture f;
+    f.world.addObserver(f.notifier);
+    int guiPeer = f.addClient(ClientState::GUI);
+
+    int playerId = f.world.addPlayer(
+        "team1", Position(1, 2), zappy::server::game::Orientation::EAST);
+
+    f.clients.forEach([](Client &c) {
+        c.buffer().on_writable();
+    });
+
+    char buf[128] = {0};
+    cr_assert_gt(read(guiPeer, buf, sizeof(buf) - 1), 0);
+    std::string expected = "pnw #" + std::to_string(playerId)
+        + " 1 2 2 1 team1\n";
+    cr_assert_str_eq(buf, expected.c_str());
+}
+
+Test(gui_notifier, test_on_player_moved_broadcasts_ppo)
+{
+    NotifierFixture f;
+    f.world.addObserver(f.notifier);
+    int guiPeer = f.addClient(ClientState::GUI);
+
+    int playerId = f.world.addPlayer(
+        "team1", Position(1, 2), zappy::server::game::Orientation::EAST);
+    f.world.movePlayer(playerId, Position(2, 2));
+
+    f.clients.forEach([](Client &c) {
+        c.buffer().on_writable();
+    });
+
+    char buf[256] = {0};
+    cr_assert_gt(read(guiPeer, buf, sizeof(buf) - 1), 0);
+    std::string received(buf);
+    std::string expected = "ppo #" + std::to_string(playerId) + " 2 2 2\n";
+    cr_assert_neq(received.find(expected), std::string::npos);
+}
+
+Test(gui_notifier, test_on_player_rotated_broadcasts_ppo)
+{
+    NotifierFixture f;
+    f.world.addObserver(f.notifier);
+    int guiPeer = f.addClient(ClientState::GUI);
+
+    int playerId = f.world.addPlayer(
+        "team1", Position(1, 2), zappy::server::game::Orientation::EAST);
+    f.world.rotatePlayer(playerId, zappy::server::game::Orientation::SOUTH);
+
+    f.clients.forEach([](Client &c) {
+        c.buffer().on_writable();
+    });
+
+    char buf[256] = {0};
+    cr_assert_gt(read(guiPeer, buf, sizeof(buf) - 1), 0);
+    std::string received(buf);
+    std::string expected = "ppo #" + std::to_string(playerId) + " 1 2 3\n";
+    cr_assert_neq(received.find(expected), std::string::npos);
+}
+
+Test(gui_notifier, test_on_player_level_changed_broadcasts_plv)
+{
+    NotifierFixture f;
+    f.world.addObserver(f.notifier);
+    int guiPeer = f.addClient(ClientState::GUI);
+
+    int playerId = f.world.addPlayer(
+        "team1", Position(1, 2), zappy::server::game::Orientation::EAST);
+    f.world.setPlayerLevel(playerId, 3);
+
+    f.clients.forEach([](Client &c) {
+        c.buffer().on_writable();
+    });
+
+    char buf[256] = {0};
+    cr_assert_gt(read(guiPeer, buf, sizeof(buf) - 1), 0);
+    std::string received(buf);
+    std::string expected = "plv #" + std::to_string(playerId) + " 3\n";
+    cr_assert_neq(received.find(expected), std::string::npos);
+}
+
+Test(gui_notifier, test_on_player_inventory_changed_broadcasts_pin)
+{
+    NotifierFixture f;
+    f.world.addObserver(f.notifier);
+    int guiPeer = f.addClient(ClientState::GUI);
+
+    int playerId = f.world.addPlayer(
+        "team1", Position(1, 2), zappy::server::game::Orientation::EAST);
+    f.world.consumePlayerFood(playerId);
+
+    f.clients.forEach([](Client &c) {
+        c.buffer().on_writable();
+    });
+
+    char buf[256] = {0};
+    cr_assert_gt(read(guiPeer, buf, sizeof(buf) - 1), 0);
+    std::string received(buf);
+    std::string expected = "pin #" + std::to_string(playerId)
+        + " 1 2 9 0 0 0 0 0 0\n";
+    cr_assert_neq(received.find(expected), std::string::npos);
+}
+
+Test(gui_notifier, test_on_player_removed_dead_broadcasts_pdi)
+{
+    NotifierFixture f;
+    f.world.addObserver(f.notifier);
+    int guiPeer = f.addClient(ClientState::GUI);
+
+    int playerId = f.world.addPlayer(
+        "team1", Position(1, 2), zappy::server::game::Orientation::EAST);
+    f.world.killPlayer(playerId);
+
+    f.clients.forEach([](Client &c) {
+        c.buffer().on_writable();
+    });
+
+    char buf[256] = {0};
+    cr_assert_gt(read(guiPeer, buf, sizeof(buf) - 1), 0);
+    std::string received(buf);
+    std::string expected = "pdi #" + std::to_string(playerId) + "\n";
+    cr_assert_neq(received.find(expected), std::string::npos);
+}
+
+Test(gui_notifier, test_on_player_ejected_broadcasts_pex)
+{
+    NotifierFixture f;
+    f.world.addObserver(f.notifier);
+    int guiPeer = f.addClient(ClientState::GUI);
+
+    int playerId = f.world.addPlayer(
+        "team1", Position(1, 2), zappy::server::game::Orientation::EAST);
+    f.world.notifyPlayerEjected(playerId);
+
+    f.clients.forEach([](Client &c) {
+        c.buffer().on_writable();
+    });
+
+    char buf[256] = {0};
+    cr_assert_gt(read(guiPeer, buf, sizeof(buf) - 1), 0);
+    std::string received(buf);
+    std::string expected = "pex #" + std::to_string(playerId) + "\n";
+    cr_assert_neq(received.find(expected), std::string::npos);
+}
+
+Test(gui_notifier, test_on_player_broadcast_broadcasts_pbc)
+{
+    NotifierFixture f;
+    f.world.addObserver(f.notifier);
+    int guiPeer = f.addClient(ClientState::GUI);
+
+    int playerId = f.world.addPlayer(
+        "team1", Position(1, 2), zappy::server::game::Orientation::EAST);
+    f.world.notifyBroadcast(playerId, "hello world");
+
+    f.clients.forEach([](Client &c) {
+        c.buffer().on_writable();
+    });
+
+    char buf[256] = {0};
+    cr_assert_gt(read(guiPeer, buf, sizeof(buf) - 1), 0);
+    std::string received(buf);
+    std::string expected = "pbc #" + std::to_string(playerId)
+        + " hello world\n";
+    cr_assert_neq(received.find(expected), std::string::npos);
+}
+
+Test(gui_notifier, test_on_player_fork_started_broadcasts_pfk)
+{
+    NotifierFixture f;
+    f.world.addObserver(f.notifier);
+    int guiPeer = f.addClient(ClientState::GUI);
+
+    int playerId = f.world.addPlayer(
+        "team1", Position(1, 2), zappy::server::game::Orientation::EAST);
+    f.world.notifyForkStarted(playerId);
+
+    f.clients.forEach([](Client &c) {
+        c.buffer().on_writable();
+    });
+
+    char buf[256] = {0};
+    cr_assert_gt(read(guiPeer, buf, sizeof(buf) - 1), 0);
+    std::string received(buf);
+    std::string expected = "pfk #" + std::to_string(playerId) + "\n";
+    cr_assert_neq(received.find(expected), std::string::npos);
+}
+
+Test(gui_notifier, test_on_incantation_started_broadcasts_pic)
+{
+    NotifierFixture f;
+    f.world.addObserver(f.notifier);
+    int guiPeer = f.addClient(ClientState::GUI);
+
+    int playerId = f.world.addPlayer(
+        "team1", Position(1, 2), zappy::server::game::Orientation::EAST);
+    f.world.notifyIncantationStarted(playerId, 1, {playerId});
+
+    f.clients.forEach([](Client &c) {
+        c.buffer().on_writable();
+    });
+
+    char buf[256] = {0};
+    cr_assert_gt(read(guiPeer, buf, sizeof(buf) - 1), 0);
+    std::string received(buf);
+    std::string expected = "pic 1 2 2 #" + std::to_string(playerId) + "\n";
+    cr_assert_neq(received.find(expected), std::string::npos);
+}
+
+Test(gui_notifier, test_on_incantation_ended_broadcasts_pie)
+{
+    NotifierFixture f;
+    f.world.addObserver(f.notifier);
+    int guiPeer = f.addClient(ClientState::GUI);
+
+    int playerId = f.world.addPlayer(
+        "team1", Position(1, 2), zappy::server::game::Orientation::EAST);
+    f.world.notifyIncantationEnded(playerId, true, 2);
+
+    f.clients.forEach([](Client &c) {
+        c.buffer().on_writable();
+    });
+
+    char buf[256] = {0};
+    cr_assert_gt(read(guiPeer, buf, sizeof(buf) - 1), 0);
+    std::string received(buf);
+    std::string expected = "pie 1 2 1\n";
+    cr_assert_neq(received.find(expected), std::string::npos);
+}
+
+Test(gui_notifier, test_on_player_dropped_resource_broadcasts_pdr)
+{
+    NotifierFixture f;
+    f.world.addObserver(f.notifier);
+    int guiPeer = f.addClient(ClientState::GUI);
+
+    int playerId = f.world.addPlayer(
+        "team1", Position(1, 2), zappy::server::game::Orientation::EAST);
+    f.world.player(playerId).addResource(ResourceType::LINEMATE, 1);
+    f.world.dropResourceOnTile(playerId, ResourceType::LINEMATE);
+
+    f.clients.forEach([](Client &c) {
+        c.buffer().on_writable();
+    });
+
+    char buf[256] = {0};
+    cr_assert_gt(read(guiPeer, buf, sizeof(buf) - 1), 0);
+    std::string received(buf);
+    std::string expected = "pdr #" + std::to_string(playerId) + " 1\n";
+    cr_assert_neq(received.find(expected), std::string::npos);
+}
+
+Test(gui_notifier, test_on_player_picked_up_resource_broadcasts_pgt)
+{
+    NotifierFixture f;
+    f.world.addObserver(f.notifier);
+    int guiPeer = f.addClient(ClientState::GUI);
+
+    int playerId = f.world.addPlayer(
+        "team1", Position(1, 2), zappy::server::game::Orientation::EAST);
+    f.world.tileAt(Position(1, 2)).addResource(ResourceType::DERAUMERE, 1);
+    f.world.takeResourceFromTile(playerId, ResourceType::DERAUMERE);
+
+    f.clients.forEach([](Client &c) {
+        c.buffer().on_writable();
+    });
+
+    char buf[256] = {0};
+    cr_assert_gt(read(guiPeer, buf, sizeof(buf) - 1), 0);
+    std::string received(buf);
+    std::string expected = "pgt #" + std::to_string(playerId) + " 2\n";
+    cr_assert_neq(received.find(expected), std::string::npos);
+}
+
