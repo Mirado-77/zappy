@@ -57,6 +57,13 @@ public:
      */
     void stopConsumption(int playerId) noexcept;
 
+    /**
+     * @brief Update the time frequency.
+     *
+     * @param frequency new time frequency
+     */
+    void setFrequency(int frequency) noexcept;
+
 private:
     /**
      * @brief Delay between two consumptions in milliseconds.

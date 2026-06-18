@@ -17,10 +17,14 @@
  */
 zappy::server::gui::GuiDispatcher::GuiDispatcher(
     game::World &world,
-    std::function<void(int fd, std::string)> onResponse)
+    std::function<void(int fd, std::string)> onResponse,
+    std::function<int()> getFrequency,
+    std::function<void(int)> setFrequency)
     : _world(world),
       _onResponse(std::move(onResponse)),
-      _lineBuilder(world)
+      _lineBuilder(world),
+      _getFrequency(std::move(getFrequency)),
+      _setFrequency(std::move(setFrequency))
 {
 }
 
@@ -201,20 +205,22 @@ std::vector<std::string> zappy::server::gui::GuiDispatcher::handleSgt(
     const std::vector<int> &args)
 {
     (void)args;
-    return {"stub-sgt"};
+    return {"sgt " + std::to_string(_getFrequency())};
 }
 
 /**
  * @brief Handle sst command.
  *
  * @param args command arguments
- * @return std::vector<std::string> stub response
+ * @return std::vector<std::string> response (empty if success, sbp on error)
  */
 std::vector<std::string> zappy::server::gui::GuiDispatcher::handleSst(
     const std::vector<int> &args)
 {
-    (void)args;
-    return {"stub-sst"};
+    if (args.empty() || args[0] <= 0)
+        return {"sbp"};
+    _setFrequency(args[0]);
+    return {};
 }
 
 /**

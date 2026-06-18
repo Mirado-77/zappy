@@ -64,6 +64,13 @@ public:
      */
     void stopPlayer(int playerId) noexcept;
 
+    /**
+     * @brief Update the time frequency.
+     *
+     * @param frequency new time frequency
+     */
+    void setFrequency(int frequency) noexcept;
+
 private:
     using Handler = std::string (AiDispatcher::*)(int, const std::string &);
     using PreHandler = void (AiDispatcher::*)(int);

@@ -23,9 +23,14 @@ using Reply = std::pair<int, std::string>;
 struct Fixture {
     World world{10, 10, {"team"}, 10};
     std::vector<Reply> replies;
-    GuiDispatcher disp{world, [this](int fd, std::string r) {
-        replies.push_back({fd, std::move(r)});
-    }};
+    int frequency = 100;
+    GuiDispatcher disp{world,
+        [this](int fd, std::string r) {
+            replies.push_back({fd, std::move(r)});
+        },
+        [this] { return frequency; },
+        [this](int f) { frequency = f; }
+    };
 };
 
 } // namespace
@@ -60,15 +65,17 @@ Test(gui_dispatcher, map_info_commands_produce_real_output)
     cr_assert_str_eq(fx.replies.back().second.c_str(), "tna team");
 }
 
-Test(gui_dispatcher, stub_commands_still_route_to_handlers)
+Test(gui_dispatcher, time_management_commands)
 {
     Fixture fx;
     fx.disp.dispatch(42, "sgt");
-    fx.disp.dispatch(42, "sst 100");
+    cr_assert_str_eq(fx.replies.back().second.c_str(), "sgt 100");
 
-    cr_assert_eq(fx.replies.size(), 2U);
-    cr_assert_str_eq(fx.replies[0].second.c_str(), "stub-sgt");
-    cr_assert_str_eq(fx.replies[1].second.c_str(), "stub-sst");
+    fx.disp.dispatch(42, "sst 200");
+    cr_assert_eq(fx.frequency, 200);
+
+    fx.disp.dispatch(42, "sst 0");
+    cr_assert_str_eq(fx.replies.back().second.c_str(), "sbp");
 }
 
 Test(gui_dispatcher, dispatch_is_instant)

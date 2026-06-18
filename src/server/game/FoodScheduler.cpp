@@ -61,3 +61,14 @@ void zappy::server::game::FoodScheduler::onConsume(int playerId)
         _onDeath(playerId);
     }
 }
+
+/**
+ * @brief Update the time frequency.
+ *
+ * @param frequency new time frequency
+ */
+void zappy::server::game::FoodScheduler::setFrequency(
+    int frequency) noexcept
+{
+    _frequency = frequency;
+}

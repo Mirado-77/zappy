@@ -51,6 +51,13 @@ public:
      */
     void stop() noexcept;
 
+    /**
+     * @brief Update the time frequency.
+     *
+     * @param frequency new time frequency
+     */
+    void setFrequency(int frequency) noexcept;
+
 private:
     /**
      * @brief Delay between two refills in milliseconds.

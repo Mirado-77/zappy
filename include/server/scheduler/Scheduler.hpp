@@ -96,6 +96,13 @@ public:
     void tick();
 
     /**
+     * @brief Rescale the remaining delays of all active events by a factor.
+     *
+     * @param factor multiplier applied to remaining durations
+     */
+    void rescaleDelays(double factor) noexcept;
+
+    /**
      * @brief Milliseconds until the next live event.
      *
      * @return int the delay, 0 if due, -1 if none

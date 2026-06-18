@@ -25,9 +25,14 @@ using Reply = std::pair<int, std::string>;
 struct MapInfoFixture {
     World world;
     std::vector<Reply> replies;
-    GuiDispatcher disp{world, [this](int fd, std::string r) {
-        replies.push_back({fd, std::move(r)});
-    }};
+    int frequency = 100;
+    GuiDispatcher disp{world,
+        [this](int fd, std::string r) {
+            replies.push_back({fd, std::move(r)});
+        },
+        [this] { return frequency; },
+        [this](int f) { frequency = f; }
+    };
 
     explicit MapInfoFixture(int w, int h,
         const std::vector<std::string> &teams = {"team"})
