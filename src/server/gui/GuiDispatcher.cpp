@@ -160,42 +160,95 @@ std::vector<std::string> zappy::server::gui::GuiDispatcher::handleTna(
 }
 
 /**
- * @brief Handle ppo command.
+ * @brief Build the "ppo #<id> <x> <y> <orientation>" line for a player.
  *
- * @param args command arguments
- * @return std::vector<std::string> stub response
+ * @param id player id (assumed to exist)
+ * @return std::string the formatted position line
+ */
+std::string zappy::server::gui::GuiDispatcher::buildPpoLine(int id) const
+{
+    const game::Player &player = _world.player(id);
+
+    return "ppo #" + std::to_string(id) + " "
+        + std::to_string(player.position().x()) + " "
+        + std::to_string(player.position().y()) + " "
+        + std::to_string(static_cast<int>(player.orientation()));
+}
+
+/**
+ * @brief Build the "plv #<id> <level>" line for a player.
+ *
+ * @param id player id (assumed to exist)
+ * @return std::string the formatted level line
+ */
+std::string zappy::server::gui::GuiDispatcher::buildPlvLine(int id) const
+{
+    return "plv #" + std::to_string(id) + " "
+        + std::to_string(_world.player(id).level());
+}
+
+/**
+ * @brief Build the "pin #<id> <x> <y> <q0>..<q6>" line for a player.
+ *
+ * @param id player id (assumed to exist)
+ * @return std::string the formatted inventory line
+ */
+std::string zappy::server::gui::GuiDispatcher::buildPinLine(int id) const
+{
+    const game::Player &player = _world.player(id);
+    std::string line = "pin #" + std::to_string(id) + " "
+        + std::to_string(player.position().x()) + " "
+        + std::to_string(player.position().y());
+
+    for (std::size_t i = 0; i < game::RESOURCE_COUNT; ++i)
+        line += " " + std::to_string(
+            player.resource(static_cast<game::ResourceType>(i)));
+    return line;
+}
+
+/**
+ * @brief Handle the ppo command: report a player's position and orientation.
+ *
+ * @param args command arguments: the player id
+ * @return std::vector<std::string> the ppo line, or "sbp" if unknown
  */
 std::vector<std::string> zappy::server::gui::GuiDispatcher::handlePpo(
     const std::vector<int> &args)
 {
-    (void)args;
-    return {"stub-ppo"};
+    const int id = args[0];
+
+    return _world.hasPlayer(id) ? std::vector<std::string>{buildPpoLine(id)}
+        : std::vector<std::string>{"sbp"};
 }
 
 /**
- * @brief Handle plv command.
+ * @brief Handle the plv command: report a player's level.
  *
- * @param args command arguments
- * @return std::vector<std::string> stub response
+ * @param args command arguments: the player id
+ * @return std::vector<std::string> the plv line, or "sbp" if unknown
  */
 std::vector<std::string> zappy::server::gui::GuiDispatcher::handlePlv(
     const std::vector<int> &args)
 {
-    (void)args;
-    return {"stub-plv"};
+    const int id = args[0];
+
+    return _world.hasPlayer(id) ? std::vector<std::string>{buildPlvLine(id)}
+        : std::vector<std::string>{"sbp"};
 }
 
 /**
- * @brief Handle pin command.
+ * @brief Handle the pin command: report a player's position and inventory.
  *
- * @param args command arguments
- * @return std::vector<std::string> stub response
+ * @param args command arguments: the player id
+ * @return std::vector<std::string> the pin line, or "sbp" if unknown
  */
 std::vector<std::string> zappy::server::gui::GuiDispatcher::handlePin(
     const std::vector<int> &args)
 {
-    (void)args;
-    return {"stub-pin"};
+    const int id = args[0];
+
+    return _world.hasPlayer(id) ? std::vector<std::string>{buildPinLine(id)}
+        : std::vector<std::string>{"sbp"};
 }
 
 /**

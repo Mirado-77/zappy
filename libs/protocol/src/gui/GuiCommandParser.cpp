@@ -62,9 +62,11 @@ bool zappy::protocol::gui::GuiCommandParser::convertArgs(
     bool ok = true;
     for (const auto &token : tokens) {
         int val = 0;
+        const std::string_view num = (!token.empty() && token.front() == '#')
+            ? token.substr(1) : token;
         const auto [ptr, ec] = std::from_chars(
-            token.data(), token.data() + token.size(), val);
-        if (ec != std::errc{} || ptr != token.data() + token.size() || val < 0)
+            num.data(), num.data() + num.size(), val);
+        if (ec != std::errc{} || ptr != num.data() + num.size() || val < 0)
             ok = false;
         else
             args.push_back(val);
