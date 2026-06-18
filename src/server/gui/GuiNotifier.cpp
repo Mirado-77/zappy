@@ -22,7 +22,8 @@ zappy::server::gui::GuiNotifier::GuiNotifier(
     : _clients(clients),
       _world(world),
       _lineBuilder(world),
-      _retunePollMask(std::move(retunePollMask))
+      _retunePollMask(std::move(retunePollMask)),
+      _victoryNotified(false)
 {
 }
 
@@ -71,6 +72,18 @@ void zappy::server::gui::GuiNotifier::onPlayerRotated(int id)
 void zappy::server::gui::GuiNotifier::onPlayerLevelChanged(int id)
 {
     broadcast(_lineBuilder.plv(id));
+    if (_victoryNotified || _world.player(id).level() != 8)
+        return;
+    const std::string &teamName = _world.player(id).team();
+    int count = 0;
+    _world.forEachPlayer([&teamName, &count](int, const game::Player &p) {
+        if (p.team() == teamName && p.level() == 8)
+            count++;
+    });
+    if (count >= 6) {
+        _victoryNotified = true;
+        broadcast(_lineBuilder.seg(teamName));
+    }
 }
 
 void zappy::server::gui::GuiNotifier::onPlayerInventoryChanged(int id)

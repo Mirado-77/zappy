@@ -164,6 +164,14 @@ public:
      */
     [[nodiscard]] std::string edi(int eggId) const;
 
+    /**
+     * @brief Build the "seg N" line for end of game.
+     *
+     * @param teamName name of the winning team
+     * @return std::string the formatted line
+     */
+    [[nodiscard]] std::string seg(const std::string &teamName) const;
+
 private:
     const game::World &_world;
 };

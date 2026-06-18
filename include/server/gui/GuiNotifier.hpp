@@ -78,6 +78,7 @@ private:
     const game::World &_world;
     GuiLineBuilder _lineBuilder;
     std::function<void(int fd)> _retunePollMask;
+    bool _victoryNotified;
 };
 
 } // namespace zappy::server::gui

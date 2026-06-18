@@ -193,3 +193,15 @@ std::string zappy::server::gui::GuiLineBuilder::edi(int eggId) const
 {
     return "edi #" + std::to_string(eggId);
 }
+
+/**
+ * @brief Build the "seg N" line for end of game.
+ *
+ * @param teamName name of the winning team
+ * @return std::string the formatted line
+ */
+std::string zappy::server::gui::GuiLineBuilder::seg(
+    const std::string &teamName) const
+{
+    return "seg " + teamName;
+}
