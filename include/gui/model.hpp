@@ -1,0 +1,41 @@
+/*
+** EPITECH PROJECT, 2026
+** local-zappy
+** File description:
+** model
+*/
+
+#ifndef MODEL_HPP_
+    #define MODEL_HPP_
+    #include <iostream>
+    #include <memory>
+    #include <raylib.h>
+
+
+class model{
+    public:
+        model(std::string name);
+        ~model();
+        void Update_anim();
+        void load_anim();
+        void load_texture();
+        void switch_index_anime();
+        void Draw_model(float scale = 1.0f);
+        void change_color(Color cl);
+        void move_model(Vector3 pos, Vector3 rotationAxis, float rotationAngle, Vector3 scale);
+        void move_pos(Vector3 pos);
+        //void Load_model(std::string name);
+        //void update_model_anim();
+    protected:
+    private:
+        Model _model;
+        std::unique_ptr<ModelAnimation> _anim;
+        int _animeCount;
+        int _current_frame;
+        int _anim_index;
+        Color _color;
+        std::string _name;
+        Vector3 _pos;
+};
+
+#endif /* !MODEL_HPP_ */
