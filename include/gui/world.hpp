@@ -21,7 +21,7 @@ class world {
     protected:
     private:
         std::vector<std::unique_ptr<model>> init_model(float y, float x);
-        void model_animation();
+        void model_animation(std::double_t time, float scale);
         std::vector<std::vector<std::unique_ptr<model>>> _map;
 
 };
