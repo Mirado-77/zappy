@@ -10,7 +10,8 @@
 model::model(std::string name)
     : _anim(nullptr) ,_animeCount(0)
     , _current_frame(0), _anim_index(0),
-    _color(WHITE), _name(name), _pos({0.0f, 0.0f, 0.0f})
+    _color(WHITE), _name(name), _pos({0.0f, 0.0f, 0.0f}),
+    _base_pos({0.0f, 0.0f, 0.0f})
 {
     this->_model = LoadModel(name.c_str());
 }
@@ -51,7 +52,23 @@ void model::move_model(Vector3 pos, Vector3 rotationAxis, float rotationAngle, V
     DrawModelEx(this->_model, pos, rotationAxis, rotationAngle, scale, this->_color);
 }
 
-void model::move_pos(Vector3 pos)
+void model::set_pos(Vector3 pos)
 {
     this->_pos = pos;
+}
+
+Vector3 model::get_pos()
+{
+    return this->_pos;
+}
+
+
+void model::set_base_pos(Vector3 pos)
+{
+    this->_base_pos = pos;
+}
+
+Vector3 model::get_base_pos()
+{
+    return this->_base_pos;
 }

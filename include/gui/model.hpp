@@ -23,7 +23,10 @@ class model{
         void Draw_model(float scale = 1.0f);
         void change_color(Color cl);
         void move_model(Vector3 pos, Vector3 rotationAxis, float rotationAngle, Vector3 scale);
-        void move_pos(Vector3 pos);
+        void set_pos(Vector3 pos);
+        void set_base_pos(Vector3 pos);
+        Vector3 get_pos();
+        Vector3 get_base_pos();
         //void Load_model(std::string name);
         //void update_model_anim();
     protected:
@@ -36,6 +39,7 @@ class model{
         Color _color;
         std::string _name;
         Vector3 _pos;
+        Vector3 _base_pos;
 };
 
 #endif /* !MODEL_HPP_ */
