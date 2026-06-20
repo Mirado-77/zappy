@@ -36,6 +36,7 @@ MODULES	=	connection.py \
 			coordination.py \
 			leading_elevation.py \
 			scouting.py \
+			forking.py \
 			fsm.py
 
 all:	$(BIN_DIR)/$(NAME)

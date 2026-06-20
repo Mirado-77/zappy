@@ -7,6 +7,7 @@
 ## main
 ##
 
+import signal
 import sys
 from connection import open_connection
 from event_loop import run
@@ -135,6 +136,8 @@ def parse_args(argv: list[str]) -> tuple[int, str, str]:
 
 
 if __name__ == "__main__":
+    signal.signal(signal.SIGINT, lambda _s, _f: sys.exit(0))
+    signal.signal(signal.SIGTERM, lambda _s, _f: sys.exit(0))
     port, name, machine = parse_args(sys.argv[1:])
     sock = open_connection(machine, port)
     info = perform_handshake(sock, name)

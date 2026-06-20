@@ -9,6 +9,7 @@ from collecting import tick_collecting
 from coordination import RallyInfo, handle_coordination_broadcast, tick_coordinating
 from elevation import ElevationState, ElevationStatus
 from foraging import tick_foraging
+from forking import can_fork, tick_forking
 from fsm_helpers import CRITICAL_FOOD, SAFE_FOOD, poll_inventory
 from have_broadcast import TeamMemberState, broadcast_have, on_broadcast_received
 from leading_elevation import (LeaderInfo, can_lead_elevation,
@@ -20,7 +21,7 @@ from stones import needed_stones
 from survival import tick_critical_survival
 
 
-def evaluate_fsm_state(state: PlayerState) -> FsmState:
+def evaluate_fsm_state(state: PlayerState, fork_cooldown: int = 0) -> FsmState:
     """Return the highest-priority FSM state that applies this tick.
 
     Evaluates conditions in strict priority order. The ELEVATING state
@@ -37,6 +38,8 @@ def evaluate_fsm_state(state: PlayerState) -> FsmState:
         return FsmState.LEADING_ELEVATION
     if food < SAFE_FOOD:
         return FsmState.FORAGING
+    if can_fork(state, fork_cooldown):
+        return FsmState.FORKING
     return FsmState.SCOUTING
 
 
@@ -55,6 +58,7 @@ class Fsm:
         self._rally: list[RallyInfo | None] = [None]
         self._leader: list[LeaderInfo | None] = [None]
         self._scout_counter: list[int] = [0]
+        self._fork_cooldown: list[int] = [0]
         self.team_members: dict[int, TeamMemberState] = {}
 
     def on_broadcast(self, sender: CommandSender,
@@ -95,7 +99,11 @@ class Fsm:
             self._state.fsm_state = FsmState.ELEVATING
             return
 
-        new_state = evaluate_fsm_state(self._state)
+        # Decrement fork cooldown each tick.
+        if self._fork_cooldown[0] > 0:
+            self._fork_cooldown[0] -= 1
+
+        new_state = evaluate_fsm_state(self._state, self._fork_cooldown[0])
         # Active rally overrides lower-priority states.
         if (self._rally[0] is not None
                 and new_state not in (FsmState.CRITICAL_SURVIVAL,
@@ -123,3 +131,7 @@ class Fsm:
             tick_leading_elevation(self._state, sender, self._leader)
         elif new_state == FsmState.SCOUTING:
             tick_scouting(self._state, sender, self._scout_counter)
+        elif new_state == FsmState.FORKING:
+            tick_forking(self._state, sender, self._fork_cooldown)
+        elif new_state == FsmState.FORKING:
+            tick_forking(self._state, sender, self._fork_cooldown)
