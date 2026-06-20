@@ -25,7 +25,8 @@ MODULES	=	connection.py \
 			player_state.py \
 			torus.py \
 			navigation.py \
-			broadcast_direction.py
+			broadcast_direction.py \
+			fsm.py
 
 all:	$(BIN_DIR)/$(NAME)
 

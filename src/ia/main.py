@@ -10,6 +10,7 @@
 import sys
 from connection import open_connection
 from event_loop import run
+from fsm import Fsm
 from handshake import perform_handshake
 from line_buffer import LineBuffer
 from player_state import make_player_state
@@ -142,4 +143,5 @@ if __name__ == "__main__":
     buf = LineBuffer(sock)
     sender = CommandSender(sock)
     state = make_player_state(name, info.slots, info.width, info.height)
-    run(buf, sender, fsm_tick=lambda s, e: None)
+    fsm = Fsm(state)
+    run(buf, sender, fsm_tick=fsm.tick)
