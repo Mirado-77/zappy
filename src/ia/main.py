@@ -140,4 +140,4 @@ if __name__ == "__main__":
           file=sys.stderr)
     buf = LineBuffer(sock)
     sender = CommandSender(sock)
-    run(buf, sender, fsm_tick=lambda s: None)
+    run(buf, sender, fsm_tick=lambda s, e: None)

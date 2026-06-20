@@ -9,10 +9,15 @@ import sys
 from typing import Callable
 
 from dispatcher import Dispatcher
+from elevation import (
+    ElevationState,
+    make_current_level_handler,
+    make_elevation_underway_handler,
+)
 from line_buffer import LineBuffer
 from sender import CommandSender
 
-FsmTickFn = Callable[[CommandSender], None]
+FsmTickFn = Callable[[CommandSender, ElevationState], None]
 
 
 def _handle_dead(_line: str) -> None:
@@ -36,22 +41,28 @@ def _on_connection_closed() -> None:
     sys.exit(0)
 
 
-def _build_dispatcher(sender: CommandSender) -> Dispatcher:
+def _build_dispatcher(sender: CommandSender,
+                      elev: ElevationState) -> Dispatcher:
     """Construct the dispatcher and register built-in handlers.
 
-    At this stage only the 'dead' handler is registered. Future steps
-    will add handlers for broadcast messages, elevation responses, etc.
-    All other lines fall through to the sender's on_response, which
-    resolves the oldest pending command callback.
+    Registered handlers (in priority order):
+        - 'dead'              : exit(0) immediately.
+        - 'Elevation underway': mark elevation as IN_PROGRESS.
+        - 'Current level: '  : parse new level, mark SUCCESS.
+    All other lines fall through to sender.on_response, which resolves
+    the oldest pending command callback.
 
     Args:
         sender: The command sender whose on_response acts as the fallback.
+        elev: Shared elevation state updated by the elevation handlers.
 
     Returns:
         A configured Dispatcher instance.
     """
     d = Dispatcher(fallback=sender.on_response)
     d.register("dead", _handle_dead)
+    d.register("Elevation underway", make_elevation_underway_handler(elev))
+    d.register("Current level: ", make_current_level_handler(elev))
     return d
 
 
@@ -72,10 +83,11 @@ def run(buf: LineBuffer, sender: CommandSender,
         buf: Line-buffered socket reader.
         sender: Command sender with in-flight tracking.
         fsm_tick: Callable invoked once per loop iteration after the line
-            has been dispatched. Receives the sender so it can enqueue
-            new commands.
+            has been dispatched. Receives the sender and the shared
+            ElevationState so the FSM can react to elevation events.
     """
-    dispatcher = _build_dispatcher(sender)
+    elev = ElevationState()
+    dispatcher = _build_dispatcher(sender, elev)
 
     while True:
         line = buf.readline()
@@ -83,4 +95,4 @@ def run(buf: LineBuffer, sender: CommandSender,
             _on_connection_closed()
             return
         dispatcher.dispatch(line)
-        fsm_tick(sender)
+        fsm_tick(sender, elev)

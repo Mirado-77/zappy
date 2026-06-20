@@ -20,7 +20,8 @@ MODULES	=	connection.py \
 			event_loop.py \
 			inventory.py \
 			look.py \
-			broadcast.py
+			broadcast.py \
+			elevation.py
 
 all:	$(BIN_DIR)/$(NAME)
 
