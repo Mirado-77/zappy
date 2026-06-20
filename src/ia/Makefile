@@ -28,6 +28,11 @@ MODULES	=	connection.py \
 			broadcast_direction.py \
 			stones.py \
 			broadcast_protocol.py \
+			fsm_helpers.py \
+			survival.py \
+			foraging.py \
+			collecting.py \
+			have_broadcast.py \
 			fsm.py
 
 all:	$(BIN_DIR)/$(NAME)
