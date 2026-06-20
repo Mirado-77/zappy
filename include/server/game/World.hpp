@@ -165,6 +165,18 @@ public:
     }
 
     /**
+     * @brief Invoke @p callback for every (id, Egg const &) in the world.
+     *
+     * @param callback callable receiving the egg id and a const reference
+     */
+    template<typename F>
+    void forEachEgg(F &&callback) const
+    {
+        for (const auto &entry : _eggs)
+            callback(entry.first, entry.second);
+    }
+
+    /**
      * @brief Create a player and place it on its tile.
      *
      * @param team owning team name
@@ -214,9 +226,10 @@ public:
      *
      * @param team owning team name
      * @param pos tile to lay the egg on
+     * @param layingPlayerId ID of the player laying the egg
      * @return int the new egg id
      */
-    int addEgg(const std::string &team, Position pos);
+    int addEgg(const std::string &team, Position pos, int layingPlayerId = -1);
 
     /**
      * @brief Remove an egg from the world and its tile.
@@ -309,6 +322,37 @@ public:
     void killPlayer(int playerId);
 
     /**
+     * @brief Consume one unit of food from player's inventory and notify.
+     *
+     * @param playerId player id
+     * @throws WorldError if unknown
+     */
+    void consumePlayerFood(int playerId);
+
+    /**
+     * @brief Notify observers a player ejected others.
+     *
+     * @param playerId player id
+     */
+    void notifyPlayerEjected(int playerId);
+
+    /**
+     * @brief Freeze a player for an incantation (state INCANTING).
+     *
+     * @param playerId player id
+     * @throws WorldError if unknown
+     */
+    void freezePlayer(int playerId);
+
+    /**
+     * @brief Unfreeze a player back to ALIVE after an incantation.
+     *
+     * @param playerId player id
+     * @throws WorldError if unknown
+     */
+    void unfreezePlayer(int playerId);
+
+    /**
      * @brief Hatch an egg (state HATCHED); the egg is not removed here.
      *
      * @param eggId egg id
@@ -363,6 +407,25 @@ public:
      */
     void notifyForkStarted(int playerId);
 
+    /**
+     * @brief Notify observers an incantation ritual started.
+     *
+     * @param initiatorId the player who launched the incantation
+     * @param level the level being elevated from
+     * @param participants ids of every frozen player taking part
+     */
+    void notifyIncantationStarted(int initiatorId, int level,
+        const std::vector<int> &participants);
+
+    /**
+     * @brief Notify observers an incantation ritual ended.
+     *
+     * @param initiatorId the player who launched the incantation
+     * @param success whether the elevation succeeded
+     * @param newLevel the resulting level on success, 0 on failure
+     */
+    void notifyIncantationEnded(int initiatorId, bool success, int newLevel);
+
 private:
     /**
      * @brief Row-major grid index of a normalized position.
@@ -378,6 +441,8 @@ private:
     void notifyPlayerRotated(int id);
     void notifyPlayerLevelChanged(int id);
     void notifyPlayerInventoryChanged(int id);
+    void notifyPlayerDroppedResource(int playerId, ResourceType type);
+    void notifyPlayerPickedUpResource(int playerId, ResourceType type);
     void notifyPlayerStateChanged(int id);
     void notifyPlayerRemoved(int id);
     void notifyEggAdded(int id);

@@ -295,10 +295,10 @@ zappy::server::game::World::egg(int id) const
  * @return int the new egg id
  */
 int zappy::server::game::World::addEgg(
-    const std::string &team, Position pos)
+    const std::string &team, Position pos, int layingPlayerId)
 {
     const int id = _nextEggId++;
-    _eggs.emplace(id, Egg(id, team, pos));
+    _eggs.emplace(id, Egg(id, team, pos, layingPlayerId));
     tileAt(pos).addEgg(id);
     notifyEggAdded(id);
     return id;
@@ -314,8 +314,8 @@ void zappy::server::game::World::removeEgg(int id)
 {
     Egg &target = egg(id);
     tileAt(target.position()).removeEgg(id);
-    _eggs.erase(id);
     notifyEggRemoved(id);
+    _eggs.erase(id);
 }
 
 /**
@@ -429,6 +429,7 @@ bool zappy::server::game::World::takeResourceFromTile(
         target.addResource(type, 1);
         notifyTileChanged(target.position());
         notifyPlayerInventoryChanged(playerId);
+        notifyPlayerPickedUpResource(playerId, type);
     }
     return ok;
 }
@@ -450,6 +451,7 @@ bool zappy::server::game::World::dropResourceOnTile(
         tileAt(target.position()).addResource(type, 1);
         notifyTileChanged(target.position());
         notifyPlayerInventoryChanged(playerId);
+        notifyPlayerDroppedResource(playerId, type);
     }
     return ok;
 }
@@ -467,6 +469,30 @@ void zappy::server::game::World::killPlayer(int playerId)
     tileAt(target.position()).removePlayer(playerId);
     notifyPlayerStateChanged(playerId);
     notifyPlayerRemoved(playerId);
+}
+
+/**
+ * @brief Freeze a player for an incantation (state INCANTING).
+ *
+ * @param playerId player id
+ * @throws WorldError if unknown
+ */
+void zappy::server::game::World::freezePlayer(int playerId)
+{
+    player(playerId).setState(PlayerState::INCANTING);
+    notifyPlayerStateChanged(playerId);
+}
+
+/**
+ * @brief Unfreeze a player back to ALIVE after an incantation.
+ *
+ * @param playerId player id
+ * @throws WorldError if unknown
+ */
+void zappy::server::game::World::unfreezePlayer(int playerId)
+{
+    player(playerId).setState(PlayerState::ALIVE);
+    notifyPlayerStateChanged(playerId);
 }
 
 /**
@@ -690,4 +716,59 @@ void zappy::server::game::World::notifyForkStarted(int playerId)
 {
     for (auto &observer : _observers)
         observer.get().onPlayerForkStarted(playerId);
+}
+
+/**
+ * @brief Notify observers an incantation ritual started.
+ *
+ * @param initiatorId the player who launched the incantation
+ * @param level the level being elevated from
+ * @param participants ids of every frozen player taking part
+ */
+void zappy::server::game::World::notifyIncantationStarted(int initiatorId,
+    int level, const std::vector<int> &participants)
+{
+    for (auto &observer : _observers)
+        observer.get().onIncantationStarted(initiatorId, level, participants);
+}
+
+/**
+ * @brief Notify observers an incantation ritual ended.
+ *
+ * @param initiatorId the player who launched the incantation
+ * @param success whether the elevation succeeded
+ * @param newLevel the resulting level on success, 0 on failure
+ */
+void zappy::server::game::World::notifyIncantationEnded(int initiatorId,
+    bool success, int newLevel)
+{
+    for (auto &observer : _observers)
+        observer.get().onIncantationEnded(initiatorId, success, newLevel);
+}
+
+void zappy::server::game::World::consumePlayerFood(int playerId)
+{
+    Player &target = player(playerId);
+    target.removeResource(ResourceType::FOOD, 1);
+    notifyPlayerInventoryChanged(playerId);
+}
+
+void zappy::server::game::World::notifyPlayerEjected(int playerId)
+{
+    for (auto &observer : _observers)
+        observer.get().onPlayerEjected(playerId);
+}
+
+void zappy::server::game::World::notifyPlayerDroppedResource(
+    int playerId, ResourceType type)
+{
+    for (auto &observer : _observers)
+        observer.get().onPlayerDroppedResource(playerId, type);
+}
+
+void zappy::server::game::World::notifyPlayerPickedUpResource(
+    int playerId, ResourceType type)
+{
+    for (auto &observer : _observers)
+        observer.get().onPlayerPickedUpResource(playerId, type);
 }

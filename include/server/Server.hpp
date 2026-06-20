@@ -9,6 +9,8 @@
     #define SERVER_SERVER_HPP_
 
     #include "server/ai/AiDispatcher.hpp"
+    #include "server/gui/GuiDispatcher.hpp"
+    #include "server/gui/GuiNotifier.hpp"
     #include "server/cli/ServerConfig.hpp"
     #include "server/client/ClientRegistry.hpp"
     #include "server/game/FoodScheduler.hpp"
@@ -110,6 +112,26 @@ private:
      */
     void onAiResponse(int playerId, std::string response);
 
+    /**
+     * @brief Deliver a GUI command response to its client, if still connected.
+     *
+     * @param fd client file descriptor
+     * @param response response line (no trailing newline)
+     */
+    void onGuiResponse(int fd, std::string response);
+
+    /**
+     * @brief Update the server time frequency dynamically and scale active timers.
+     *
+     * @param newFrequency new reciprocal of the time unit
+     */
+    void updateFrequency(int newFrequency);
+
+    /**
+     * @brief Read lines from standard input and broadcast them to all GUI clients.
+     */
+    void handleStdin();
+
     cli::ServerConfig _config;
     net::Listener _listener;
     net::PollLoop _poll;
@@ -118,9 +140,12 @@ private:
     client::ClientRegistry _clients;
     scheduler::SteadyClock _clock;
     scheduler::Scheduler _scheduler{_clock};
+    int _frequency;
     game::RefillScheduler _refillScheduler;
     game::FoodScheduler _foodScheduler;
     ai::AiDispatcher _aiDispatcher;
+    gui::GuiDispatcher _guiDispatcher;
+    gui::GuiNotifier _guiNotifier;
     handshake::HandshakeHandler _handshake;
 };
 

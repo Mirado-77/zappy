@@ -47,3 +47,14 @@ void zappy::server::game::RefillScheduler::onRefill()
     _currentEventId = _scheduler.schedule(
         refillInterval(), [this] { onRefill(); });
 }
+
+/**
+ * @brief Update the time frequency.
+ *
+ * @param frequency new time frequency
+ */
+void zappy::server::game::RefillScheduler::setFrequency(
+    int frequency) noexcept
+{
+    _frequency = frequency;
+}

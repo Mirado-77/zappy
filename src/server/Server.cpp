@@ -9,6 +9,8 @@
 #include <iostream>
 #include <optional>
 #include <utility>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "server/game/EggSpawner.hpp"
 
@@ -30,18 +32,25 @@ zappy::server::Server::Server(const cli::ServerConfig &config)
           _config.teamNames(), _config.clientsPerTeam()),
       _resourceSpawner(),
       _clients(),
-      _refillScheduler(_world, _resourceSpawner, _scheduler,
-          _config.frequency()),
-      _foodScheduler(_world, _scheduler, _config.frequency(),
+      _scheduler(_clock),
+      _frequency(_config.frequency()),
+      _refillScheduler(_world, _resourceSpawner, _scheduler, _frequency),
+      _foodScheduler(_world, _scheduler, _frequency,
           [this](int playerId) { onPlayerStarved(playerId); }),
-      _aiDispatcher(_world, _scheduler, _config.frequency(),
+      _aiDispatcher(_world, _scheduler, _frequency,
           [this](int id, std::string r) { onAiResponse(id, std::move(r)); }),
+      _guiDispatcher(_world,
+          [this](int fd, std::string r) { onGuiResponse(fd, std::move(r)); },
+          [this] { return _frequency; },
+          [this](int freq) { updateFrequency(freq); }),
+      _guiNotifier(_clients, _world, [this](int fd) { retunePollMask(fd); }),
       _handshake(_config, _world, _foodScheduler)
 {
     _resourceSpawner.spawnInitial(_world);
     game::EggSpawner eggSpawner;
     eggSpawner.spawnInitial(_world);
     _refillScheduler.start();
+    _world.addObserver(_guiNotifier);
 }
 
 /**
@@ -53,6 +62,10 @@ void zappy::server::Server::run()
               << _listener.port() << "\n";
     _poll.register_fd(_listener.fd(), POLLIN, [this](short) {
         acceptPendingClients();
+    });
+    fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK);
+    _poll.register_fd(0, POLLIN, [this](short) {
+        handleStdin();
     });
     _poll.set_pre_wait_hook([this] {
         _poll.set_next_timeout(_scheduler.nextTimeoutMs());
@@ -204,6 +217,20 @@ void zappy::server::Server::onAiResponse(int playerId, std::string response)
 }
 
 /**
+ * @brief Deliver a GUI command response to its client, if still connected.
+ *
+ * @param fd client file descriptor
+ * @param response response line (no trailing newline)
+ */
+void zappy::server::Server::onGuiResponse(int fd, std::string response)
+{
+    if (_clients.contains(fd)) {
+        _clients.get(fd).buffer().queue_message(std::move(response));
+        retunePollMask(fd);
+    }
+}
+
+/**
  * @brief Recompute POLLOUT need and update the poll mask for @p clientFd.
  *
  * @param clientFd file descriptor to retune
@@ -235,10 +262,54 @@ bool zappy::server::Server::dispatchReadyMessages(int clientFd)
         if (c.state() == client::ClientState::HANDSHAKE) {
             const auto res = _handshake.handle(c, *msg);
             dropped = (res == handshake::HandshakeResult::DROP);
-            if (dropped)
+            if (dropped) {
                 dropClient(clientFd);
+            } else if (c.state() == client::ClientState::GUI) {
+                _guiDispatcher.sendInitialSync(clientFd, _frequency);
+            }
         } else if (c.state() == client::ClientState::AI)
             _aiDispatcher.dispatch(c.aiData().playerId, *msg);
+        else if (c.state() == client::ClientState::GUI
+            || c.state() == client::ClientState::GUI_ADMIN)
+            _guiDispatcher.dispatch(clientFd, *msg);
     }
     return dropped;
+}
+
+/**
+ * @brief Update the server time frequency dynamically and scale active timers.
+ *
+ * @param newFrequency new reciprocal of the time unit
+ */
+void zappy::server::Server::updateFrequency(int newFrequency)
+{
+    if (newFrequency <= 0)
+        return;
+    const double factor = static_cast<double>(_frequency) / newFrequency;
+    _frequency = newFrequency;
+    _refillScheduler.setFrequency(newFrequency);
+    _foodScheduler.setFrequency(newFrequency);
+    _aiDispatcher.setFrequency(newFrequency);
+    _scheduler.rescaleDelays(factor);
+    _guiNotifier.broadcast("sst " + std::to_string(newFrequency));
+}
+
+/**
+ * @brief Read lines from standard input and broadcast them to all GUI clients.
+ */
+void zappy::server::Server::handleStdin()
+{
+    char buf[1024];
+    const ssize_t n = read(0, buf, sizeof(buf) - 1);
+
+    if (n <= 0) {
+        _poll.unregister_fd(0);
+        return;
+    }
+    buf[n] = '\0';
+    std::string line(buf);
+    while (!line.empty() && (line.back() == '\n' || line.back() == '\r'))
+        line.pop_back();
+    if (!line.empty())
+        _guiNotifier.broadcastMessage(line);
 }
