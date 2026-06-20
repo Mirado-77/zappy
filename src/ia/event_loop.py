@@ -87,11 +87,7 @@ def run(buf: LineBuffer, sender: CommandSender,
         2. Dispatch the line to its registered handler.
         3. Call fsm_tick so the FSM can evaluate its state and send commands.
 
-    The loop exits (via sys.ex
-Tyla
-Tyla
-5,91 M d’abonnés
-it) on:
+    The loop exits (via sys.exit) on:
         - Receipt of 'dead' from the server.
         - The server closing the TCP connection.
 
