@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 
 from inventory import Inventory, empty_inventory
+from torus import torus_wrap
 
 
 class Orientation(Enum):
@@ -134,3 +135,46 @@ def rotate_left(orientation: Orientation) -> Orientation:
         New facing direction after turning left.
     """
     return Orientation((orientation.value - 1) % 4)
+
+
+# Displacement vectors for each orientation: (dx, dy).
+# North decrements y (row index decreases going forward),
+# East increments x, South increments y, West decrements x.
+_FORWARD_DELTA: dict[Orientation, tuple[int, int]] = {
+    Orientation.NORTH: (0, -1),
+    Orientation.EAST:  (1,  0),
+    Orientation.SOUTH: (0,  1),
+    Orientation.WEST:  (-1, 0),
+}
+
+
+def apply_forward(state: PlayerState) -> None:
+    """Update the player's position after a successful Forward command.
+
+    Moves one tile in the current orientation direction, wrapping
+    coordinates toroidally using the stored map dimensions.
+
+    Args:
+        state: Mutable player state to update in place.
+    """
+    dx, dy = _FORWARD_DELTA[state.orientation]
+    state.x = torus_wrap(state.x + dx, state.map_width)
+    state.y = torus_wrap(state.y + dy, state.map_height)
+
+
+def apply_right(state: PlayerState) -> None:
+    """Update the player's orientation after a successful Right command.
+
+    Args:
+        state: Mutable player state to update in place.
+    """
+    state.orientation = rotate_right(state.orientation)
+
+
+def apply_left(state: PlayerState) -> None:
+    """Update the player's orientation after a successful Left command.
+
+    Args:
+        state: Mutable player state to update in place.
+    """
+    state.orientation = rotate_left(state.orientation)
