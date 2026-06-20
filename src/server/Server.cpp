@@ -8,11 +8,51 @@
 #include "server/Server.hpp"
 #include <iostream>
 #include <optional>
+#include <string>
 #include <utility>
+#include <cstring>
 #include <fcntl.h>
 #include <unistd.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 
 #include "server/game/EggSpawner.hpp"
+
+namespace {
+
+/**
+ * @brief Resolve the machine's primary outbound IPv4 address.
+ *
+ * Opens a UDP socket and "connects" it to a public address: no packet is
+ * sent, but the kernel picks the source interface, which getsockname() then
+ * reveals. Falls back to the loopback address when offline or on any error.
+ *
+ * @return std::string the local IPv4 in dotted form, or "127.0.0.1"
+ */
+std::string resolveLocalIp()
+{
+    const int sock = ::socket(AF_INET, SOCK_DGRAM, 0);
+    std::string ip = "127.0.0.1";
+    sockaddr_in probe = {};
+    sockaddr_in local = {};
+    socklen_t len = sizeof(local);
+    char buf[INET_ADDRSTRLEN] = {};
+
+    if (sock < 0)
+        return ip;
+    probe.sin_family = AF_INET;
+    probe.sin_port = htons(53);
+    ::inet_pton(AF_INET, "8.8.8.8", &probe.sin_addr);
+    if (::connect(sock, reinterpret_cast<sockaddr *>(&probe), sizeof(probe)) == 0
+        && ::getsockname(sock, reinterpret_cast<sockaddr *>(&local), &len) == 0
+        && ::inet_ntop(AF_INET, &local.sin_addr, buf, sizeof(buf)) != nullptr)
+        ip = buf;
+    ::close(sock);
+    return ip;
+}
+
+} // namespace
 
 /**
  * @brief Initialise all members from the validated configuration.
@@ -58,8 +98,8 @@ zappy::server::Server::Server(const cli::ServerConfig &config)
  */
 void zappy::server::Server::run()
 {
-    std::cout << "zappy_server listening on port "
-              << _listener.port() << "\n";
+    std::cout << "zappy_server listening on "
+              << resolveLocalIp() << ":" << _listener.port() << "\n";
     _poll.register_fd(_listener.fd(), POLLIN, [this](short) {
         acceptPendingClients();
     });

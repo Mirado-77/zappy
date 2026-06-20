@@ -36,6 +36,26 @@ static zappy::posix::FileDescriptor makeWakeEvent()
 }
 
 /**
+ * @brief Run a loop hook, logging any exception instead of letting it escape.
+ *
+ * Keeps the running server alive: a runtime error raised while a hook fires
+ * is reported on stderr and the loop keeps spinning.
+ *
+ * @param hook the hook to invoke (no-op if empty)
+ * @param label human-readable hook name used in the error log
+ */
+static void run_hook(const std::function<void()> &hook, const char *label)
+{
+    if (!hook)
+        return;
+    try {
+        hook();
+    } catch (const std::exception &error) {
+        std::cerr << label << " error: " << error.what() << "\n";
+    }
+}
+
+/**
  * @brief Append a descriptor to the polled set.
  *
  * @param pollfds the polled set to extend
@@ -184,8 +204,7 @@ void zappy::net::PollLoop::dispatch()
 void zappy::net::PollLoop::run()
 {
     while (!_stop_requested.load()) {
-        if (_pre_wait_hook)
-            _pre_wait_hook();
+        run_hook(_pre_wait_hook, "pre-wait hook");
         const int ready = ::poll(_pollfds.data(),
             static_cast<nfds_t>(_pollfds.size()), _timeout_ms);
 
@@ -196,8 +215,7 @@ void zappy::net::PollLoop::run()
         }
         if (ready > 0)
             dispatch();
-        if (_post_wait_hook)
-            _post_wait_hook();
+        run_hook(_post_wait_hook, "post-wait hook");
     }
 }
 

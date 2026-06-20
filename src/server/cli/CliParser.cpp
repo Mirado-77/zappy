@@ -22,7 +22,17 @@ namespace zappy::server::cli {
 namespace {
 
 constexpr int kDefaultFrequency = 100;
+constexpr int kDefaultPort = 4242;
+constexpr int kDefaultWidth = 10;
+constexpr int kDefaultHeight = 10;
+constexpr int kDefaultClientsPerTeam = 5;
 constexpr std::string_view kReservedTeamName = "GRAPHIC";
+
+/// @brief Default team names used when -n is omitted entirely.
+std::vector<std::string> defaultTeamNames()
+{
+    return {"team1", "team2"};
+}
 
 /// @brief Parse a whole token as a base-10 integer; reject any extra char.
 long parseStrictInteger(const std::string &token, std::string_view flag)
@@ -90,8 +100,10 @@ void CliParser::collect(const std::vector<std::string> &args, Builder &out) cons
             out.clientsPerTeam = takeInteger(args, i, arg);
         else if (arg == "-f")
             out.frequency = takeInteger(args, i, arg);
-        else if (arg == "-n")
+        else if (arg == "-n") {
+            out.sawTeamFlag = true;
             takeTeamNames(args, i, out);
+        }
         else if (arg == "--enable-events")
             out.enableEvents = true;
         else if (arg == "--enable-biomes")
@@ -107,39 +119,36 @@ void CliParser::collect(const std::vector<std::string> &args, Builder &out) cons
 
 ServerConfig CliParser::finalize(const Builder &b) const
 {
-    if (!b.port)
-        throw CliParseError("missing required argument: -p");
-    if (b.port.value() <= 0
-        || b.port.value() > std::numeric_limits<std::uint16_t>::max())
+    const long port = b.port.value_or(kDefaultPort);
+    if (port <= 0 || port > std::numeric_limits<std::uint16_t>::max())
         throw CliParseError("-p port must be in range 1..65535");
 
-    if (!b.width)
-        throw CliParseError("missing required argument: -x");
-    requirePositive(b.width.value(), "-x");
+    const long width = b.width.value_or(kDefaultWidth);
+    requirePositive(width, "-x");
 
-    if (!b.height)
-        throw CliParseError("missing required argument: -y");
-    requirePositive(b.height.value(), "-y");
+    const long height = b.height.value_or(kDefaultHeight);
+    requirePositive(height, "-y");
 
-    if (b.teamNames.empty())
-        throw CliParseError("missing required argument: -n (at least one team)");
-    for (const std::string &name : b.teamNames) {
+    if (b.sawTeamFlag && b.teamNames.empty())
+        throw CliParseError("missing team name after -n");
+    std::vector<std::string> teamNames =
+        b.teamNames.empty() ? defaultTeamNames() : b.teamNames;
+    for (const std::string &name : teamNames) {
         if (name == kReservedTeamName)
             throw CliParseError("team name 'GRAPHIC' is reserved");
-        if (std::count(b.teamNames.begin(), b.teamNames.end(), name) > 1)
+        if (std::count(teamNames.begin(), teamNames.end(), name) > 1)
             throw CliParseError("duplicate team name: " + name);
     }
 
-    if (!b.clientsPerTeam)
-        throw CliParseError("missing required argument: -c");
-    requirePositive(b.clientsPerTeam.value(), "-c");
+    const long clientsPerTeam = b.clientsPerTeam.value_or(kDefaultClientsPerTeam);
+    requirePositive(clientsPerTeam, "-c");
 
     const long frequency = b.frequency.value_or(kDefaultFrequency);
     requirePositive(frequency, "-f");
 
-    return ServerConfig(static_cast<std::uint16_t>(b.port.value()),
-        static_cast<int>(b.width.value()), static_cast<int>(b.height.value()),
-        b.teamNames, static_cast<int>(b.clientsPerTeam.value()),
+    return ServerConfig(static_cast<std::uint16_t>(port),
+        static_cast<int>(width), static_cast<int>(height),
+        teamNames, static_cast<int>(clientsPerTeam),
         static_cast<int>(frequency), b.enableEvents, b.enableBiomes,
         b.enableAdmin, b.adminPassword.value_or(std::string{}));
 }
@@ -171,12 +180,14 @@ std::string CliParser::usage()
     return
         "USAGE: ./zappy_server -p port -x width -y height -n name1 name2 ... "
         "-c clientsNb -f freq\n"
-        "-p port      port number\n"
-        "-x width     width of the world\n"
-        "-y height    height of the world\n"
-        "-n name1 ... name of the team\n"
-        "-c clientsNb number of authorized clients per team\n"
-        "-f freq      reciprocal of time unit for execution of actions\n"
+        "All arguments are optional; defaults are used when omitted.\n"
+        "-p port      port number (default: 4242)\n"
+        "-x width     width of the world (default: 10)\n"
+        "-y height    height of the world (default: 10)\n"
+        "-n name1 ... name of the team (default: team1 team2)\n"
+        "-c clientsNb number of authorized clients per team (default: 5)\n"
+        "-f freq      reciprocal of time unit for execution of actions "
+        "(default: 100)\n"
         "--enable-events       (optional) enable dynamic events [bonus]\n"
         "--enable-biomes       (optional) enable biome generation [bonus]\n"
         "--enable-admin        (optional) enable admin console [bonus]\n"

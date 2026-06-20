@@ -51,6 +51,7 @@ private:
         std::optional<long> width;
         std::optional<long> height;
         std::vector<std::string> teamNames;
+        bool sawTeamFlag = false;
         std::optional<long> clientsPerTeam;
         std::optional<long> frequency;
 
