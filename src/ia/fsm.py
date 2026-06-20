@@ -14,6 +14,7 @@ from have_broadcast import TeamMemberState, broadcast_have, on_broadcast_receive
 from leading_elevation import (LeaderInfo, can_lead_elevation,
                                handle_leader_broadcast, tick_leading_elevation)
 from player_state import FsmState, PlayerState
+from scouting import tick_scouting
 from sender import CommandSender
 from stones import needed_stones
 from survival import tick_critical_survival
@@ -53,6 +54,7 @@ class Fsm:
         self._roam_counter: list[int] = [0]
         self._rally: list[RallyInfo | None] = [None]
         self._leader: list[LeaderInfo | None] = [None]
+        self._scout_counter: list[int] = [0]
         self.team_members: dict[int, TeamMemberState] = {}
 
     def on_broadcast(self, sender: CommandSender,
@@ -80,6 +82,19 @@ class Fsm:
             self._rally[0] = None
             elev.status = ElevationStatus.IDLE
 
+        # Failed incantation (ko): clear roles and fall back to evaluation.
+        if elev.status == ElevationStatus.FAILED:
+            self._leader[0] = None
+            self._rally[0] = None
+            self._state.fsm_state = FsmState.COLLECTING
+            elev.status = ElevationStatus.IDLE
+
+        # While an incantation is in progress the player is frozen:
+        # do not send any commands.
+        if elev.status == ElevationStatus.IN_PROGRESS:
+            self._state.fsm_state = FsmState.ELEVATING
+            return
+
         new_state = evaluate_fsm_state(self._state)
         # Active rally overrides lower-priority states.
         if (self._rally[0] is not None
@@ -106,4 +121,5 @@ class Fsm:
             if self._leader[0] is None:
                 self._leader[0] = LeaderInfo()
             tick_leading_elevation(self._state, sender, self._leader)
-        # FORKING and SCOUTING will be wired in future steps.
+        elif new_state == FsmState.SCOUTING:
+            tick_scouting(self._state, sender, self._scout_counter)
