@@ -12,6 +12,7 @@ from connection import open_connection
 from event_loop import run
 from handshake import perform_handshake
 from line_buffer import LineBuffer
+from player_state import make_player_state
 from sender import CommandSender
 
 USAGE = "USAGE: ./zappy_ai -p port -n name [-h machine]"
@@ -140,4 +141,5 @@ if __name__ == "__main__":
           file=sys.stderr)
     buf = LineBuffer(sock)
     sender = CommandSender(sock)
+    state = make_player_state(name, info.slots, info.width, info.height)
     run(buf, sender, fsm_tick=lambda s, e: None)
