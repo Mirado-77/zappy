@@ -7,10 +7,11 @@
 
 from elevation import ElevationState
 from inventory import parse_inventory
-from look import parse_look
+from look import parse_look, tile_index_to_offset
 from navigation import navigate_to
 from player_state import FsmState, PlayerState, apply_forward, apply_left, apply_right
 from sender import CommandSender
+from stones import needed_stones
 
 # Food threshold below which the player drops everything and forages.
 CRITICAL_FOOD = 3
@@ -144,7 +145,6 @@ def _tick_critical_survival(state: PlayerState,
     if state.last_look:
         food_idx = _find_food_tile(state)
         if food_idx is not None and food_idx > 0:
-            from look import tile_index_to_offset
             dx, dy = tile_index_to_offset(food_idx, state.level)
             tx = (state.x + dx) % state.map_width
             ty = (state.y + dy) % state.map_height
@@ -157,6 +157,46 @@ def _tick_critical_survival(state: PlayerState,
         return
 
     # 4. Nothing visible: advance one tile and request a new look.
+    sender.send("Forward",
+                callback=lambda r: apply_forward(state) if r == "ok" else None)
+    _request_look(state, sender)
+
+
+def _tick_foraging(state: PlayerState, sender: CommandSender) -> None:
+    """Execute one FSM tick in the FORAGING state.
+
+    Opportunistically collects food when below the safe threshold.
+    Does not abandon navigation or coordination in progress; yields
+    immediately to CRITICAL_SURVIVAL if food drops further.
+
+    Priority actions:
+    1. Food on current tile: take it.
+    2. Food visible one step away in the Look result: navigate and take.
+    3. No food visible: advance one step then request a new Look.
+
+    Args:
+        state: Mutable player state.
+        sender: Command sender.
+    """
+    if not sender.can_send:
+        return
+
+    # 1. Food on own tile.
+    if state.last_look and "food" in state.last_look[0]:
+        sender.send("Take food", callback=lambda r: None)
+        return
+
+    # 2. Food visible nearby (only one step away, tile index 1-3 at level 1).
+    if state.last_look:
+        food_idx = _find_food_tile(state)
+        if food_idx is not None and food_idx > 0:
+            dx, dy = tile_index_to_offset(food_idx, state.level)
+            tx = (state.x + dx) % state.map_width
+            ty = (state.y + dy) % state.map_height
+            navigate_to(state, sender, tx, ty)
+            return
+
+    # 3. Nothing visible: move forward and refresh look.
     sender.send("Forward",
                 callback=lambda r: apply_forward(state) if r == "ok" else None)
     _request_look(state, sender)
@@ -182,6 +222,8 @@ def _evaluate_fsm_state(state: PlayerState) -> FsmState:
         return FsmState.CRITICAL_SURVIVAL
     if state.fsm_state == FsmState.ELEVATING:
         return FsmState.ELEVATING
+    if food < SAFE_FOOD and not needed_stones(state.level, state.inventory):
+        return FsmState.FORAGING
     # Remaining states will be filled in by future steps.
     # Default to SCOUTING for now.
     return FsmState.SCOUTING
@@ -225,4 +267,6 @@ class Fsm:
 
         if new_state == FsmState.CRITICAL_SURVIVAL:
             _tick_critical_survival(self._state, sender)
+        elif new_state == FsmState.FORAGING:
+            _tick_foraging(self._state, sender)
         # Additional state handlers will be wired in future steps.
