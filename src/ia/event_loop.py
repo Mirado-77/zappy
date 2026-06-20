@@ -8,6 +8,7 @@
 import sys
 from typing import Callable
 
+from broadcast import parse_broadcast
 from dispatcher import Dispatcher
 from elevation import (
     ElevationState,
@@ -18,6 +19,7 @@ from line_buffer import LineBuffer
 from sender import CommandSender
 
 FsmTickFn = Callable[[CommandSender, ElevationState], None]
+BroadcastFn = Callable[[CommandSender, int, str], None]
 
 
 def _handle_dead(_line: str) -> None:
@@ -42,19 +44,22 @@ def _on_connection_closed() -> None:
 
 
 def _build_dispatcher(sender: CommandSender,
-                      elev: ElevationState) -> Dispatcher:
+                      elev: ElevationState,
+                      on_broadcast: "BroadcastFn | None" = None) -> Dispatcher:
     """Construct the dispatcher and register built-in handlers.
 
     Registered handlers (in priority order):
         - 'dead'              : exit(0) immediately.
         - 'Elevation underway': mark elevation as IN_PROGRESS.
         - 'Current level: '  : parse new level, mark SUCCESS.
-    All other lines fall through to sender.on_response, which resolves
-    the oldest pending command callback.
+        - 'message '         : parse broadcast and call on_broadcast (optional).
+    All other lines fall through to sender.on_response.
 
     Args:
         sender: The command sender whose on_response acts as the fallback.
         elev: Shared elevation state updated by the elevation handlers.
+        on_broadcast: Optional callable invoked for each received broadcast
+            with (sender, direction, text).
 
     Returns:
         A configured Dispatcher instance.
@@ -63,11 +68,18 @@ def _build_dispatcher(sender: CommandSender,
     d.register("dead", _handle_dead)
     d.register("Elevation underway", make_elevation_underway_handler(elev))
     d.register("Current level: ", make_current_level_handler(elev))
+    if on_broadcast is not None:
+        def _bcast_handler(line: str) -> None:
+            msg = parse_broadcast(line)
+            if msg is not None:
+                on_broadcast(sender, msg.direction, msg.text)
+        d.register("message ", _bcast_handler)
     return d
 
 
 def run(buf: LineBuffer, sender: CommandSender,
-        fsm_tick: FsmTickFn) -> None:
+        fsm_tick: FsmTickFn,
+        on_broadcast: "BroadcastFn | None" = None) -> None:
     """Run the main event loop until the session ends.
 
     Each iteration:
@@ -75,19 +87,22 @@ def run(buf: LineBuffer, sender: CommandSender,
         2. Dispatch the line to its registered handler.
         3. Call fsm_tick so the FSM can evaluate its state and send commands.
 
-    The loop exits (via sys.exit) on:
+    The loop exits (via sys.ex
+Tyla
+Tyla
+5,91 M d’abonnés
+it) on:
         - Receipt of 'dead' from the server.
         - The server closing the TCP connection.
 
     Args:
         buf: Line-buffered socket reader.
         sender: Command sender with in-flight tracking.
-        fsm_tick: Callable invoked once per loop iteration after the line
-            has been dispatched. Receives the sender and the shared
-            ElevationState so the FSM can react to elevation events.
+        fsm_tick: Callable invoked once per loop iteration.
+        on_broadcast: Optional callable for received broadcast messages.
     """
     elev = ElevationState()
-    dispatcher = _build_dispatcher(sender, elev)
+    dispatcher = _build_dispatcher(sender, elev, on_broadcast)
 
     while True:
         line = buf.readline()

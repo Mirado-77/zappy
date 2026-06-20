@@ -144,4 +144,4 @@ if __name__ == "__main__":
     sender = CommandSender(sock)
     state = make_player_state(name, info.slots, info.width, info.height)
     fsm = Fsm(state)
-    run(buf, sender, fsm_tick=fsm.tick)
+    run(buf, sender, fsm_tick=fsm.tick, on_broadcast=fsm.on_broadcast)

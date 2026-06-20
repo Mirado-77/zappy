@@ -33,6 +33,7 @@ MODULES	=	connection.py \
 			foraging.py \
 			collecting.py \
 			have_broadcast.py \
+			coordination.py \
 			fsm.py
 
 all:	$(BIN_DIR)/$(NAME)
