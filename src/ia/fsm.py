@@ -5,13 +5,16 @@
 ## FSM - priority evaluator, inventory polling, CRITICAL_SURVIVAL state
 ##
 
+from dataclasses import dataclass, field
+
+from broadcast_protocol import CoordMessage, MSG_HAVE, format_msg, parse_msg
 from elevation import ElevationState
 from inventory import parse_inventory
 from look import parse_look, tile_index_to_offset
 from navigation import navigate_to
 from player_state import FsmState, PlayerState, apply_forward, apply_left, apply_right
 from sender import CommandSender
-from stones import needed_stones, STONE_NAMES
+from stones import needed_stones, STONE_NAMES, ELEVATION_REQUIREMENTS
 
 # Food threshold below which the player drops everything and forages.
 CRITICAL_FOOD = 3
@@ -22,6 +25,123 @@ SAFE_FOOD = 15
 # Number of FSM ticks between automatic Inventory polls when none is
 # already in flight.
 INVENTORY_POLL_INTERVAL = 20
+
+# Number of FSM ticks between HAVE broadcasts.
+HAVE_BROADCAST_INTERVAL = 50
+
+# HAVE field order: level then stones in STONE_NAMES order.
+_HAVE_STONE_ORDER = ("linemate", "deraumere", "sibur", "mendiane",
+                     "phiras", "thystame")
+
+
+@dataclass(slots=True)
+class TeamMemberState:
+    """Last known state of one teammate as parsed from HAVE broadcasts.
+
+    Attributes:
+        level: Reported level.
+        stones: Stone counts keyed by name.
+        direction: Last broadcast direction (K value, 0 means same tile).
+    """
+
+    level: int
+    stones: dict[str, int]
+    direction: int
+
+
+def _format_have(state: PlayerState) -> str:
+    """Format a HAVE broadcast message for the current player state.
+
+    The HAVE message encodes the player's level followed by each stone
+    count in _HAVE_STONE_ORDER so teammates can determine how many stones
+    this player contributes toward a joint incantation.
+
+    Args:
+        state: Current player state.
+
+    Returns:
+        A string ready for use as ``Broadcast <text>``.
+    """
+    fields = [str(state.level)]
+    for stone in _HAVE_STONE_ORDER:
+        fields.append(str(state.inventory.get(stone, 0)))
+    return format_msg(MSG_HAVE, *fields)
+
+
+def _parse_have(msg: CoordMessage) -> TeamMemberState | None:
+    """Parse a CoordMessage of type HAVE into a TeamMemberState.
+
+    Expected fields: level, linemate, deraumere, sibur, mendiane,
+    phiras, thystame (7 integers in that order).
+
+    Args:
+        msg: A CoordMessage with msg_type == MSG_HAVE.
+
+    Returns:
+        TeamMemberState on success, None if the message is malformed.
+    """
+    if len(msg.fields) != 7:
+        return None
+    try:
+        values = [int(f) for f in msg.fields]
+    except ValueError:
+        return None
+    if values[0] < 1:
+        return None
+    stones = {name: values[i + 1] for i, name in enumerate(_HAVE_STONE_ORDER)}
+    return TeamMemberState(level=values[0], stones=stones, direction=0)
+
+
+def on_broadcast_received(
+        team_members: dict[int, TeamMemberState],
+        direction: int,
+        text: str) -> None:
+    """Process an incoming broadcast and update the team member table.
+
+    Only HAVE messages are handled here. Other message types are handled
+    by dedicated coordination handlers in future steps.
+
+    Each distinct broadcast direction is treated as a separate teammate
+    so the table is indexed by the direction value (1-8). This is a
+    simplified proxy for player identity; in practice two teammates may
+    share the same direction temporarily.
+
+    Args:
+        team_members: Mutable dict mapping direction -> TeamMemberState.
+        direction: K value from the broadcast (0 = same tile, 1-8 = direction).
+        text: Raw text portion of the broadcast line.
+    """
+    msg = parse_msg(text)
+    if msg is None:
+        return
+    if msg.msg_type == MSG_HAVE:
+        member = _parse_have(msg)
+        if member is not None:
+            member.direction = direction
+            team_members[direction] = member
+
+
+def _broadcast_have(state: PlayerState, sender: CommandSender,
+                    tick: int) -> bool:
+    """Emit a HAVE broadcast if the broadcast interval has elapsed.
+
+    Does nothing if the sender pipeline is full.
+
+    Args:
+        state: Current player state.
+        sender: Command sender.
+        tick: Current FSM tick counter.
+
+    Returns:
+        True if the command was sent.
+    """
+    if tick % HAVE_BROADCAST_INTERVAL != 0:
+        return False
+    if not sender.can_send:
+        return False
+    text = _format_have(state)
+    sender.send(f"Broadcast {text}", callback=lambda r: None)
+    return True
 
 
 def _on_inventory_response(state: PlayerState, line: str) -> None:
@@ -337,6 +457,7 @@ class Fsm:
         self._state = state
         self._tick: int = 0
         self._roam_counter: list[int] = [0]
+        self.team_members: dict[int, TeamMemberState] = {}
 
     def tick(self, sender: CommandSender, elev: ElevationState) -> None:
         """Run one FSM iteration.
@@ -351,6 +472,7 @@ class Fsm:
         """
         self._tick += 1
         _poll_inventory(self._state, sender, self._tick)
+        _broadcast_have(self._state, sender, self._tick)
 
         new_state = _evaluate_fsm_state(self._state)
         self._state.fsm_state = new_state
