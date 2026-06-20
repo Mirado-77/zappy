@@ -19,7 +19,8 @@ MODULES	=	connection.py \
 			dispatcher.py \
 			event_loop.py \
 			inventory.py \
-			look.py
+			look.py \
+			broadcast.py
 
 all:	$(BIN_DIR)/$(NAME)
 
