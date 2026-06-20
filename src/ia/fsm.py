@@ -11,7 +11,7 @@ from look import parse_look, tile_index_to_offset
 from navigation import navigate_to
 from player_state import FsmState, PlayerState, apply_forward, apply_left, apply_right
 from sender import CommandSender
-from stones import needed_stones
+from stones import needed_stones, STONE_NAMES
 
 # Food threshold below which the player drops everything and forages.
 CRITICAL_FOOD = 3
@@ -162,6 +162,93 @@ def _tick_critical_survival(state: PlayerState,
     _request_look(state, sender)
 
 
+# Roaming turn interval: turn right every N forward steps to spiral.
+_ROAM_TURN_INTERVAL = 4
+
+
+def _find_needed_stone_tile(
+        state: PlayerState,
+        wanted: dict[str, int]) -> tuple[int, str] | None:
+    """Find the nearest tile containing a stone the player still needs.
+
+    Scans the Look result in tile-index order (lowest = nearest). Only
+    returns a stone that is in the wanted dict. Skips stones that would
+    exceed the needed quantity (over-collection prevention).
+
+    Args:
+        state: Current player state with a valid last_look.
+        wanted: Dict of {resource: quantity_still_needed}.
+
+    Returns:
+        (tile_index, stone_name) of the nearest match, or None.
+    """
+    for idx, tile in enumerate(state.last_look):
+        for stone in STONE_NAMES:
+            if stone in tile and stone in wanted:
+                return idx, stone
+    return None
+
+
+def _tick_collecting(state: PlayerState, sender: CommandSender,
+                     roam_counter: list[int]) -> None:
+    """Execute one FSM tick in the COLLECTING state.
+
+    Priority actions:
+    1. Needed stone on current tile: take it (over-collection check applied).
+    2. Needed stone visible in Look result: navigate there.
+    3. Look not yet requested: request it.
+    4. Nothing useful visible: roam (forward + periodic turn).
+
+    The roam_counter list holds a single integer so it can be mutated
+    in place across ticks without a class attribute.
+
+    Args:
+        state: Mutable player state.
+        sender: Command sender.
+        roam_counter: Single-element list used as a mutable roam step counter.
+    """
+    if not sender.can_send:
+        return
+
+    wanted = needed_stones(state.level, state.inventory)
+    if not wanted:
+        return   # nothing left to collect; evaluator will transition state
+
+    # 1. Needed stone on own tile.
+    if state.last_look:
+        for stone in STONE_NAMES:
+            if stone in state.last_look[0] and stone in wanted:
+                sender.send(f"Take {stone}", callback=lambda r: None)
+                return
+
+    # 2. Needed stone visible elsewhere.
+    if state.last_look:
+        match = _find_needed_stone_tile(state, wanted)
+        if match is not None:
+            idx, stone = match
+            dx, dy = tile_index_to_offset(idx, state.level)
+            tx = (state.x + dx) % state.map_width
+            ty = (state.y + dy) % state.map_height
+            navigate_to(state, sender, tx, ty)
+            return
+
+    # 3. No Look result: request one.
+    if not state.last_look:
+        _request_look(state, sender)
+        return
+
+    # 4. Nothing visible: roam with periodic turns.
+    roam_counter[0] += 1
+    if roam_counter[0] % _ROAM_TURN_INTERVAL == 0:
+        sender.send("Right",
+                    callback=lambda r: apply_right(state) if r == "ok" else None)
+    else:
+        sender.send("Forward",
+                    callback=lambda r: apply_forward(state) if r == "ok" else None)
+    state.last_look = []   # invalidate so a fresh Look is requested next tick
+    _request_look(state, sender)
+
+
 def _tick_foraging(state: PlayerState, sender: CommandSender) -> None:
     """Execute one FSM tick in the FORAGING state.
 
@@ -222,7 +309,9 @@ def _evaluate_fsm_state(state: PlayerState) -> FsmState:
         return FsmState.CRITICAL_SURVIVAL
     if state.fsm_state == FsmState.ELEVATING:
         return FsmState.ELEVATING
-    if food < SAFE_FOOD and not needed_stones(state.level, state.inventory):
+    if needed_stones(state.level, state.inventory):
+        return FsmState.COLLECTING
+    if food < SAFE_FOOD:
         return FsmState.FORAGING
     # Remaining states will be filled in by future steps.
     # Default to SCOUTING for now.
@@ -247,6 +336,7 @@ class Fsm:
         """
         self._state = state
         self._tick: int = 0
+        self._roam_counter: list[int] = [0]
 
     def tick(self, sender: CommandSender, elev: ElevationState) -> None:
         """Run one FSM iteration.
@@ -269,4 +359,6 @@ class Fsm:
             _tick_critical_survival(self._state, sender)
         elif new_state == FsmState.FORAGING:
             _tick_foraging(self._state, sender)
+        elif new_state == FsmState.COLLECTING:
+            _tick_collecting(self._state, sender, self._roam_counter)
         # Additional state handlers will be wired in future steps.
