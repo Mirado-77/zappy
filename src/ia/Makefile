@@ -23,7 +23,8 @@ MODULES	=	connection.py \
 			broadcast.py \
 			elevation.py \
 			player_state.py \
-			torus.py
+			torus.py \
+			navigation.py
 
 all:	$(BIN_DIR)/$(NAME)
 
