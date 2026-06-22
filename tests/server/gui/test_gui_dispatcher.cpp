@@ -24,7 +24,10 @@ struct Fixture {
     World world{10, 10, {"team"}, 10};
     std::vector<Reply> replies;
     int frequency = 100;
+    zappy::server::client::ClientRegistry clients;
+    zappy::server::config::FeatureFlags flags;
     GuiDispatcher disp{world,
+        zappy::server::gui::GuiAdminDeps{clients, flags, ""},
         [this](int fd, std::string r) {
             replies.push_back({fd, std::move(r)});
         },

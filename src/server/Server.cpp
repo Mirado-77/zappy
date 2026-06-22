@@ -81,6 +81,7 @@ zappy::server::Server::Server(const cli::ServerConfig &config)
       _aiDispatcher(_world, _scheduler, _frequency,
           [this](int id, std::string r) { onAiResponse(id, std::move(r)); }),
       _guiDispatcher(_world,
+          gui::GuiAdminDeps{_clients, _featureFlags, _config.adminPassword()},
           [this](int fd, std::string r) { onGuiResponse(fd, std::move(r)); },
           [this] { return _frequency; },
           [this](int freq) { updateFrequency(freq); }),

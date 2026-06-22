@@ -13,10 +13,13 @@
  * @brief Construct a new Gui Dispatcher object.
  *
  * @param world the game world reference
+ * @param adminDeps client registry, feature flags and admin password
  * @param onResponse the callback to dispatch responses
+ * @param getFrequency callback to query the current frequency
+ * @param setFrequency callback to update the time frequency
  */
 zappy::server::gui::GuiDispatcher::GuiDispatcher(
-    game::World &world,
+    game::World &world, GuiAdminDeps adminDeps,
     std::function<void(int fd, std::string)> onResponse,
     std::function<int()> getFrequency,
     std::function<void(int)> setFrequency)
@@ -24,8 +27,32 @@ zappy::server::gui::GuiDispatcher::GuiDispatcher(
       _onResponse(std::move(onResponse)),
       _lineBuilder(world),
       _getFrequency(std::move(getFrequency)),
-      _setFrequency(std::move(setFrequency))
+      _setFrequency(std::move(setFrequency)),
+      _clients(adminDeps.clients),
+      _featureFlags(adminDeps.featureFlags),
+      _adminPassword(std::move(adminDeps.adminPassword))
 {
+}
+
+/**
+ * @brief Run a standard integer-argument command through its handler.
+ *
+ * @param cmd the parsed command (never ADMIN)
+ * @return std::vector<std::string> the response lines
+ */
+std::vector<std::string> zappy::server::gui::GuiDispatcher::dispatchStandard(
+    const protocol::gui::ParsedGuiCommand &cmd)
+{
+    static constexpr std::array<Handler,
+        protocol::gui::GUI_COMMAND_KIND_COUNT - 1> handlers = {
+            &GuiDispatcher::handleMsz, &GuiDispatcher::handleBct,
+            &GuiDispatcher::handleMct, &GuiDispatcher::handleTna,
+            &GuiDispatcher::handlePpo, &GuiDispatcher::handlePlv,
+            &GuiDispatcher::handlePin, &GuiDispatcher::handleSgt,
+            &GuiDispatcher::handleSst};
+    const std::size_t idx = static_cast<std::size_t>(cmd.kind);
+
+    return (this->*handlers[idx])(cmd.arguments);
 }
 
 /**
@@ -37,24 +64,56 @@ zappy::server::gui::GuiDispatcher::GuiDispatcher(
 void zappy::server::gui::GuiDispatcher::dispatch(
     int fd, std::string_view line)
 {
-    static constexpr std::array<Handler,
-        protocol::gui::GUI_COMMAND_KIND_COUNT> handlers = {
-            &GuiDispatcher::handleMsz, &GuiDispatcher::handleBct,
-            &GuiDispatcher::handleMct, &GuiDispatcher::handleTna,
-            &GuiDispatcher::handlePpo, &GuiDispatcher::handlePlv,
-            &GuiDispatcher::handlePin, &GuiDispatcher::handleSgt,
-            &GuiDispatcher::handleSst};
     const auto res = protocol::gui::GuiCommandParser::parse(line);
 
     if (std::holds_alternative<protocol::gui::GuiParseError>(res)) {
         sendError(fd, std::get<protocol::gui::GuiParseError>(res));
     } else {
-        const auto cmd = std::get<protocol::gui::ParsedGuiCommand>(res);
-        const std::size_t idx = static_cast<std::size_t>(cmd.kind);
-        const auto responses = (this->*handlers[idx])(cmd.arguments);
-        for (const auto &line : responses)
-            _onResponse(fd, line);
+        const auto &cmd = std::get<protocol::gui::ParsedGuiCommand>(res);
+        const auto responses =
+            (cmd.kind == protocol::gui::GuiCommandKind::ADMIN)
+            ? handleAdmin(fd, cmd) : dispatchStandard(cmd);
+        for (const auto &response : responses)
+            _onResponse(fd, response);
     }
+}
+
+/**
+ * @brief Promote the GUI client at @p fd to GUI_ADMIN if eligible.
+ *
+ * @param fd client file descriptor
+ * @return bool true if the client was GUI/GUI_ADMIN and is now admin
+ */
+bool zappy::server::gui::GuiDispatcher::promoteClientAdmin(int fd)
+{
+    client::Client &client = _clients.get(fd);
+    const bool eligible = client.state() == client::ClientState::GUI
+        || client.state() == client::ClientState::GUI_ADMIN;
+
+    if (eligible)
+        client.promoteToAdmin();
+    return eligible;
+}
+
+/**
+ * @brief Handle the admin authentication command for @p fd.
+ *
+ * @param fd client file descriptor
+ * @param cmd the parsed admin command (rawArgument holds the password)
+ * @return std::vector<std::string> the single response line
+ */
+std::vector<std::string> zappy::server::gui::GuiDispatcher::handleAdmin(
+    int fd, const protocol::gui::ParsedGuiCommand &cmd)
+{
+    std::vector<std::string> response = {"ko"};
+
+    if (!_featureFlags.isEnabled(config::FeatureFlag::ADMIN))
+        response = {"suc"};
+    else if (cmd.rawArgument.empty())
+        response = {"sbp"};
+    else if (cmd.rawArgument == _adminPassword && promoteClientAdmin(fd))
+        response = {"ok"};
+    return response;
 }
 
 /**

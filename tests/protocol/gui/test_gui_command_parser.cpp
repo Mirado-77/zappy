@@ -142,6 +142,39 @@ Test(gui_command_parser, malformed_hash_prefix_gives_bad_parameter_error)
     }
 }
 
+Test(gui_command_parser, admin_takes_raw_string_password)
+{
+    auto res = GuiCommandParser::parse("admin secret");
+    cr_assert(std::holds_alternative<ParsedGuiCommand>(res));
+    cr_assert(std::get<ParsedGuiCommand>(res).kind == GuiCommandKind::ADMIN);
+    cr_assert(std::get<ParsedGuiCommand>(res).arguments.empty());
+    cr_assert_str_eq(
+        std::get<ParsedGuiCommand>(res).rawArgument.c_str(), "secret");
+}
+
+Test(gui_command_parser, admin_password_keeps_internal_spaces)
+{
+    auto res = GuiCommandParser::parse("admin my long password with spaces");
+    cr_assert(std::holds_alternative<ParsedGuiCommand>(res));
+    cr_assert(std::get<ParsedGuiCommand>(res).kind == GuiCommandKind::ADMIN);
+    cr_assert_str_eq(std::get<ParsedGuiCommand>(res).rawArgument.c_str(),
+        "my long password with spaces");
+}
+
+Test(gui_command_parser, admin_without_password_is_bad_parameter)
+{
+    auto res = GuiCommandParser::parse("admin");
+    cr_assert(std::holds_alternative<GuiParseError>(res));
+    cr_assert(std::get<GuiParseError>(res) == GuiParseError::BAD_PARAMETER);
+}
+
+Test(gui_command_parser, admin_is_case_sensitive)
+{
+    auto res = GuiCommandParser::parse("ADMIN secret");
+    cr_assert(std::holds_alternative<GuiParseError>(res));
+    cr_assert(std::get<GuiParseError>(res) == GuiParseError::UNKNOWN_COMMAND);
+}
+
 Test(gui_command_parser, whitespace_is_tolerated)
 {
     auto res_msz = GuiCommandParser::parse("  msz  ");
