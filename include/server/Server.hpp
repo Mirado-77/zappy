@@ -12,6 +12,7 @@
     #include "server/gui/GuiDispatcher.hpp"
     #include "server/gui/GuiNotifier.hpp"
     #include "server/cli/ServerConfig.hpp"
+    #include "server/config/FeatureFlags.hpp"
     #include "server/client/ClientRegistry.hpp"
     #include "server/game/FoodScheduler.hpp"
     #include "server/game/RefillScheduler.hpp"
@@ -133,6 +134,7 @@ private:
     void handleStdin();
 
     cli::ServerConfig _config;
+    config::FeatureFlags _featureFlags;
     net::Listener _listener;
     net::PollLoop _poll;
     game::World _world;

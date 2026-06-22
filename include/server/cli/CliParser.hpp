@@ -58,6 +58,7 @@ private:
         bool enableEvents = false;
         bool enableBiomes = false;
         bool enableAdmin = false;
+        bool enableProfile = false;
         std::optional<std::string> adminPassword;
     };
 

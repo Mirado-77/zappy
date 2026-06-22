@@ -58,14 +58,15 @@ std::string resolveLocalIp()
  * @brief Initialise all members from the validated configuration.
  *
  * Member order matches the declaration order in Server.hpp:
- * _config → _listener → _poll → _world → _resourceSpawner → _clients →
- * _clock → _scheduler → _refillScheduler → _foodScheduler → _aiDispatcher →
- * _handshake.
+ * _config → _featureFlags → _listener → _poll → _world → _resourceSpawner →
+ * _clients → _clock → _scheduler → _refillScheduler → _foodScheduler →
+ * _aiDispatcher → _handshake.
  *
  * @param config validated CLI configuration
  */
 zappy::server::Server::Server(const cli::ServerConfig &config)
     : _config(config),
+      _featureFlags(),
       _listener(_config.port()),
       _poll(),
       _world(_config.width(), _config.height(),
@@ -86,6 +87,12 @@ zappy::server::Server::Server(const cli::ServerConfig &config)
       _guiNotifier(_clients, _world, [this](int fd) { retunePollMask(fd); }),
       _handshake(_config, _world, _foodScheduler)
 {
+    for (const auto flag : _config.initialEnabledFlags())
+        _featureFlags.enable(flag);
+    std::cout << "Feature flags: "
+              << (_config.initialEnabledFlags().empty()
+                  ? "all disabled (strict mode)" : "some enabled via CLI")
+              << "\n";
     _resourceSpawner.spawnInitial(_world);
     game::EggSpawner eggSpawner;
     eggSpawner.spawnInitial(_world);
