@@ -84,6 +84,19 @@ void zappy::server::client::Client::promote(ClientState newState)
 }
 
 /**
+ * @brief Promote a GUI client to GUI_ADMIN; idempotent when already admin.
+ *
+ * @throws ClientStateError if current state is not GUI or GUI_ADMIN
+ */
+void zappy::server::client::Client::promoteToAdmin()
+{
+    if (_state != ClientState::GUI && _state != ClientState::GUI_ADMIN)
+        throw ClientStateError("promoteToAdmin() requires GUI or GUI_ADMIN state");
+    _payload = GuiAdminData{};
+    _state = ClientState::GUI_ADMIN;
+}
+
+/**
  * @brief Return a mutable reference to the AiData payload.
  *
  * @return AiData&

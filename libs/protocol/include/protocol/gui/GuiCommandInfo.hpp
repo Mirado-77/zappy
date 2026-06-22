@@ -22,6 +22,7 @@ namespace zappy::protocol::gui {
 struct GuiCommandInfo {
     std::string_view name;
     int argCount;
+    bool acceptsRawArgument;
 
     /**
      * @brief Table entry for @p kind.
@@ -35,15 +36,16 @@ struct GuiCommandInfo {
 
 inline constexpr std::array<GuiCommandInfo,
     GUI_COMMAND_KIND_COUNT> GUI_COMMAND_INFOS = {{
-    {"msz", 0},
-    {"bct", 2},
-    {"mct", 0},
-    {"tna", 0},
-    {"ppo", 1},
-    {"plv", 1},
-    {"pin", 1},
-    {"sgt", 0},
-    {"sst", 1}
+    {"msz", 0, false},
+    {"bct", 2, false},
+    {"mct", 0, false},
+    {"tna", 0, false},
+    {"ppo", 1, false},
+    {"plv", 1, false},
+    {"pin", 1, false},
+    {"sgt", 0, false},
+    {"sst", 1, false},
+    {"admin", 1, true}
 }};
 
 constexpr const GuiCommandInfo &GuiCommandInfo::guiCommandInfoFor(

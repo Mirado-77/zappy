@@ -24,10 +24,11 @@ enum class GuiCommandKind {
     PLV,
     PIN,
     SGT,
-    SST
+    SST,
+    ADMIN
 };
 
-constexpr std::size_t GUI_COMMAND_KIND_COUNT = 9;
+constexpr std::size_t GUI_COMMAND_KIND_COUNT = 10;
 
 } // namespace zappy::protocol::gui
 

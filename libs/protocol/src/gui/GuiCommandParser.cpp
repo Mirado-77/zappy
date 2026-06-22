@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <string>
 #include <system_error>
 
 #include "protocol/gui/GuiCommandInfo.hpp"
@@ -92,7 +93,54 @@ zappy::protocol::gui::GuiCommandParser::buildCommand(
 
     args.reserve(tokens.size());
     if (convertArgs(tokens, args))
-        result = ParsedGuiCommand{kind, std::move(args)};
+        result = ParsedGuiCommand{kind, std::move(args), std::string{}};
+    return result;
+}
+
+/**
+ * @brief Build a command whose payload is a raw, unparsed string argument.
+ *
+ * @param kind the command kind
+ * @param rest the trimmed argument block (the raw payload)
+ * @return std::variant<ParsedGuiCommand, GuiParseError> BAD_PARAMETER if empty
+ */
+std::variant<zappy::protocol::gui::ParsedGuiCommand,
+    zappy::protocol::gui::GuiParseError>
+zappy::protocol::gui::GuiCommandParser::buildRawCommand(
+    GuiCommandKind kind, std::string_view rest)
+{
+    std::variant<ParsedGuiCommand, GuiParseError> result =
+        GuiParseError::BAD_PARAMETER;
+
+    if (!rest.empty())
+        result = ParsedGuiCommand{kind, {}, std::string(rest)};
+    return result;
+}
+
+/**
+ * @brief Resolve a matched command into a parse result.
+ *
+ * @param info matched command metadata
+ * @param kind the command kind
+ * @param rest the trimmed argument block
+ * @return std::variant<ParsedGuiCommand, GuiParseError>
+ */
+std::variant<zappy::protocol::gui::ParsedGuiCommand,
+    zappy::protocol::gui::GuiParseError>
+zappy::protocol::gui::GuiCommandParser::resolve(
+    const GuiCommandInfo &info, GuiCommandKind kind, std::string_view rest)
+{
+    std::variant<ParsedGuiCommand, GuiParseError> result =
+        GuiParseError::BAD_PARAMETER;
+    std::vector<std::string_view> tokens;
+
+    if (info.acceptsRawArgument)
+        result = buildRawCommand(kind, rest);
+    else {
+        tokens = tokenize(rest);
+        if (tokens.size() == static_cast<std::size_t>(info.argCount))
+            result = buildCommand(kind, tokens);
+    }
     return result;
 }
 
@@ -118,12 +166,8 @@ zappy::protocol::gui::GuiCommandParser::parse(std::string_view line)
             return info.name == verb;
         });
 
-    if (!trimmed.empty() && it != GUI_COMMAND_INFOS.end()) {
-        const std::vector<std::string_view> tokens = tokenize(rest);
-        const std::size_t idx = it - GUI_COMMAND_INFOS.begin();
-        result = tokens.size() == static_cast<std::size_t>(it->argCount)
-            ? buildCommand(static_cast<GuiCommandKind>(idx), tokens)
-            : GuiParseError::BAD_PARAMETER;
-    }
+    if (!trimmed.empty() && it != GUI_COMMAND_INFOS.end())
+        result = resolve(*it,
+            static_cast<GuiCommandKind>(it - GUI_COMMAND_INFOS.begin()), rest);
     return result;
 }

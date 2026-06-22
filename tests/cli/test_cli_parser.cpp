@@ -89,6 +89,32 @@ Test(cli_valid, bonus_flags_default_to_disabled)
     cr_assert_str_empty(config->adminPassword().c_str());
 }
 
+Test(cli_valid, admin_password_without_enable_is_stored_and_unused)
+{
+    auto config = run({"-p", "1", "-x", "1", "-y", "1", "-n", "a", "-c", "1",
+        "--admin-password", "lonely"});
+
+    cr_assert(config.has_value());
+    cr_assert_not(config->adminEnabled());
+    cr_assert_str_eq(config->adminPassword().c_str(), "lonely");
+}
+
+Test(cli_error, enable_admin_without_password_throws)
+{
+    cr_assert_throw(
+        run({"-p", "1", "-x", "1", "-y", "1", "-n", "a", "-c", "1",
+            "--enable-admin"}),
+        zappy::server::cli::CliParseError);
+}
+
+Test(cli_error, enable_admin_with_empty_password_throws)
+{
+    cr_assert_throw(
+        run({"-p", "1", "-x", "1", "-y", "1", "-n", "a", "-c", "1",
+            "--enable-admin", "--admin-password", ""}),
+        zappy::server::cli::CliParseError);
+}
+
 /* help */
 
 Test(cli_help, returns_nullopt)

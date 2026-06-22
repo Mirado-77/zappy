@@ -119,6 +119,12 @@ void CliParser::collect(const std::vector<std::string> &args, Builder &out) cons
     }
 }
 
+void CliParser::validateAdminPassword(const Builder &b) const
+{
+    if (b.enableAdmin && b.adminPassword.value_or(std::string{}).empty())
+        throw CliParseError("admin feature requires --admin-password");
+}
+
 ServerConfig CliParser::finalize(const Builder &b) const
 {
     const long port = b.port.value_or(kDefaultPort);
@@ -148,6 +154,7 @@ ServerConfig CliParser::finalize(const Builder &b) const
     const long frequency = b.frequency.value_or(kDefaultFrequency);
     requirePositive(frequency, "-f");
 
+    validateAdminPassword(b);
     return ServerConfig(static_cast<std::uint16_t>(port),
         static_cast<int>(width), static_cast<int>(height),
         teamNames, static_cast<int>(clientsPerTeam),
