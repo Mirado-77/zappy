@@ -13,6 +13,8 @@
     #include <utility>
     #include <vector>
 
+    #include "server/config/FeatureFlag.hpp"
+
 namespace zappy::server::cli {
 
 /**
@@ -32,17 +34,19 @@ public:
      * @param enableEvents bonus: dynamic events subsystem
      * @param enableBiomes bonus: biome generation
      * @param enableAdmin bonus: admin console
+     * @param enableProfile bonus: player profile command
      * @param adminPassword bonus: admin console password (empty if none)
      */
     ServerConfig(std::uint16_t port, int width, int height,
         std::vector<std::string> teamNames, int clientsPerTeam, int frequency,
         bool enableEvents = false, bool enableBiomes = false,
-        bool enableAdmin = false, std::string adminPassword = {})
+        bool enableAdmin = false, bool enableProfile = false,
+        std::string adminPassword = {})
         : _port(port), _width(width), _height(height),
         _teamNames(std::move(teamNames)), _clientsPerTeam(clientsPerTeam),
         _frequency(frequency), _enableEvents(enableEvents),
         _enableBiomes(enableBiomes), _enableAdmin(enableAdmin),
-        _adminPassword(std::move(adminPassword))
+        _enableProfile(enableProfile), _adminPassword(std::move(adminPassword))
     {
     }
 
@@ -113,11 +117,39 @@ public:
     bool adminEnabled() const noexcept { return _enableAdmin; }
 
     /**
+     * @brief Whether the bonus player profile command is enabled.
+     *
+     * @return true if the profile command is enabled
+     * @return false otherwise
+     */
+    bool profileEnabled() const noexcept { return _enableProfile; }
+
+    /**
      * @brief Configured admin password.
      *
      * @return const std::string& reference to the password (empty if none provided)
      */
     const std::string &adminPassword() const noexcept { return _adminPassword; }
+
+    /**
+     * @brief Feature flags requested on the command line, in enum order.
+     *
+     * @return std::vector<config::FeatureFlag> the flags to enable at boot
+     */
+    std::vector<config::FeatureFlag> initialEnabledFlags() const
+    {
+        std::vector<config::FeatureFlag> flags;
+
+        if (_enableEvents)
+            flags.push_back(config::FeatureFlag::EVENTS);
+        if (_enableBiomes)
+            flags.push_back(config::FeatureFlag::BIOMES);
+        if (_enableAdmin)
+            flags.push_back(config::FeatureFlag::ADMIN);
+        if (_enableProfile)
+            flags.push_back(config::FeatureFlag::PROFILE);
+        return flags;
+    }
 
 private:
     const std::uint16_t _port;
@@ -129,6 +161,7 @@ private:
     const bool _enableEvents;
     const bool _enableBiomes;
     const bool _enableAdmin;
+    const bool _enableProfile;
     const std::string _adminPassword;
 };
 

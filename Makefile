@@ -49,7 +49,9 @@ TEST_SRC = src/server/cli/CliParser.cpp \
 			src/server/gui/GuiDispatcher.cpp \
 			src/server/gui/GuiLineBuilder.cpp \
 			src/server/gui/GuiNotifier.cpp \
+			src/server/config/FeatureFlags.cpp \
 		    $(wildcard tests/cli/*.cpp) \
+			$(wildcard tests/server/config/*.cpp) \
 			$(wildcard tests/server/client/*.cpp) \
 			$(wildcard tests/server/game/*.cpp) \
 			$(wildcard tests/server/scheduler/*.cpp) \

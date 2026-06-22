@@ -110,6 +110,8 @@ void CliParser::collect(const std::vector<std::string> &args, Builder &out) cons
             out.enableBiomes = true;
         else if (arg == "--enable-admin")
             out.enableAdmin = true;
+        else if (arg == "--enable-profile")
+            out.enableProfile = true;
         else if (arg == "--admin-password")
             out.adminPassword = takeValue(args, i, arg);
         else
@@ -150,7 +152,8 @@ ServerConfig CliParser::finalize(const Builder &b) const
         static_cast<int>(width), static_cast<int>(height),
         teamNames, static_cast<int>(clientsPerTeam),
         static_cast<int>(frequency), b.enableEvents, b.enableBiomes,
-        b.enableAdmin, b.adminPassword.value_or(std::string{}));
+        b.enableAdmin, b.enableProfile,
+        b.adminPassword.value_or(std::string{}));
 }
 
 std::optional<ServerConfig> CliParser::parse(int argc,
@@ -191,6 +194,7 @@ std::string CliParser::usage()
         "--enable-events       (optional) enable dynamic events [bonus]\n"
         "--enable-biomes       (optional) enable biome generation [bonus]\n"
         "--enable-admin        (optional) enable admin console [bonus]\n"
+        "--enable-profile      (optional) enable player profile command [bonus]\n"
         "--admin-password <pw> (optional) admin console password [bonus]\n";
 }
 
