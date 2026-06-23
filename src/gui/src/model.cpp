@@ -47,9 +47,9 @@ void model::load_anim()
     this->_anim.reset(LoadModelAnimations(_name.c_str(), &this->_animeCount));
 }
 
-void model::move_model(Vector3 pos, Vector3 rotationAxis, float rotationAngle, Vector3 scale)
+void model::move_model(Vector3 rotationAxis, float rotationAngle, Vector3 scale)
 {
-    DrawModelEx(this->_model, pos, rotationAxis, rotationAngle, scale, this->_color);
+    DrawModelEx(this->_model, this->_pos, rotationAxis, rotationAngle, scale, this->_color);
 }
 
 void model::set_pos(Vector3 pos)
@@ -71,4 +71,9 @@ void model::set_base_pos(Vector3 pos)
 Vector3 model::get_base_pos()
 {
     return this->_base_pos;
+}
+
+void model::set_anim_index(int anime_index)
+{
+    this->_anim_index = anime_index;
 }
