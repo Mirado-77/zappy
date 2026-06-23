@@ -169,31 +169,36 @@ void ServerLink::poll_once(int timeout_ms)
     }
 }
 
+void ServerLink::send_bootstrap()
+{
+    _buffer->queue_message("GRAPHIC\n");
+    _buffer->queue_message("msz\n");
+    _buffer->queue_message("sgt\n");
+    _buffer->queue_message("tna\n");
+    _buffer->queue_message("mct\n");
+}
+
 void ServerLink::process_line(const std::string &line)
 {
     if (_state == HandshakeState::WAIT_WELCOME) {
-        if (line.rfind(WELCOME_LINE, 0) == 0) {
-            _buffer->queue_message(std::string(GRAPHIC_CMD));
+        if (line.rfind("WELCOME", 0) == 0) {
+            send_bootstrap();
             _state = HandshakeState::READY;
-            return;
         }
         return;
     }
-
-    auto parsed = zappy::protocol::gui::GuiCommandParser::parse(line);
-    if (std::holds_alternative<zappy::protocol::gui::ParsedGuiCommand>(parsed))
-        _ready.push(
-            std::get<zappy::protocol::gui::ParsedGuiCommand>(std::move(parsed)));
+    ServerEvent ev = ServerEventParser::parse(line);
+    if (ev.kind != EventKind::UNKNOWN)
+        _ready.push(std::move(ev));
 }
 
-std::optional<zappy::protocol::gui::ParsedGuiCommand>
-    ServerLink::next_message()
+std::optional<ServerEvent> ServerLink::next_message()
 {
     if (_ready.empty())
         return std::nullopt;
-    auto msg = std::move(_ready.front());
+    auto m = std::move(_ready.front());
     _ready.pop();
-    return msg;
+    return m;
 }
 
 bool ServerLink::is_connected() const noexcept

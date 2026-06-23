@@ -11,12 +11,12 @@
     #include <cstdint>
     #include <memory>
     #include <optional>
+    #include <queue>
     #include <stdexcept>
     #include <string>
 
+    #include "gui/net/ServerEvent.hpp"
     #include "net/ClientBuffer.hpp"
-    #include "protocol/gui/GuiCommandParser.hpp"
-    #include "protocol/gui/ParsedGuiCommand.hpp"
 
 namespace zappy::gui::net {
 
@@ -33,12 +33,8 @@ public:
     ServerLink &operator=(const ServerLink &) = delete;
 
     void send(std::string line);
-
     void poll_once(int timeout_ms);
-
-    [[nodiscard]] std::optional<zappy::protocol::gui::ParsedGuiCommand>
-        next_message();
-
+    [[nodiscard]] std::optional<ServerEvent> next_message();
     [[nodiscard]] bool is_connected() const noexcept;
 
 private:
@@ -46,11 +42,12 @@ private:
 
     void open_socket(const std::string &host, std::uint16_t port);
     void process_line(const std::string &line);
+    void send_bootstrap();
 
     std::unique_ptr<zappy::net::ClientBuffer> _buffer;
     HandshakeState _state;
     bool _connected;
-    std::queue<zappy::protocol::gui::ParsedGuiCommand> _ready;
+    std::queue<ServerEvent> _ready;
 };
 
 } // namespace zappy::gui::net
