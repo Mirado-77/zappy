@@ -1,14 +1,61 @@
 /*
-** EPITECH PROJECT, 2025
-** C++ Project Template
+** EPITECH PROJECT, 2026
+** Zappy
 ** File description:
-** Main entry point
+** zappy_gui entry point
 */
 
 #include <iostream>
+#include <stdexcept>
 
-int main(void)
+#include "gui/Constants.hpp"
+#include "gui/Gui.hpp"
+#include "gui/ipc/SerializationError.hpp"
+#include "gui/GuiArgParser.hpp"
+
+/**
+ * @brief zappy_gui entry point: server_infor then hand off to Gui.
+ *
+ * @param argc number of command-line arguments (valid = 2 if help otherwise 2)
+ * @param argv command-line argument vector
+ * @return int SUCCESS on clean shutdown, FAILURE on any error
+ */
+int main(int argc, char **argv)
 {
-    std::cout << "hello world i'm the gui" << std::endl;
-    return 0;
+    int exitCode = zappy::gui::SUCCESS;
+
+    try {
+        const auto server_cordinates = zappy::gui::GuiArgParser{}.parse(argc, argv);
+        if (server_cordinates)
+            zappy::gui::Gui(*server_cordinates).run();
+    } catch (const zappy::gui::ipc::SerializationError &error) {
+        std::cerr << "Error: " << error.what() << "\n"
+                  << zappy::gui::GuiArgParser::usage();
+        exitCode = zappy::gui::FAILURE;
+    } catch (const std::runtime_error &error) {
+        std::cerr << "Error: " << error.what() << "\n";
+        exitCode = zappy::gui::FAILURE;
+    }
+    return exitCode;
 }
+
+/* naughty list
+zappy::gui::cli::CliParseError -> zappy::gui::ipc::SerializationError
+Server -> Gui
+cli::CliParser -> GuiArgParser
+zappy::gui::cli::CliParser::usage()-> zappy::gui::GuiArgParser::usage()
+zappy::gui::ipc::ServerInfo -> zappy::gui::ServerConfig
+
+
+modified files:
+#include "ipc/SerializationError.hpp"
+GuiArgParser.cpp
+GuiArgParser.hpp
+#include "gui/cli/ServerConfig.hpp" -> #include "gui/ipc/ServerInfo.hpp"
+    zappy::gui::ServerConfig -> zappy::gui::ipc::ServerInfo
+
+to-modify headers:
+#include "gui/Server.hpp" -> "gui/Gui.hpp"
+#include "gui/Constants.hpp" -> "gui/Constants.hpp"
+
+*/
