@@ -7,6 +7,7 @@
 
 #include <criterion/criterion.h>
 #include <memory>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -50,6 +51,10 @@ public:
         : _ticksToLive(ticksToLive), _applyLog(applyLog), _id(id) {}
 
     std::string_view name() const noexcept override { return "test"; }
+
+    std::string startBroadcast() const override { return "evt_test_start"; }
+
+    std::string endBroadcast() const override { return "evt_test_end"; }
 
     bool applyTick(World &) override
     {

@@ -137,6 +137,8 @@ void zappy::server::event::EventBus::applyActiveEvents()
             if (expired) {
                 event->onEnd(_world);
                 notifyEventEnded(*event);
+            } else {
+                notifyEventTicked(*event);
             }
             return expired;
         });
@@ -169,7 +171,20 @@ zappy::server::event::EventBus::tickInterval() const noexcept
  */
 void zappy::server::event::EventBus::notifyEventStarted(const Event &event)
 {
-    _guiNotifier.broadcast("evt_" + std::string(event.name()) + "_start");
+    _guiNotifier.broadcast(event.startBroadcast());
+}
+
+/**
+ * @brief Broadcast the per-tick line for @p event when it is non-empty.
+ *
+ * @param event the event that just ticked
+ */
+void zappy::server::event::EventBus::notifyEventTicked(const Event &event)
+{
+    const std::string line = event.tickBroadcast();
+
+    if (!line.empty())
+        _guiNotifier.broadcast(line);
 }
 
 /**
@@ -179,5 +194,5 @@ void zappy::server::event::EventBus::notifyEventStarted(const Event &event)
  */
 void zappy::server::event::EventBus::notifyEventEnded(const Event &event)
 {
-    _guiNotifier.broadcast("evt_" + std::string(event.name()) + "_end");
+    _guiNotifier.broadcast(event.endBroadcast());
 }

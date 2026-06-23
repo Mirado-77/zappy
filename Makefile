@@ -51,6 +51,7 @@ TEST_SRC = src/server/cli/CliParser.cpp \
 			src/server/gui/GuiNotifier.cpp \
 			src/server/config/FeatureFlags.cpp \
 			src/server/event/EventBus.cpp \
+			src/server/event/Storm.cpp \
 		    $(wildcard tests/cli/*.cpp) \
 			$(wildcard tests/server/config/*.cpp) \
 			$(wildcard tests/server/client/*.cpp) \

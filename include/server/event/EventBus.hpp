@@ -129,6 +129,13 @@ private:
     void notifyEventStarted(const Event &event);
 
     /**
+     * @brief Broadcast @p event's per-tick line if it is non-empty.
+     *
+     * @param event the event that just ticked
+     */
+    void notifyEventTicked(const Event &event);
+
+    /**
      * @brief Broadcast "evt_<name>_end" for @p event.
      *
      * @param event the event that ended
