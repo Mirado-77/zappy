@@ -36,6 +36,9 @@ class RallyInfo:
             when forward_pending=False (no in-flight Forward that could
             relocate us after READY but before the Incantation).
             Unlike in_flight, this flag is unaffected by Look/Inventory.
+        ticks_stale: Ticks elapsed since the last RALLY refresh.  If this
+            exceeds COORDINATING_STALE_TICKS the rally is considered
+            abandoned by the leader and is cleared automatically.
     """
 
     level: int
@@ -43,6 +46,10 @@ class RallyInfo:
     ready_sent: bool = False
     step_taken: bool = False
     forward_pending: bool = False
+    ticks_stale: int = 0
+
+
+COORDINATING_STALE_TICKS = 200
 
 
 def _navigate_toward_k(state: PlayerState, sender: CommandSender,
@@ -116,6 +123,7 @@ def on_rally_received(
             return
         old_direction = existing.direction
         existing.direction = direction
+        existing.ticks_stale = 0
         if direction == 0:
             if not existing.forward_pending and sender.can_send:
                 sender.send(f"Broadcast {format_msg(MSG_READY)}",
@@ -178,13 +186,38 @@ def tick_coordinating(
         return
 
     if rally.ready_sent:
-        from fsm_helpers import request_look
+        rally.ticks_stale += 1
+        if rally.ticks_stale > COORDINATING_STALE_TICKS:
+            rally_holder[0] = None
+            return
+        from fsm_helpers import request_look, SAFE_FOOD
+        if state.last_look and "food" in state.last_look[0] \
+                and state.inventory.get("food", 0) < SAFE_FOOD and sender.can_send:
+            state.last_look[0].remove("food")
+            def _eat(r: str) -> None:
+                if r == "ok":
+                    state.inventory["food"] = state.inventory.get("food", 0) + 1
+            sender.send("Take food", callback=_eat)
+            return
         if not state.pending_look:
             request_look(state, sender)
         return
 
+    rally.ticks_stale += 1
+    if rally.ticks_stale > COORDINATING_STALE_TICKS:
+        rally_holder[0] = None
+        return
+
     if rally.direction == 0:
-        from fsm_helpers import request_look
+        from fsm_helpers import request_look, SAFE_FOOD
+        if state.last_look and "food" in state.last_look[0] \
+                and state.inventory.get("food", 0) < SAFE_FOOD and sender.can_send:
+            state.last_look[0].remove("food")
+            def _eat2(r: str) -> None:
+                if r == "ok":
+                    state.inventory["food"] = state.inventory.get("food", 0) + 1
+            sender.send("Take food", callback=_eat2)
+            return
         if not state.pending_look:
             request_look(state, sender)
         return

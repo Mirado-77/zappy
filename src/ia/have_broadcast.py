@@ -12,7 +12,7 @@ from player_state import PlayerState
 from sender import CommandSender
 
 # Number of FSM ticks between HAVE broadcasts.
-HAVE_BROADCAST_INTERVAL = 50
+HAVE_BROADCAST_INTERVAL = 40
 
 # Stone field order inside a HAVE message (must stay consistent).
 _HAVE_STONE_ORDER = ("linemate", "deraumere", "sibur", "mendiane",

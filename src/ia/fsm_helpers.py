@@ -12,7 +12,11 @@ from sender import CommandSender
 
 CRITICAL_FOOD = 3
 
-SAFE_FOOD = 15
+SAFE_FOOD = 20
+
+LEAD_FOOD = 15
+
+FOLLOW_FOOD = 5
 
 INVENTORY_POLL_INTERVAL = 20
 

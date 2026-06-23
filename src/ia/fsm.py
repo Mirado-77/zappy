@@ -21,7 +21,8 @@ from stones import needed_stones
 from survival import tick_critical_survival
 
 
-def evaluate_fsm_state(state: PlayerState, fork_cooldown: int = 0) -> FsmState:
+def evaluate_fsm_state(state: PlayerState, fork_cooldown: int = 0,
+                       lead_cooldown: int = 0) -> FsmState:
     """Return the highest-priority FSM state that applies this tick.
 
     Evaluates conditions in strict priority order. The ELEVATING state
@@ -32,7 +33,7 @@ def evaluate_fsm_state(state: PlayerState, fork_cooldown: int = 0) -> FsmState:
         return FsmState.CRITICAL_SURVIVAL
     if state.fsm_state == FsmState.ELEVATING:
         return FsmState.ELEVATING
-    if can_lead_elevation(state):
+    if lead_cooldown == 0 and can_lead_elevation(state):
         return FsmState.LEADING_ELEVATION
     if food < SAFE_FOOD:
         return FsmState.FORAGING
@@ -59,6 +60,7 @@ class Fsm:
         self._leader: list[LeaderInfo | None] = [None]
         self._scout_counter: list[int] = [0]
         self._fork_cooldown: list[int] = [0]
+        self._lead_cooldown: list[int] = [0]
         self.team_members: dict[int, TeamMemberState] = {}
 
     def on_broadcast(self, sender: CommandSender,
@@ -80,10 +82,15 @@ class Fsm:
         """
         self._tick += 1
         poll_inventory(self._state, sender, self._tick)
-        broadcast_have(self._state, sender, self._tick)
+        if self._state.inventory.get("food", 0) >= SAFE_FOOD:
+            broadcast_have(self._state, sender, self._tick)
 
         if elev.status == ElevationStatus.SUCCESS:
             self._state.level = elev.new_level
+            if self._leader[0] is not None and sender.can_send:
+                from broadcast_protocol import MSG_CANCEL, format_msg as _fmt
+                sender.send(f"Broadcast {_fmt(MSG_CANCEL)}",
+                            callback=lambda r: None)
             self._state.fsm_state = FsmState.COLLECTING
             self._leader[0] = None
             self._rally[0] = None
@@ -106,16 +113,38 @@ class Fsm:
         if self._fork_cooldown[0] > 0:
             self._fork_cooldown[0] -= 1
 
-        new_state = evaluate_fsm_state(self._state, self._fork_cooldown[0])
-        if (self._rally[0] is not None
-                and new_state not in (FsmState.CRITICAL_SURVIVAL,
-                                      FsmState.ELEVATING)):
-            new_state = FsmState.COORDINATING
-        if (self._leader[0] is not None
-                and new_state not in (FsmState.CRITICAL_SURVIVAL,
-                                      FsmState.ELEVATING,
-                                      FsmState.COORDINATING)):
-            new_state = FsmState.LEADING_ELEVATION
+        if self._lead_cooldown[0] > 0:
+            self._lead_cooldown[0] -= 1
+
+        new_state = evaluate_fsm_state(self._state, self._fork_cooldown[0],
+                                       self._lead_cooldown[0])
+
+        if self._rally[0] is not None:
+            from fsm_helpers import FOLLOW_FOOD as _ff
+            low_food = new_state == FsmState.FORAGING and \
+                self._state.inventory.get("food", 0) < _ff
+            if new_state not in (FsmState.CRITICAL_SURVIVAL,
+                                 FsmState.ELEVATING) and not low_food:
+                new_state = FsmState.COORDINATING
+            else:
+                from coordination import COORDINATING_STALE_TICKS
+                self._rally[0].ticks_stale += 1
+                if self._rally[0].ticks_stale > COORDINATING_STALE_TICKS:
+                    self._rally[0] = None
+
+        if self._leader[0] is not None and new_state not in (
+                FsmState.CRITICAL_SURVIVAL, FsmState.ELEVATING,
+                FsmState.COORDINATING):
+            from fsm_helpers import LEAD_FOOD as _lf
+            if self._state.inventory.get("food", 0) >= _lf:
+                new_state = FsmState.LEADING_ELEVATION
+            else:
+                from broadcast_protocol import MSG_CANCEL, format_msg as _fmt
+                if sender.can_send:
+                    sender.send(f"Broadcast {_fmt(MSG_CANCEL)}",
+                                callback=lambda r: None)
+                self._leader[0] = None
+
         if new_state == FsmState.CRITICAL_SURVIVAL and self._leader[0] is not None:
             if sender.can_send:
                 from broadcast_protocol import MSG_CANCEL, format_msg as _fmt
@@ -133,12 +162,13 @@ class Fsm:
         elif new_state == FsmState.COORDINATING:
             tick_coordinating(self._state, sender, self._rally)
         elif new_state == FsmState.LEADING_ELEVATION:
+            had_leader = self._leader[0] is not None
             if self._leader[0] is None:
                 self._leader[0] = LeaderInfo()
             tick_leading_elevation(self._state, sender, self._leader, elev)
+            if had_leader and self._leader[0] is None:
+                self._lead_cooldown[0] = 50
         elif new_state == FsmState.SCOUTING:
             tick_scouting(self._state, sender, self._scout_counter)
-        elif new_state == FsmState.FORKING:
-            tick_forking(self._state, sender, self._fork_cooldown)
         elif new_state == FsmState.FORKING:
             tick_forking(self._state, sender, self._fork_cooldown)

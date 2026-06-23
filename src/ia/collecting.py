@@ -58,6 +58,14 @@ def tick_collecting(state: PlayerState, sender: CommandSender,
                         state.inventory[s] = state.inventory.get(s, 0) + 1
                 sender.send(f"Take {stone}", callback=_take_stone)
                 return
+        from fsm_helpers import SAFE_FOOD
+        if "food" in state.last_look[0] and state.inventory.get("food", 0) < SAFE_FOOD:
+            state.last_look[0].remove("food")
+            def _take_food(r: str) -> None:
+                if r == "ok":
+                    state.inventory["food"] = state.inventory.get("food", 0) + 1
+            sender.send("Take food", callback=_take_food)
+            return
 
     if state.last_look:
         match = find_needed_stone_tile(state, wanted)

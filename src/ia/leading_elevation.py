@@ -40,14 +40,13 @@ def can_lead_elevation(state: PlayerState) -> bool:
 
     Conditions (all must hold):
     - No stones are still needed (inventory is satisfied for this level).
-    - Food is above SAFE_FOOD so the player won't die during the ritual
-      and the brief rally-wait period.
+    - Food is above LEAD_FOOD so the player won't die during the rally.
     - Level 1 requires only 1 player, so no coordination is needed.
     """
-    from fsm_helpers import SAFE_FOOD
+    from fsm_helpers import LEAD_FOOD
     if needed_stones(state.level, state.inventory):
         return False
-    if state.inventory.get("food", 0) < SAFE_FOOD:
+    if state.inventory.get("food", 0) < LEAD_FOOD:
         return False
     req = ELEVATION_REQUIREMENTS.get(state.level, {})
     needed_players = req.get("players", 0)
@@ -144,7 +143,7 @@ def _startup_delay(state: PlayerState) -> int:
     ensures different AIs have different delays, reducing simultaneous-broadcast
     collisions.
     """
-    return 20 + (state.x * 3 + state.y) % 15
+    return 5 + (state.x * 3 + state.y) % 6
 
 
 def tick_leading_elevation(
@@ -207,5 +206,12 @@ def tick_leading_elevation(
         return
 
     from fsm_helpers import request_look
+    if state.last_look and "food" in state.last_look[0] and sender.can_send:
+        state.last_look[0].remove("food")
+        def _eat(r: str) -> None:
+            if r == "ok":
+                state.inventory["food"] = state.inventory.get("food", 0) + 1
+        sender.send("Take food", callback=_eat)
+        return
     if not state.pending_look:
         request_look(state, sender)
