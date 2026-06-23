@@ -5,15 +5,25 @@
 ** main
 */
 
-#include "draw.hpp"
-#include "window.hpp"
-#include "camera.hpp"
-#include "model.hpp"
-#include "world.hpp"
-#include "trantor.hpp"
+#include "gui/cli/GuiCliParser.hpp"
+#include "gui/draw.hpp"
+#include "gui/window.hpp"
+#include "gui/camera.hpp"
+#include "gui/model.hpp"
+#include "gui/world.hpp"
+#include "gui/trantor.hpp"
 
-int main()
+int main(int argc, char **argv)
 {
+    zappy::gui::cli::GuiOptions opts;
+    try {
+        opts = zappy::gui::cli::GuiCliParser::parse(argc, argv);
+    } catch(const zappy::gui::cli::GuiCliError &e) {
+        std::cerr << e.what() << '\n';
+        zappy::gui::cli::GuiCliParser::print_usage(std::cerr, argv[0]);
+        return 84;
+    }
+    
     window wind(800, 450, "MY big BAZOUZOUZ");
     camera cam({10.0f, 10.0f, 10.0f});
     //model mod("src/gui/assets/robot.glb");

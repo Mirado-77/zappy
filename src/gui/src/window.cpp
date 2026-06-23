@@ -5,7 +5,7 @@
 ** window
 */
 
-#include "window.hpp"
+#include "gui/window.hpp"
 
 window::window(int widght, int height, std::string name)
 {

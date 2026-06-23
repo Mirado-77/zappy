@@ -5,7 +5,7 @@
 ** world
 */
 
-#include "world.hpp"
+#include "gui/world.hpp"
 
 world::world(int x, int y)
 {
