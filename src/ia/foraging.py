@@ -5,8 +5,7 @@
 ## FORAGING state handler
 ##
 
-from fsm_helpers import find_food_tile, request_look
-from look import tile_index_to_offset
+from fsm_helpers import find_food_tile, request_look, tile_world_target
 from navigation import navigate_to
 from player_state import PlayerState, apply_forward
 from sender import CommandSender
@@ -26,22 +25,27 @@ def tick_foraging(state: PlayerState, sender: CommandSender) -> None:
     if not sender.can_send:
         return
 
-    # 1. Food on current tile.
     if state.last_look and "food" in state.last_look[0]:
-        sender.send("Take food", callback=lambda r: None)
+        state.last_look[0].remove("food")
+        def _take_food(r: str) -> None:
+            if r == "ok":
+                state.inventory["food"] = state.inventory.get("food", 0) + 1
+        sender.send("Take food", callback=_take_food)
         return
 
-    # 2. Food visible elsewhere.
     if state.last_look:
         food_idx = find_food_tile(state)
         if food_idx is not None and food_idx > 0:
-            dx, dy = tile_index_to_offset(food_idx, state.level)
-            tx = (state.x + dx) % state.map_width
-            ty = (state.y + dy) % state.map_height
+            tx, ty = tile_world_target(state, food_idx)
             navigate_to(state, sender, tx, ty)
+            state.last_look = []
+            state.pending_look = False
             return
 
-    # 3. Nothing visible: move forward and refresh Look.
-    sender.send("Forward",
-                callback=lambda r: apply_forward(state) if r == "ok" else None)
+    if not state.last_look:
+        request_look(state, sender)
+        return
+
+    if sender.send("Forward"):
+        apply_forward(state)
     request_look(state, sender)

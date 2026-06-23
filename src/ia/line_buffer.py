@@ -69,20 +69,22 @@ class LineBuffer:
     def readline(self) -> str | None:
         """Return the next complete line from the socket.
 
-        If a complete line is already in the buffer it is returned
-        immediately without reading from the socket. Otherwise one chunk
-        is read and the extraction is retried.
+        Reads chunks from the socket until a newline-terminated line is
+        available in the internal buffer. This guarantees that fragmented
+        TCP delivery (data arriving in very small chunks) is handled
+        correctly: the method only returns None when the server closes the
+        connection, never because a partial line has not yet arrived.
 
         Returns:
             The next line as a string (without the trailing newline), or
             None if the server closed the connection.
         """
-        line = self._extract_line()
-        if line is not None:
-            return line
-        if not self._read_chunk():
-            return None
-        return self._extract_line()
+        while True:
+            line = self._extract_line()
+            if line is not None:
+                return line
+            if not self._read_chunk():
+                return None
 
     def readlines(self) -> list[str]:
         """Return all complete lines currently available in the buffer.

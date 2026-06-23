@@ -14,6 +14,9 @@ ERROR = 84
 MAX_IN_FLIGHT = 10
 
 
+_RESPONSE_PREFIXES = ("ok", "ko", "[")
+
+
 class CommandSender:
     """Sends commands to the server and tracks how many are in flight.
 
@@ -81,16 +84,52 @@ class CommandSender:
         self._in_flight += 1
         return True
 
+    def consume_response(self, line: str) -> None:
+        """Directly dequeue the oldest pending callback with the given line.
+
+        Unlike on_response, no prefix validation is performed.  This method
+        is intended for dispatcher handlers that need to consume the callback
+        slot for a known server-initiated response to a specific command
+        (e.g. 'Elevation underway' responding to 'Incantation').
+
+        Does nothing silently when the callback queue is empty (follower
+        players receive 'Elevation underway' without having sent Incantation).
+
+        Args:
+            line: The response line to pass to the callback.
+        """
+        if not self._callbacks:
+            return
+        self._in_flight -= 1
+        cb = self._callbacks.popleft()
+        cb(line)
+
     def on_response(self, line: str) -> None:
         """Notify the sender that the server sent a response line.
 
         Decrements the in-flight counter and invokes the callback
         associated with the oldest pending command.
 
+        Lines that do not look like protocol responses (i.e. they do not
+        start with 'ok', 'ko', or '[') are server-initiated events that
+        should have been intercepted by a Dispatcher prefix handler before
+        reaching here.  Such lines are logged as warnings and discarded
+        without touching the callback queue, preventing callback-queue
+        corruption from unexpected server messages.
+
+        If the callback queue is empty the line is also unexpected and a
+        warning is emitted.
+
         Args:
             line: The raw response line received from the server.
         """
+        if not any(line.startswith(p) for p in _RESPONSE_PREFIXES):
+            print(f"warning: unexpected server line (not a response): {line!r}",
+                  file=sys.stderr)
+            return
         if not self._callbacks:
+            print(f"warning: unexpected response (no command in flight): {line!r}",
+                  file=sys.stderr)
             return
         self._in_flight -= 1
         cb = self._callbacks.popleft()

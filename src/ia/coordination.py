@@ -9,54 +9,126 @@ from dataclasses import dataclass
 
 from broadcast_protocol import (MSG_CANCEL, MSG_COMING, MSG_RALLY, MSG_READY,
                                 format_msg, parse_msg)
-from navigation import navigate_to
-from player_state import FsmState, PlayerState
+from player_state import FsmState, PlayerState, apply_forward, apply_left, apply_right
 from sender import CommandSender
 
 
 @dataclass(slots=True)
 class RallyInfo:
-    """Destination tile for the current follower rally.
+    """State for the current follower rally.
+
+    Navigation uses the broadcast direction K from the leader's repeated
+    RALLY broadcasts rather than absolute coordinates (which are meaningless
+    across different AIs' dead-reckoned coordinate frames).
 
     Attributes:
-        tx: Target x coordinate (already wrapped to map bounds).
-        ty: Target y coordinate (already wrapped to map bounds).
         level: Level required for the incantation.
+        direction: K value from the most recent RALLY broadcast.
+            0 means the leader is on the same tile.
+        ready_sent: True after READY has been broadcast.  While True the
+            follower stays frozen on the tile instead of navigating away.
+        step_taken: True after a Forward has been queued for the current
+            direction.  Reset when the direction changes OR when the
+            previous Forward has executed (forward_pending=False).
+            Limits the pipeline to at most 1 Forward per direction cycle.
+        forward_pending: True from the moment a Forward is enqueued until
+            its response arrives.  Used to gate READY: we only send READY
+            when forward_pending=False (no in-flight Forward that could
+            relocate us after READY but before the Incantation).
+            Unlike in_flight, this flag is unaffected by Look/Inventory.
     """
 
-    tx: int
-    ty: int
     level: int
+    direction: int
+    ready_sent: bool = False
+    step_taken: bool = False
+    forward_pending: bool = False
+
+
+def _navigate_toward_k(state: PlayerState, sender: CommandSender,
+                       k: int, rally: "RallyInfo | None" = None) -> None:
+    """Take at most 2 turns + 1 Forward step toward broadcast source K."""
+    from broadcast_direction import direction_to_orientation
+    from navigation import turns_to_face
+
+    target_orient = direction_to_orientation(k, state.orientation)
+    if target_orient is None:
+        return
+
+    for cmd in turns_to_face(state.orientation, target_orient):
+        if not sender.can_send:
+            return
+        if cmd == "Right":
+            sender.send("Right", callback=lambda r: None)
+            apply_right(state)
+        else:
+            sender.send("Left", callback=lambda r: None)
+            apply_left(state)
+
+    if sender.can_send:
+        if rally is not None:
+            rally.forward_pending = True
+            def _on_fwd(r: str, rl: RallyInfo = rally) -> None:
+                rl.forward_pending = False
+            sender.send("Forward", callback=_on_fwd)
+        else:
+            sender.send("Forward", callback=lambda r: None)
+        apply_forward(state)
 
 
 def on_rally_received(
         state: PlayerState,
         rally_holder: list,
+        leader_holder: list,
         direction: int,
         fields: tuple[str, ...],
         sender: CommandSender) -> None:
     """Process an incoming RALLY message (follower side).
 
     Accepts the rally only when the announced level matches the player's
-    current level. Sets the rally_holder, transitions the FSM state to
-    COORDINATING, and immediately broadcasts COMING as acknowledgement.
+    current level. On the first RALLY, transitions to COORDINATING and
+    broadcasts COMING. On subsequent (repeated) RALLYs from the same
+    level, just refreshes the direction so the follower can self-correct.
 
-    RALLY field format: level:tx:ty
+    If we are currently acting as a leader ourselves, we abandon that role
+    and follow the incoming leader instead (prevents two-leader deadlock).
+
+    RALLY field format: level:x:y  (x,y are the leader's position in its
+    own coordinate frame and are ignored; navigation uses direction K).
     """
     if len(fields) != 3:
         return
     try:
-        level, tx, ty = int(fields[0]), int(fields[1]), int(fields[2])
-    except ValueError:
+        level = int(fields[0])
+    except (ValueError, IndexError):
         return
     if level != state.level:
-        return   # not an incantation for our level
+        return
 
-    rally_holder[0] = RallyInfo(
-        tx=tx % state.map_width,
-        ty=ty % state.map_height,
-        level=level,
-    )
+    if leader_holder[0] is not None:
+        if leader_holder[0].has_rallied:
+            return
+        leader_holder[0] = None
+
+    existing = rally_holder[0]
+    if existing is not None and existing.level == level:
+        if existing.ready_sent:
+            return
+        old_direction = existing.direction
+        existing.direction = direction
+        if direction == 0:
+            if not existing.forward_pending and sender.can_send:
+                sender.send(f"Broadcast {format_msg(MSG_READY)}",
+                            callback=lambda r: None)
+                existing.ready_sent = True
+            return
+        if direction != old_direction:
+            existing.step_taken = False
+        elif not existing.forward_pending:
+            existing.step_taken = False
+        return
+
+    rally_holder[0] = RallyInfo(level=level, direction=direction)
     state.fsm_state = FsmState.COORDINATING
     if sender.can_send:
         sender.send(f"Broadcast {format_msg(MSG_COMING)}",
@@ -68,7 +140,8 @@ def handle_coordination_broadcast(
         rally_holder: list,
         sender: CommandSender,
         direction: int,
-        text: str) -> None:
+        text: str,
+        leader_holder: "list | None" = None) -> None:
     """Route a received broadcast to the appropriate coordination handler.
 
     Only RALLY is handled here. CANCEL clears any active rally.
@@ -77,8 +150,9 @@ def handle_coordination_broadcast(
     msg = parse_msg(text)
     if msg is None:
         return
+    _leader = leader_holder if leader_holder is not None else [None]
     if msg.msg_type == MSG_RALLY:
-        on_rally_received(state, rally_holder, direction, msg.fields, sender)
+        on_rally_received(state, rally_holder, _leader, direction, msg.fields, sender)
     elif msg.msg_type == MSG_CANCEL:
         rally_holder[0] = None
 
@@ -89,20 +163,36 @@ def tick_coordinating(
         rally_holder: list) -> None:
     """Execute one FSM tick in the COORDINATING state (follower role).
 
+    Navigation uses the broadcast direction K from the leader's periodic
+    RALLY broadcasts rather than absolute coordinates.
+
     Priority actions:
-    1. Already on the rally tile: broadcast READY and clear the rally.
-    2. Not yet there: navigate towards the rally tile.
+    1. READY already sent: freeze in place (Look keepalive only).
+    2. direction == 0 (on same tile as leader): broadcast READY.
+    3. Otherwise: take one step toward the broadcast source (K direction).
     """
     if not sender.can_send:
         return
     rally = rally_holder[0]
     if rally is None:
-        return   # no active rally; evaluator will transition away
-
-    if state.x == rally.tx and state.y == rally.ty:
-        sender.send(f"Broadcast {format_msg(MSG_READY)}",
-                    callback=lambda r: None)
-        rally_holder[0] = None
         return
 
-    navigate_to(state, sender, rally.tx, rally.ty)
+    if rally.ready_sent:
+        from fsm_helpers import request_look
+        if not state.pending_look:
+            request_look(state, sender)
+        return
+
+    if rally.direction == 0:
+        from fsm_helpers import request_look
+        if not state.pending_look:
+            request_look(state, sender)
+        return
+
+    if not rally.step_taken and not rally.forward_pending:
+        _navigate_toward_k(state, sender, rally.direction, rally)
+        rally.step_taken = True
+    else:
+        from fsm_helpers import request_look
+        if not state.pending_look:
+            request_look(state, sender)

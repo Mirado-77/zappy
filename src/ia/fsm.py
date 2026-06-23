@@ -32,12 +32,12 @@ def evaluate_fsm_state(state: PlayerState, fork_cooldown: int = 0) -> FsmState:
         return FsmState.CRITICAL_SURVIVAL
     if state.fsm_state == FsmState.ELEVATING:
         return FsmState.ELEVATING
-    if needed_stones(state.level, state.inventory):
-        return FsmState.COLLECTING
     if can_lead_elevation(state):
         return FsmState.LEADING_ELEVATION
     if food < SAFE_FOOD:
         return FsmState.FORAGING
+    if needed_stones(state.level, state.inventory):
+        return FsmState.COLLECTING
     if can_fork(state, fork_cooldown):
         return FsmState.FORKING
     return FsmState.SCOUTING
@@ -62,12 +62,16 @@ class Fsm:
         self.team_members: dict[int, TeamMemberState] = {}
 
     def on_broadcast(self, sender: CommandSender,
-                     direction: int, text: str) -> None:
+                     direction: int, text: str,
+                     elev: "ElevationState | None" = None) -> None:
         """Handle an incoming broadcast: update team table and check RALLY/READY."""
         on_broadcast_received(self.team_members, direction, text)
         handle_coordination_broadcast(
-            self._state, self._rally, sender, direction, text)
-        handle_leader_broadcast(self._state, self._leader, sender, text)
+            self._state, self._rally, sender, direction, text,
+            leader_holder=self._leader)
+        from elevation import ElevationState as _ES
+        _elev = elev if elev is not None else _ES()
+        handle_leader_broadcast(self._state, self._leader, sender, _elev, text)
 
     def tick(self, sender: CommandSender, elev: ElevationState) -> None:
         """Run one FSM iteration.
@@ -78,7 +82,6 @@ class Fsm:
         poll_inventory(self._state, sender, self._tick)
         broadcast_have(self._state, sender, self._tick)
 
-        # Post-elevation reset: apply new level from a completed incantation.
         if elev.status == ElevationStatus.SUCCESS:
             self._state.level = elev.new_level
             self._state.fsm_state = FsmState.COLLECTING
@@ -86,35 +89,39 @@ class Fsm:
             self._rally[0] = None
             elev.status = ElevationStatus.IDLE
 
-        # Failed incantation (ko): clear roles and fall back to evaluation.
         if elev.status == ElevationStatus.FAILED:
+            if sender.can_send:
+                from broadcast_protocol import MSG_CANCEL, format_msg as _fmt
+                sender.send(f"Broadcast {_fmt(MSG_CANCEL)}",
+                            callback=lambda r: None)
             self._leader[0] = None
             self._rally[0] = None
             self._state.fsm_state = FsmState.COLLECTING
             elev.status = ElevationStatus.IDLE
 
-        # While an incantation is in progress the player is frozen:
-        # do not send any commands.
         if elev.status == ElevationStatus.IN_PROGRESS:
             self._state.fsm_state = FsmState.ELEVATING
             return
 
-        # Decrement fork cooldown each tick.
         if self._fork_cooldown[0] > 0:
             self._fork_cooldown[0] -= 1
 
         new_state = evaluate_fsm_state(self._state, self._fork_cooldown[0])
-        # Active rally overrides lower-priority states.
         if (self._rally[0] is not None
                 and new_state not in (FsmState.CRITICAL_SURVIVAL,
                                       FsmState.ELEVATING)):
             new_state = FsmState.COORDINATING
-        # Active leader session overrides except CRITICAL_SURVIVAL/ELEVATING.
         if (self._leader[0] is not None
                 and new_state not in (FsmState.CRITICAL_SURVIVAL,
                                       FsmState.ELEVATING,
                                       FsmState.COORDINATING)):
             new_state = FsmState.LEADING_ELEVATION
+        if new_state == FsmState.CRITICAL_SURVIVAL and self._leader[0] is not None:
+            if sender.can_send:
+                from broadcast_protocol import MSG_CANCEL, format_msg as _fmt
+                sender.send(f"Broadcast {_fmt(MSG_CANCEL)}",
+                            callback=lambda r: None)
+            self._leader[0] = None
         self._state.fsm_state = new_state
 
         if new_state == FsmState.CRITICAL_SURVIVAL:
@@ -128,7 +135,7 @@ class Fsm:
         elif new_state == FsmState.LEADING_ELEVATION:
             if self._leader[0] is None:
                 self._leader[0] = LeaderInfo()
-            tick_leading_elevation(self._state, sender, self._leader)
+            tick_leading_elevation(self._state, sender, self._leader, elev)
         elif new_state == FsmState.SCOUTING:
             tick_scouting(self._state, sender, self._scout_counter)
         elif new_state == FsmState.FORKING:

@@ -35,10 +35,14 @@ class ElevationState:
     Attributes:
         status: Current elevation status.
         new_level: Level reached after a successful elevation (0 if none).
+        incantation_sent: True while this player's Incantation command is in
+            flight. Used by the 'Elevation underway' handler to determine
+            whether to consume the pending callback slot (leaders only).
     """
 
     status: ElevationStatus = ElevationStatus.IDLE
     new_level: int = 0
+    incantation_sent: bool = False
 
 
 def parse_current_level(line: str) -> int | None:
@@ -76,22 +80,29 @@ def is_elevation_underway(line: str) -> bool:
     return line.strip() == "Elevation underway"
 
 
-def make_elevation_underway_handler(state: ElevationState):
+def make_elevation_underway_handler(state: ElevationState, sender=None):
     """Create a dispatcher handler that marks an elevation as in progress.
+
+    When sender is provided and state.incantation_sent is True, this
+    handler also consumes the pending Incantation callback slot so that
+    the sender's in-flight counter stays accurate.  Only the player who
+    actually sent Incantation (the leader) sets incantation_sent=True;
+    followers receive 'Elevation underway' too but must not consume a
+    slot they never allocated.
 
     Args:
         state: Shared ElevationState object to update.
+        sender: Optional CommandSender. When provided and incantation_sent
+            is True, consume_response is called to dequeue the slot.
 
     Returns:
         A handler callable suitable for Dispatcher.register.
     """
-    def handler(_line: str) -> None:
-        """Set elevation status to IN_PROGRESS.
-
-        Args:
-            _line: Full server line (always 'Elevation underway').
-        """
+    def handler(line: str) -> None:
         state.status = ElevationStatus.IN_PROGRESS
+        if sender is not None and state.incantation_sent:
+            state.incantation_sent = False
+            sender.consume_response(line)
 
     return handler
 

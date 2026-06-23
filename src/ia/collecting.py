@@ -5,14 +5,12 @@
 ## COLLECTING state handler
 ##
 
-from fsm_helpers import request_look
-from look import tile_index_to_offset
+from fsm_helpers import request_look, tile_world_target
 from navigation import navigate_to
 from player_state import PlayerState, apply_forward, apply_right
 from sender import CommandSender
 from stones import needed_stones, STONE_NAMES
 
-# Turn right every N forward steps when roaming to produce a loose spiral.
 ROAM_TURN_INTERVAL = 4
 
 
@@ -49,32 +47,32 @@ def tick_collecting(state: PlayerState, sender: CommandSender,
 
     wanted = needed_stones(state.level, state.inventory)
     if not wanted:
-        return   # evaluator will transition state next tick
+        return
 
-    # 1. Needed stone on own tile.
     if state.last_look:
         for stone in STONE_NAMES:
             if stone in state.last_look[0] and stone in wanted:
-                sender.send(f"Take {stone}", callback=lambda r: None)
+                state.last_look[0].remove(stone)
+                def _take_stone(r: str, s: str = stone) -> None:
+                    if r == "ok":
+                        state.inventory[s] = state.inventory.get(s, 0) + 1
+                sender.send(f"Take {stone}", callback=_take_stone)
                 return
 
-    # 2. Needed stone visible elsewhere.
     if state.last_look:
         match = find_needed_stone_tile(state, wanted)
         if match is not None:
             idx, stone = match
-            dx, dy = tile_index_to_offset(idx, state.level)
-            tx = (state.x + dx) % state.map_width
-            ty = (state.y + dy) % state.map_height
+            tx, ty = tile_world_target(state, idx)
             navigate_to(state, sender, tx, ty)
+            state.last_look = []
+            state.pending_look = False
             return
 
-    # 3. No Look result: request one.
     if not state.last_look:
         request_look(state, sender)
         return
 
-    # 4. Nothing useful visible: roam.
     roam_counter[0] += 1
     if roam_counter[0] % ROAM_TURN_INTERVAL == 0:
         sender.send("Right",
@@ -82,5 +80,5 @@ def tick_collecting(state: PlayerState, sender: CommandSender,
     else:
         sender.send("Forward",
                     callback=lambda r: apply_forward(state) if r == "ok" else None)
-    state.last_look = []   # invalidate so a fresh Look is requested next tick
+    state.last_look = []
     request_look(state, sender)

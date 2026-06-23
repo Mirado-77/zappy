@@ -6,18 +6,14 @@
 ##
 
 from inventory import parse_inventory
-from look import parse_look
-from player_state import PlayerState
+from look import parse_look, tile_index_to_offset
+from player_state import Orientation, PlayerState
 from sender import CommandSender
 
-# Food threshold below which the player drops everything and forages.
 CRITICAL_FOOD = 3
 
-# Food threshold below which the player enters opportunistic foraging.
 SAFE_FOOD = 15
 
-# Number of FSM ticks between automatic Inventory polls when none is
-# already in flight.
 INVENTORY_POLL_INTERVAL = 20
 
 
@@ -72,3 +68,29 @@ def request_look(state: PlayerState, sender: CommandSender) -> bool:
     sender.send("Look",
                 callback=lambda line: on_look_response(state, line))
     return True
+
+
+def tile_world_target(state: PlayerState, idx: int) -> tuple[int, int]:
+    """Convert a Look tile index to absolute world (tx, ty) coordinates.
+
+    tile_index_to_offset returns (dx, dy) in the player's LOCAL frame
+    where dy > 0 is forward and dx > 0 is right. This rotates those into
+    the world frame based on the player's current orientation, then adds
+    them to the player's position with toroidal wrap.
+
+    NORTH: forward = -y, right = +x    world (dx_l, -dy_l)
+    EAST:  forward = +x, right = +y    world (dy_l,  dx_l)
+    SOUTH: forward = +y, right = -x    world (-dx_l, dy_l)
+    WEST:  forward = -x, right = -y    world (-dy_l, -dx_l)
+    """
+    dx_l, dy_l = tile_index_to_offset(idx, state.level)
+    o = state.orientation
+    if o == Orientation.NORTH:
+        dx, dy = dx_l, -dy_l
+    elif o == Orientation.EAST:
+        dx, dy = dy_l, dx_l
+    elif o == Orientation.SOUTH:
+        dx, dy = -dx_l, dy_l
+    else:
+        dx, dy = -dy_l, -dx_l
+    return (state.x + dx) % state.map_width, (state.y + dy) % state.map_height

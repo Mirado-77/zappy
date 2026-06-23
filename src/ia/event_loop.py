@@ -19,7 +19,7 @@ from line_buffer import LineBuffer
 from sender import CommandSender
 
 FsmTickFn = Callable[[CommandSender, ElevationState], None]
-BroadcastFn = Callable[[CommandSender, int, str], None]
+BroadcastFn = Callable[[CommandSender, int, str, ElevationState], None]
 
 
 def _handle_dead(_line: str) -> None:
@@ -66,13 +66,13 @@ def _build_dispatcher(sender: CommandSender,
     """
     d = Dispatcher(fallback=sender.on_response)
     d.register("dead", _handle_dead)
-    d.register("Elevation underway", make_elevation_underway_handler(elev))
+    d.register("Elevation underway", make_elevation_underway_handler(elev, sender))
     d.register("Current level: ", make_current_level_handler(elev))
     if on_broadcast is not None:
         def _bcast_handler(line: str) -> None:
             msg = parse_broadcast(line)
             if msg is not None:
-                on_broadcast(sender, msg.direction, msg.text)
+                on_broadcast(sender, msg.direction, msg.text, elev)
         d.register("message ", _bcast_handler)
     return d
 
@@ -99,6 +99,8 @@ def run(buf: LineBuffer, sender: CommandSender,
     """
     elev = ElevationState()
     dispatcher = _build_dispatcher(sender, elev, on_broadcast)
+
+    fsm_tick(sender, elev)
 
     while True:
         line = buf.readline()
