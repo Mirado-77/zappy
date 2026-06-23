@@ -46,14 +46,11 @@ std::vector<std::unique_ptr<model>> world::init_model(float y, float x)
 
 void world::model_animation(std::double_t time, float scale)
 {
-    Vector3 pos = {0, 0, 0};
-
     for (std::size_t i = 0; i < this->_map.size(); i++) {
         for (std::size_t j = 0; j < this->_map[i].size(); j++) {
             Vector3 base = this->_map[i][j]->get_base_pos();
             float phase  = (float)(i + j) * 0.4f;
             float wave   = sinf((float)(time * 3.0f) + phase) * scale;
-
             Vector3 pos  = base;
             pos.y        = base.y + wave;
             this->_map[i][j]->set_pos(pos);
