@@ -10,27 +10,37 @@
 #include "camera.hpp"
 #include "model.hpp"
 #include "world.hpp"
+#include "trantor.hpp"
 
 int main()
 {
     window wind(800, 450, "MY big BAZOUZOUZ");
     camera cam({10.0f, 10.0f, 10.0f});
-    //model mod("src/gui/assets/farm_grass-tile.glb");
+    //model mod("src/gui/assets/robot.glb");
+    trantor mod;
     world map(4, 8);
     cam.set_mode(CAMERA_FREE);
+    //mod.load_anim();
     DisableCursor();
     SetTargetFPS(60);
     wind.Set_window_state(FLAG_WINDOW_RESIZABLE);
-    Vector3 Position = { 0.0f, 0.0f, 0.0f};
+    //Vector3 Position = { 0.0f, 0.0f, 0.0f};
+    //mod.set_pos(Position);
     while (!wind.WindowIsCLose()) {
         cam.update_camera();
-        //if (IsKeyPressed(KEY_RIGHT))
-        //    mod.switch_index_anime();
+        if (IsKeyPressed(KEY_RIGHT))
+            mod.Turn_left();
+        if (IsKeyPressed(KEY_LEFT))
+            mod.Turn_right();
+        if (IsKeyPressed(KEY_UP))
+            mod.death();
         //mod.Update_anim();
         draw::Start_Draw();
         ClearBackground(RAYWHITE);
 
         cam.Begin_mode_3d();
+            //mod.Draw_model();
+            mod.draw();
             map.draw_world();
             //DrawGrid(10, 1.0f);
 
