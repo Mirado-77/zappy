@@ -12,6 +12,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <iostream>
 
 #include "gui/GuiArgParser.hpp"
 #include "gui/ipc/SerializationError.hpp"
@@ -69,6 +70,17 @@ ipc::ServerInfo GuiArgParser::finalize(const Builder &b) const
     return ipc::ServerInfo(static_cast<std::uint16_t>(port), server_hostname);
 }
 
+std::string GuiArgParser::usage()
+{
+    static std::string gui_help =
+    "USAGE: ./zappy_gui -p port -h machine\n"
+    "./zappy_gui\n"
+    "--help  help flag\n"
+    "-p      port port number\n"
+    "-h      machine hostname of the server\n";
+    return gui_help;
+}
+
 std::optional<ipc::ServerInfo> GuiArgParser::parse(int argc, const char *const argv[]) const
 {
     std::optional<ipc::ServerInfo> result;
@@ -86,18 +98,10 @@ std::optional<ipc::ServerInfo> GuiArgParser::parse(int argc, const char *const a
         Builder builder;
         collect(args, builder);
         result.emplace(finalize(builder));
+    } else {
+        std::cerr << usage();
     }
     return result;
-}
-
-std::string GuiArgParser::usage()
-{
-        return
-        "USAGE: ./zappy_gui -p port -h machine"
-        "./zappy_gui"
-        "--help  help flag"
-        "-p      port port number"
-        "-h      machine hostname of the server";
 }
 
 } // namespace zappy::server::cli

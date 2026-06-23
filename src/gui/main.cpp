@@ -26,8 +26,9 @@ int main(int argc, char **argv)
 
     try {
         const auto server_cordinates = zappy::gui::GuiArgParser{}.parse(argc, argv);
-        if (server_cordinates)
+        if (server_cordinates) {
             zappy::gui::Gui(*server_cordinates).run();
+        }
     } catch (const zappy::gui::ipc::SerializationError &error) {
         std::cerr << "Error: " << error.what() << "\n"
                   << zappy::gui::GuiArgParser::usage();
