@@ -5,7 +5,7 @@
 ** trantor
 */
 
-#include "trantor.hpp"
+#include "gui/trantor.hpp"
 
 trantor::trantor()
 : _mod(TRANTOR_PATH), _state(YES),

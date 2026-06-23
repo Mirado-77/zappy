@@ -5,7 +5,7 @@
 ** camera
 */
 
-#include "camera.hpp"
+#include "gui/camera.hpp"
 #include <iostream>
 #include <map>
 

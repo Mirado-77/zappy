@@ -5,7 +5,7 @@
 ** cube
 */
 
-#include "cube.hpp"
+#include "gui/cube.hpp"
 
 cube::cube()
     : _pos({0, 0, 0}), _color(RED)

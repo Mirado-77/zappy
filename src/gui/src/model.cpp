@@ -5,7 +5,7 @@
 ** model
 */
 
-#include "model.hpp"
+#include "gui/model.hpp"
 
 model::model(std::string name)
     : _anim(nullptr) ,_animeCount(0)

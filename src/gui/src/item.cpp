@@ -5,7 +5,7 @@
 ** item
 */
 
-#include "item.hpp"
+#include "gui/item.hpp"
 #include <string>
 
 item::item(item_type type)
