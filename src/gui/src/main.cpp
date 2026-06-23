@@ -11,14 +11,15 @@
 #include "model.hpp"
 #include "world.hpp"
 #include "trantor.hpp"
+#include "item.hpp"
 
 int main()
 {
     window wind(800, 450, "MY big BAZOUZOUZ");
     camera cam({10.0f, 10.0f, 10.0f});
     //model mod("src/gui/assets/robot.glb");
-    trantor mod;
-    world map(4, 8);
+    item mod(LINMATE);
+    world map(1, 1);
     cam.set_mode(CAMERA_FREE);
     //mod.load_anim();
     DisableCursor();
@@ -28,12 +29,12 @@ int main()
     //mod.set_pos(Position);
     while (!wind.WindowIsCLose()) {
         cam.update_camera();
-        if (IsKeyPressed(KEY_RIGHT))
-            mod.Turn_left();
-        if (IsKeyPressed(KEY_LEFT))
-            mod.Turn_right();
-        if (IsKeyPressed(KEY_UP))
-            mod.death();
+        // if (IsKeyPressed(KEY_RIGHT))
+        //     mod.Turn_left();
+        // if (IsKeyPressed(KEY_LEFT))
+        //     mod.Turn_right();
+        // if (IsKeyPressed(KEY_UP))
+        //     mod.death();
         //mod.Update_anim();
         draw::Start_Draw();
         ClearBackground(RAYWHITE);
