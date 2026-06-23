@@ -80,13 +80,15 @@ zappy::server::Server::Server(const cli::ServerConfig &config)
           [this](int playerId) { onPlayerStarved(playerId); }),
       _aiDispatcher(_world, _scheduler, _frequency,
           [this](int id, std::string r) { onAiResponse(id, std::move(r)); }),
+      _guiNotifier(_clients, _world, [this](int fd) { retunePollMask(fd); }),
+      _eventBus(_world, _guiNotifier, _scheduler, _featureFlags),
       _guiDispatcher(_world,
           gui::GuiAdminDeps{_clients, _featureFlags, _config.adminPassword(),
-              [this](int playerId) { onPlayerKilledByAdmin(playerId); }},
+              [this](int playerId) { onPlayerKilledByAdmin(playerId); },
+              _eventBus},
           [this](int fd, std::string r) { onGuiResponse(fd, std::move(r)); },
           [this] { return _frequency; },
           [this](int freq) { updateFrequency(freq); }),
-      _guiNotifier(_clients, _world, [this](int fd) { retunePollMask(fd); }),
       _handshake(_config, _world, _foodScheduler)
 {
     for (const auto flag : _config.initialEnabledFlags())
@@ -100,6 +102,7 @@ zappy::server::Server::Server(const cli::ServerConfig &config)
     eggSpawner.spawnInitial(_world);
     _refillScheduler.start();
     _world.addObserver(_guiNotifier);
+    _eventBus.start();
 }
 
 /**

@@ -13,19 +13,27 @@
 #include <unistd.h>
 
 #include "server/gui/GuiDispatcher.hpp"
+#include "server/gui/GuiNotifier.hpp"
 #include "server/game/World.hpp"
 #include "server/client/ClientState.hpp"
 #include "server/config/FeatureFlag.hpp"
+#include "server/event/EventBus.hpp"
+#include "server/scheduler/Clock.hpp"
+#include "server/scheduler/Scheduler.hpp"
 #include "posix/FileDescriptor.hpp"
 
 using zappy::server::gui::GuiDispatcher;
 using zappy::server::gui::GuiAdminDeps;
+using zappy::server::gui::GuiNotifier;
 using zappy::server::game::World;
 using zappy::server::client::Client;
 using zappy::server::client::ClientRegistry;
 using zappy::server::client::ClientState;
 using zappy::server::config::FeatureFlags;
 using zappy::server::config::FeatureFlag;
+using zappy::server::event::EventBus;
+using zappy::server::scheduler::Scheduler;
+using zappy::server::scheduler::SteadyClock;
 using zappy::posix::FileDescriptor;
 
 namespace {
@@ -38,10 +46,15 @@ struct AdminFixture {
     FeatureFlags flags;
     std::vector<Reply> replies;
     int frequency = 100;
+    SteadyClock clock;
+    Scheduler scheduler{clock};
+    GuiNotifier notifier{clients, world, [](int) {}};
+    EventBus eventBus{world, notifier, scheduler, flags};
     GuiDispatcher disp;
 
     AdminFixture(std::string password, bool adminEnabled)
-        : disp(world, GuiAdminDeps{clients, flags, std::move(password), {}},
+        : disp(world,
+            GuiAdminDeps{clients, flags, std::move(password), {}, eventBus},
             [this](int fd, std::string r) {
                 replies.push_back({fd, std::move(r)});
             },
