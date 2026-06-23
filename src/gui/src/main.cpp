@@ -9,13 +9,11 @@
 
 #include "gui/cli/GuiCliParser.hpp"
 #include "gui/net/ServerLink.hpp"
+#include "gui/render/Scene.hpp"
 #include "gui/state/GameState.hpp"
 #include "gui/draw.hpp"
 #include "gui/window.hpp"
 #include "gui/camera.hpp"
-#include "gui/model.hpp"
-#include "gui/world.hpp"
-#include "gui/trantor.hpp"
 
 namespace {
 
@@ -27,31 +25,15 @@ void pump_network(zappy::gui::net::ServerLink &link,
         state.apply(*ev);
 }
 
-void handle_input(camera &cam, trantor &mod)
-{
-    cam.update_camera();
-    if (IsKeyPressed(KEY_RIGHT))
-        mod.Turn_left();
-    if (IsKeyPressed(KEY_LEFT))
-        mod.Turn_right();
-    if (IsKeyPressed(KEY_UP))
-        mod.death();
-}
-
-void render_frame(camera &cam, trantor &mod, world &map)
+void render_frame(camera &cam, zappy::gui::render::Scene &scene)
 {
     draw::Start_Draw();
     ClearBackground(RAYWHITE);
     cam.Begin_mode_3d();
-    mod.draw();
-    map.draw_world();
+    scene.draw();
     cam.End_mode_3d();
-    draw::Draw_text("Welcome to the third dimension!",
-        {10, 40}, 20, DARKGRAY);
-    draw::Draw_text("Use the LEFT/RIGHT keys to switch animation",
-        {10, 10}, 20, GRAY);
+    draw::Draw_text("Zappy GUI", {10, 10}, 20, DARKGRAY);
     draw::End_Draw();
-    
 }
 
 void setup_window(window &wind, camera &cam)
@@ -64,18 +46,18 @@ void setup_window(window &wind, camera &cam)
 
 int run_gui(const zappy::gui::cli::GuiOptions &opts)
 {
+    window wind(800, 450, "Zappy");
+    camera cam({10.0f, 10.0f, 10.0f});
     zappy::gui::net::ServerLink link(opts.host, opts.port);
     zappy::gui::state::GameState state;
-    window wind(800, 450, "MY big BAZOUZOUZ");
-    camera cam({10.0f, 10.0f, 10.0f});
-    trantor mod;
-    world map(4, 8);
+    zappy::gui::render::Scene scene;
 
     setup_window(wind, cam);
     while (!wind.WindowIsCLose()) {
         pump_network(link, state);
-        handle_input(cam, mod);
-        render_frame(cam, mod, map);
+        scene.sync(state);
+        cam.update_camera();
+        render_frame(cam, scene);
     }
     return 0;
 }
