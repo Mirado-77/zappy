@@ -294,18 +294,30 @@ namespace {
 class IdleEvent : public zappy::server::event::Event {
 public:
     std::string_view name() const noexcept override { return "idle"; }
+    std::string startBroadcast() const override { return "evt_idle_start"; }
+    std::string endBroadcast() const override { return "evt_idle_end"; }
     bool applyTick(World &) override { return true; }
     void onEnd(World &) override {}
 };
 
 } // namespace
 
-Test(gui_admin_commands, event_trigger_returns_ko_without_concrete_events)
+Test(gui_admin_commands, event_trigger_storm_returns_ok_when_events_on)
 {
     AdminCommandsFixture fx;
 
     fx.flags.enable(FeatureFlag::EVENTS);
     fx.disp.dispatch(fx.adminFd, "adm_event_trigger storm");
+    cr_assert(fx.repliesAre({"ok"}));
+    cr_assert_eq(fx.eventBus.activeEventCount(), 1U);
+}
+
+Test(gui_admin_commands, event_trigger_returns_ko_for_unknown_event)
+{
+    AdminCommandsFixture fx;
+
+    fx.flags.enable(FeatureFlag::EVENTS);
+    fx.disp.dispatch(fx.adminFd, "adm_event_trigger bogus");
     cr_assert(fx.repliesAre({"ko"}));
 }
 

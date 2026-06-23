@@ -11,6 +11,7 @@
 #include "server/game/ElevationRules.hpp"
 #include "server/game/ResourceNameResolver.hpp"
 #include "server/event/EventBus.hpp"
+#include "server/event/Storm.hpp"
 
 /**
  * @brief Construct a new Gui Dispatcher object.
@@ -559,8 +560,14 @@ std::unique_ptr<zappy::server::event::Event>
 zappy::server::gui::GuiDispatcher::createEventByName(
     std::string_view name) const
 {
-    (void)name;
-    return nullptr;
+    std::unique_ptr<event::Event> result;
+
+    if (name == "storm")
+        result = std::make_unique<event::Storm>(
+            game::Position(_world.width() / 2, _world.height() / 2),
+            STORM_DEFAULT_RADIUS, game::Orientation::EAST,
+            STORM_DEFAULT_PUSH_INTERVAL, STORM_DEFAULT_DURATION);
+    return result;
 }
 
 /**

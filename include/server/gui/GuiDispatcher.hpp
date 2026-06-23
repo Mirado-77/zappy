@@ -103,11 +103,15 @@ private:
 
     void sendError(int fd, protocol::gui::GuiParseError err);
 
+    static constexpr int STORM_DEFAULT_RADIUS = 3;
+    static constexpr int STORM_DEFAULT_PUSH_INTERVAL = 2;
+    static constexpr int STORM_DEFAULT_DURATION = 10;
+
     /**
      * @brief Instantiate the event matching @p name, if any exists yet.
      *
-     * No concrete events exist in ZAP-48, so this always yields nullptr;
-     * ZAP-49/50/51 extend it to build storm, flood and meteor events.
+     * Currently recognises "storm" (default parameters); ZAP-50/51 extend it
+     * to build flood and meteor events. Unknown names yield nullptr.
      *
      * @param name requested event name
      * @return std::unique_ptr<event::Event> the event, or nullptr if unknown
