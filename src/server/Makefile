@@ -20,6 +20,9 @@ POSIX_LIB = $(POSIX_LIB_DIR)/libzappy_posix.a
 NET_LIB_DIR = $(ROOT)/libs/net
 NET_LIB = $(NET_LIB_DIR)/libzappy_net.a
 
+PROTOCOL_LIB_DIR = $(ROOT)/libs/protocol
+PROTOCOL_LIB = $(PROTOCOL_LIB_DIR)/libzappy_protocol.a
+
 SRC = $(wildcard *$(SRC_EXTENSION)) \
 		$(wildcard **/*$(SRC_EXTENSION)) \
 		$(wildcard **/**/*$(SRC_EXTENSION))
@@ -32,8 +35,10 @@ CXXFLAGS = -std=c++20 -Wall -Wextra
 CXXFLAGS += -iquote $(ROOT)/include/
 CXXFLAGS += -I$(POSIX_LIB_DIR)/include
 CXXFLAGS += -I$(NET_LIB_DIR)/include
+CXXFLAGS += -I$(PROTOCOL_LIB_DIR)/include
 
 LDFLAGS = -L$(NET_LIB_DIR) -lzappy_net -L$(POSIX_LIB_DIR) -lzappy_posix
+LDFLAGS += -L$(PROTOCOL_LIB_DIR) -lzappy_protocol
 
 DEBUG_CFLAGS = -g3 -fsanitize=address -DDEBUG
 DEBUG_LDFLAGS = -fsanitize=address
@@ -46,14 +51,17 @@ $(POSIX_LIB):
 $(NET_LIB):
 	@$(MAKE) -C $(NET_LIB_DIR)
 
-$(BIN_DIR)/$(NAME):	$(OBJ) $(POSIX_LIB) $(NET_LIB)
+$(PROTOCOL_LIB):
+	@$(MAKE) -C $(PROTOCOL_LIB_DIR)
+
+$(BIN_DIR)/$(NAME):	$(OBJ) $(POSIX_LIB) $(NET_LIB) $(PROTOCOL_LIB)
 	@mkdir -p $(BIN_DIR)
 	$(CXX) -o $@ $(OBJ) $(LDFLAGS)
 
 debug: CXXFLAGS += $(DEBUG_CFLAGS)
 debug: $(BIN_DIR)/$(NAME)-debug
 
-$(BIN_DIR)/$(NAME)-debug:	$(DEBUG_OBJ) $(POSIX_LIB) $(NET_LIB)
+$(BIN_DIR)/$(NAME)-debug:	$(DEBUG_OBJ) $(POSIX_LIB) $(NET_LIB) $(PROTOCOL_LIB)
 	$(CXX) -o $(BIN_DIR)/$(NAME) $(DEBUG_OBJ) $(LDFLAGS) $(DEBUG_LDFLAGS)
 
 $(OBJ_DIR)/%.o:	%$(SRC_EXTENSION)

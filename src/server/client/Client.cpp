@@ -84,6 +84,19 @@ void zappy::server::client::Client::promote(ClientState newState)
 }
 
 /**
+ * @brief Promote a GUI client to GUI_ADMIN; idempotent when already admin.
+ *
+ * @throws ClientStateError if current state is not GUI or GUI_ADMIN
+ */
+void zappy::server::client::Client::promoteToAdmin()
+{
+    if (_state != ClientState::GUI && _state != ClientState::GUI_ADMIN)
+        throw ClientStateError("promoteToAdmin() requires GUI or GUI_ADMIN state");
+    _payload = GuiAdminData{};
+    _state = ClientState::GUI_ADMIN;
+}
+
+/**
  * @brief Return a mutable reference to the AiData payload.
  *
  * @return AiData&
@@ -165,4 +178,22 @@ zappy::server::client::Client::guiAdminData() const
     if (_state != ClientState::GUI_ADMIN)
         throw ClientStateError("guiAdminData() requires GUI_ADMIN state");
     return std::get<GuiAdminData>(_payload);
+}
+
+/**
+ * @brief Flag this client for a deferred drop once its buffer drains.
+ */
+void zappy::server::client::Client::markForDrop() noexcept
+{
+    _markedForDrop = true;
+}
+
+/**
+ * @brief Whether a deferred drop was requested.
+ *
+ * @return bool true if markForDrop() was called
+ */
+bool zappy::server::client::Client::isMarkedForDrop() const noexcept
+{
+    return _markedForDrop;
 }

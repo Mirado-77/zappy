@@ -8,35 +8,118 @@
 #include "server/Server.hpp"
 #include <iostream>
 #include <optional>
+#include <string>
+#include <utility>
+#include <cstring>
+#include <fcntl.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+
+#include "server/game/EggSpawner.hpp"
+
+namespace {
+
+/**
+ * @brief Resolve the machine's primary outbound IPv4 address.
+ *
+ * Opens a UDP socket and "connects" it to a public address: no packet is
+ * sent, but the kernel picks the source interface, which getsockname() then
+ * reveals. Falls back to the loopback address when offline or on any error.
+ *
+ * @return std::string the local IPv4 in dotted form, or "127.0.0.1"
+ */
+std::string resolveLocalIp()
+{
+    const int sock = ::socket(AF_INET, SOCK_DGRAM, 0);
+    std::string ip = "127.0.0.1";
+    sockaddr_in probe = {};
+    sockaddr_in local = {};
+    socklen_t len = sizeof(local);
+    char buf[INET_ADDRSTRLEN] = {};
+
+    if (sock < 0)
+        return ip;
+    probe.sin_family = AF_INET;
+    probe.sin_port = htons(53);
+    ::inet_pton(AF_INET, "8.8.8.8", &probe.sin_addr);
+    if (::connect(sock, reinterpret_cast<sockaddr *>(&probe), sizeof(probe)) == 0
+        && ::getsockname(sock, reinterpret_cast<sockaddr *>(&local), &len) == 0
+        && ::inet_ntop(AF_INET, &local.sin_addr, buf, sizeof(buf)) != nullptr)
+        ip = buf;
+    ::close(sock);
+    return ip;
+}
+
+} // namespace
 
 /**
  * @brief Initialise all members from the validated configuration.
  *
  * Member order matches the declaration order in Server.hpp:
- * _config → _listener → _poll → _world → _clients → _handshake.
+ * _config → _featureFlags → _listener → _poll → _world → _resourceSpawner →
+ * _clients → _clock → _scheduler → _refillScheduler → _foodScheduler →
+ * _aiDispatcher → _handshake.
  *
  * @param config validated CLI configuration
  */
 zappy::server::Server::Server(const cli::ServerConfig &config)
     : _config(config),
+      _featureFlags(),
       _listener(_config.port()),
       _poll(),
       _world(_config.width(), _config.height(),
           _config.teamNames(), _config.clientsPerTeam()),
+      _resourceSpawner(),
       _clients(),
-      _handshake(_config, _world)
-{}
+      _scheduler(_clock),
+      _frequency(_config.frequency()),
+      _refillScheduler(_world, _resourceSpawner, _scheduler, _frequency),
+      _foodScheduler(_world, _scheduler, _frequency,
+          [this](int playerId) { onPlayerStarved(playerId); }),
+      _aiDispatcher(_world, _scheduler, _frequency,
+          [this](int id, std::string r) { onAiResponse(id, std::move(r)); }),
+      _guiDispatcher(_world,
+          gui::GuiAdminDeps{_clients, _featureFlags, _config.adminPassword(),
+              [this](int playerId) { onPlayerKilledByAdmin(playerId); }},
+          [this](int fd, std::string r) { onGuiResponse(fd, std::move(r)); },
+          [this] { return _frequency; },
+          [this](int freq) { updateFrequency(freq); }),
+      _guiNotifier(_clients, _world, [this](int fd) { retunePollMask(fd); }),
+      _handshake(_config, _world, _foodScheduler)
+{
+    for (const auto flag : _config.initialEnabledFlags())
+        _featureFlags.enable(flag);
+    std::cout << "Feature flags: "
+              << (_config.initialEnabledFlags().empty()
+                  ? "all disabled (strict mode)" : "some enabled via CLI")
+              << "\n";
+    _resourceSpawner.spawnInitial(_world);
+    game::EggSpawner eggSpawner;
+    eggSpawner.spawnInitial(_world);
+    _refillScheduler.start();
+    _world.addObserver(_guiNotifier);
+}
 
 /**
  * @brief Register the accept callback and enter the poll loop.
  */
 void zappy::server::Server::run()
 {
-    std::cout << "zappy_server listening on port "
-              << _listener.port() << "\n";
+    std::cout << "zappy_server listening on "
+              << resolveLocalIp() << ":" << _listener.port() << "\n";
     _poll.register_fd(_listener.fd(), POLLIN, [this](short) {
         acceptPendingClients();
     });
+    fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK);
+    _poll.register_fd(0, POLLIN, [this](short) {
+        handleStdin();
+    });
+    _poll.set_pre_wait_hook([this] {
+        _poll.set_next_timeout(_scheduler.nextTimeoutMs());
+    });
+    _poll.set_post_wait_hook([this] { _scheduler.tick(); });
     _poll.run();
     std::cout << "zappy_server shutting down\n";
 }
@@ -80,6 +163,9 @@ void zappy::server::Server::handleClientEvents(
         dropped = handlePollout(clientFd);
     if (!dropped)
         retunePollMask(clientFd);
+    if (!dropped && _clients.get(clientFd).isMarkedForDrop() &&
+        !_clients.get(clientFd).buffer().has_pending_write())
+        dropClient(clientFd);
 }
 
 /**
@@ -121,17 +207,93 @@ bool zappy::server::Server::handlePollout(int clientFd)
 }
 
 /**
- * @brief Release the team slot (if AI), unregister from poll, and erase from registry.
+ * @brief Kill the player (if AI and still alive), unregister and erase the client.
+ *
+ * Idempotent: a no-op when @p clientFd is already gone. Stops food consumption
+ * and kills the player only when it is still alive.
  *
  * @param clientFd file descriptor to drop
  */
 void zappy::server::Server::dropClient(int clientFd)
 {
-    if (_clients.contains(clientFd) &&
-        _clients.get(clientFd).state() == client::ClientState::AI)
-        _world.team(_clients.get(clientFd).aiData().teamName).releaseSlot();
+    if (!_clients.contains(clientFd))
+        return;
+    client::Client &client = _clients.get(clientFd);
+    if (client.state() == client::ClientState::AI) {
+        const int playerId = client.aiData().playerId;
+        _aiDispatcher.stopPlayer(playerId);
+        _foodScheduler.stopConsumption(playerId);
+        if (_world.hasPlayer(playerId) &&
+            _world.player(playerId).state() != game::PlayerState::DEAD)
+            _world.killPlayer(playerId);
+    }
     _poll.unregister_fd(clientFd);
     _clients.remove(clientFd);
+}
+
+/**
+ * @brief React to starvation: send "dead", flag for drop, kill and arm POLLOUT.
+ *
+ * @param playerId starving player id reported by the food scheduler
+ */
+void zappy::server::Server::onPlayerStarved(int playerId)
+{
+    const std::optional<int> fd = _clients.findFdByPlayerId(playerId);
+    if (!fd)
+        return;
+    _aiDispatcher.stopPlayer(playerId);
+    client::Client &client = _clients.get(*fd);
+    client.buffer().queue_message("dead");
+    client.markForDrop();
+    if (_world.hasPlayer(playerId))
+        _world.killPlayer(playerId);
+    retunePollMask(*fd);
+}
+
+/**
+ * @brief Disconnect the AI client of a player killed by an admin command.
+ *
+ * @param playerId id of the player killed by the GUI admin
+ */
+void zappy::server::Server::onPlayerKilledByAdmin(int playerId)
+{
+    const std::optional<int> fd = _clients.findFdByPlayerId(playerId);
+    if (!fd)
+        return;
+    _aiDispatcher.stopPlayer(playerId);
+    client::Client &client = _clients.get(*fd);
+    client.buffer().queue_message("dead");
+    client.markForDrop();
+    retunePollMask(*fd);
+}
+
+/**
+ * @brief Deliver @p response to the AI client owning @p playerId, if present.
+ *
+ * @param playerId player the response is addressed to
+ * @param response response line (no trailing newline)
+ */
+void zappy::server::Server::onAiResponse(int playerId, std::string response)
+{
+    const std::optional<int> fd = _clients.findFdByPlayerId(playerId);
+    if (!fd)
+        return;
+    _clients.get(*fd).buffer().queue_message(std::move(response));
+    retunePollMask(*fd);
+}
+
+/**
+ * @brief Deliver a GUI command response to its client, if still connected.
+ *
+ * @param fd client file descriptor
+ * @param response response line (no trailing newline)
+ */
+void zappy::server::Server::onGuiResponse(int fd, std::string response)
+{
+    if (_clients.contains(fd)) {
+        _clients.get(fd).buffer().queue_message(std::move(response));
+        retunePollMask(fd);
+    }
 }
 
 /**
@@ -166,9 +328,54 @@ bool zappy::server::Server::dispatchReadyMessages(int clientFd)
         if (c.state() == client::ClientState::HANDSHAKE) {
             const auto res = _handshake.handle(c, *msg);
             dropped = (res == handshake::HandshakeResult::DROP);
-            if (dropped)
+            if (dropped) {
                 dropClient(clientFd);
-        }
+            } else if (c.state() == client::ClientState::GUI) {
+                _guiDispatcher.sendInitialSync(clientFd, _frequency);
+            }
+        } else if (c.state() == client::ClientState::AI)
+            _aiDispatcher.dispatch(c.aiData().playerId, *msg);
+        else if (c.state() == client::ClientState::GUI
+            || c.state() == client::ClientState::GUI_ADMIN)
+            _guiDispatcher.dispatch(clientFd, *msg);
     }
     return dropped;
+}
+
+/**
+ * @brief Update the server time frequency dynamically and scale active timers.
+ *
+ * @param newFrequency new reciprocal of the time unit
+ */
+void zappy::server::Server::updateFrequency(int newFrequency)
+{
+    if (newFrequency <= 0)
+        return;
+    const double factor = static_cast<double>(_frequency) / newFrequency;
+    _frequency = newFrequency;
+    _refillScheduler.setFrequency(newFrequency);
+    _foodScheduler.setFrequency(newFrequency);
+    _aiDispatcher.setFrequency(newFrequency);
+    _scheduler.rescaleDelays(factor);
+    _guiNotifier.broadcast("sst " + std::to_string(newFrequency));
+}
+
+/**
+ * @brief Read lines from standard input and broadcast them to all GUI clients.
+ */
+void zappy::server::Server::handleStdin()
+{
+    char buf[1024];
+    const ssize_t n = read(0, buf, sizeof(buf) - 1);
+
+    if (n <= 0) {
+        _poll.unregister_fd(0);
+        return;
+    }
+    buf[n] = '\0';
+    std::string line(buf);
+    while (!line.empty() && (line.back() == '\n' || line.back() == '\r'))
+        line.pop_back();
+    if (!line.empty())
+        _guiNotifier.broadcastMessage(line);
 }

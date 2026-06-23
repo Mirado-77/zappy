@@ -36,6 +36,26 @@ static zappy::posix::FileDescriptor makeWakeEvent()
 }
 
 /**
+ * @brief Run a loop hook, logging any exception instead of letting it escape.
+ *
+ * Keeps the running server alive: a runtime error raised while a hook fires
+ * is reported on stderr and the loop keeps spinning.
+ *
+ * @param hook the hook to invoke (no-op if empty)
+ * @param label human-readable hook name used in the error log
+ */
+static void run_hook(const std::function<void()> &hook, const char *label)
+{
+    if (!hook)
+        return;
+    try {
+        hook();
+    } catch (const std::exception &error) {
+        std::cerr << label << " error: " << error.what() << "\n";
+    }
+}
+
+/**
  * @brief Append a descriptor to the polled set.
  *
  * @param pollfds the polled set to extend
@@ -114,6 +134,22 @@ void zappy::net::PollLoop::set_next_timeout(int ms) noexcept
 }
 
 /**
+ * @brief Set the hook run before each poll() wait.
+ */
+void zappy::net::PollLoop::set_pre_wait_hook(PreWaitHook hook)
+{
+    _pre_wait_hook = std::move(hook);
+}
+
+/**
+ * @brief Set the hook run after each poll() wait.
+ */
+void zappy::net::PollLoop::set_post_wait_hook(PostWaitHook hook)
+{
+    _post_wait_hook = std::move(hook);
+}
+
+/**
  * @brief Drain the eventfd used to wake the loop.
  */
 void zappy::net::PollLoop::drain_wake_event() noexcept
@@ -168,6 +204,7 @@ void zappy::net::PollLoop::dispatch()
 void zappy::net::PollLoop::run()
 {
     while (!_stop_requested.load()) {
+        run_hook(_pre_wait_hook, "pre-wait hook");
         const int ready = ::poll(_pollfds.data(),
             static_cast<nfds_t>(_pollfds.size()), _timeout_ms);
 
@@ -178,6 +215,7 @@ void zappy::net::PollLoop::run()
         }
         if (ready > 0)
             dispatch();
+        run_hook(_post_wait_hook, "post-wait hook");
     }
 }
 

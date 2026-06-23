@@ -89,6 +89,32 @@ Test(cli_valid, bonus_flags_default_to_disabled)
     cr_assert_str_empty(config->adminPassword().c_str());
 }
 
+Test(cli_valid, admin_password_without_enable_is_stored_and_unused)
+{
+    auto config = run({"-p", "1", "-x", "1", "-y", "1", "-n", "a", "-c", "1",
+        "--admin-password", "lonely"});
+
+    cr_assert(config.has_value());
+    cr_assert_not(config->adminEnabled());
+    cr_assert_str_eq(config->adminPassword().c_str(), "lonely");
+}
+
+Test(cli_error, enable_admin_without_password_throws)
+{
+    cr_assert_throw(
+        run({"-p", "1", "-x", "1", "-y", "1", "-n", "a", "-c", "1",
+            "--enable-admin"}),
+        zappy::server::cli::CliParseError);
+}
+
+Test(cli_error, enable_admin_with_empty_password_throws)
+{
+    cr_assert_throw(
+        run({"-p", "1", "-x", "1", "-y", "1", "-n", "a", "-c", "1",
+            "--enable-admin", "--admin-password", ""}),
+        zappy::server::cli::CliParseError);
+}
+
 /* help */
 
 Test(cli_help, returns_nullopt)
@@ -112,10 +138,27 @@ Test(cli_help, usage_message_matches_subject)
 
 /* error */
 
-Test(cli_error, missing_required_port)
+Test(cli_valid, no_arguments_uses_all_defaults)
 {
-    cr_assert_throw(run({"-x", "1", "-y", "1", "-n", "a", "-c", "1"}),
-        zappy::server::cli::CliParseError);
+    auto config = run({});
+
+    cr_assert(config.has_value(), "no-arg launch should parse with defaults");
+    cr_assert_eq(config->port(), 4242);
+    cr_assert_eq(config->width(), 10);
+    cr_assert_eq(config->height(), 10);
+    cr_assert_eq(config->clientsPerTeam(), 5);
+    cr_assert_eq(config->frequency(), 100);
+    cr_assert_eq(config->teamNames().size(), 2u);
+    cr_assert_str_eq(config->teamNames()[0].c_str(), "team1");
+    cr_assert_str_eq(config->teamNames()[1].c_str(), "team2");
+}
+
+Test(cli_valid, omitted_port_falls_back_to_default)
+{
+    auto config = run({"-x", "1", "-y", "1", "-n", "a", "-c", "1"});
+
+    cr_assert(config.has_value());
+    cr_assert_eq(config->port(), 4242, "missing -p should default to 4242");
 }
 
 Test(cli_error, missing_value_for_flag)

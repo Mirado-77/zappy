@@ -9,8 +9,10 @@
     #define SERVER_GAME_IWORLDOBSERVER_HPP_
 
     #include <string>
+    #include <vector>
 
     #include "server/game/Position.hpp"
+    #include "server/game/Constants.hpp"
 
 namespace zappy::server::game {
 
@@ -106,6 +108,64 @@ public:
      * @param teamName the affected team
      */
     virtual void onTeamSlotsChanged(const std::string &teamName) = 0;
+
+    /**
+     * @brief A player broadcast a message to the world.
+     *
+     * @param id the broadcasting player id
+     * @param text the broadcast text
+     */
+    virtual void onPlayerBroadcast(int id, const std::string &text) = 0;
+
+    /**
+     * @brief A player started a Fork command.
+     *
+     * @param playerId the forking player id
+     */
+    virtual void onPlayerForkStarted(int playerId) = 0;
+
+    /**
+     * @brief An incantation ritual started on a tile.
+     *
+     * @param initiatorId the player who launched the incantation
+     * @param level the level being elevated from
+     * @param participants ids of every frozen player taking part
+     */
+    virtual void onIncantationStarted(int initiatorId, int level,
+        const std::vector<int> &participants) = 0;
+
+    /**
+     * @brief An incantation ritual ended.
+     *
+     * @param initiatorId the player who launched the incantation
+     * @param success whether the elevation succeeded
+     * @param newLevel the resulting level on success, 0 on failure
+     */
+    virtual void onIncantationEnded(int initiatorId, bool success,
+        int newLevel) = 0;
+
+    /**
+     * @brief A player performed an Eject command.
+     *
+     * @param id player id
+     */
+    virtual void onPlayerEjected(int id) = 0;
+
+    /**
+     * @brief A player dropped a resource.
+     *
+     * @param id player id
+     * @param type resource type
+     */
+    virtual void onPlayerDroppedResource(int id, ResourceType type) = 0;
+
+    /**
+     * @brief A player picked up a resource.
+     *
+     * @param id player id
+     * @param type resource type
+     */
+    virtual void onPlayerPickedUpResource(int id, ResourceType type) = 0;
 };
 
 /**
@@ -125,6 +185,13 @@ public:
     void onEggHatched(int) override {}
     void onEggRemoved(int) override {}
     void onTeamSlotsChanged(const std::string &) override {}
+    void onPlayerBroadcast(int, const std::string &) override {}
+    void onPlayerForkStarted(int) override {}
+    void onIncantationStarted(int, int, const std::vector<int> &) override {}
+    void onIncantationEnded(int, bool, int) override {}
+    void onPlayerEjected(int) override {}
+    void onPlayerDroppedResource(int, ResourceType) override {}
+    void onPlayerPickedUpResource(int, ResourceType) override {}
 };
 
 } // namespace zappy::server::game

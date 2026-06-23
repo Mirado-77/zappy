@@ -9,6 +9,7 @@
     #define CLIENT_CLIENTREGISTRY_HPP_
 
     #include <cstddef>
+    #include <optional>
     #include <unordered_map>
 
     #include "server/client/Client.hpp"
@@ -78,6 +79,14 @@ public:
      * @return std::size_t
      */
     [[nodiscard]] std::size_t countInState(ClientState s) const noexcept;
+
+    /**
+     * @brief File descriptor of the AI client owning @p playerId.
+     *
+     * @param playerId game player id to match
+     * @return std::optional<int> the fd, or nullopt if no AI client matches
+     */
+    [[nodiscard]] std::optional<int> findFdByPlayerId(int playerId) const;
 
     /**
      * @brief Invoke @p callback(Client&) for every registered client.

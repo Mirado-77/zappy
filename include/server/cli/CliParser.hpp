@@ -51,12 +51,14 @@ private:
         std::optional<long> width;
         std::optional<long> height;
         std::vector<std::string> teamNames;
+        bool sawTeamFlag = false;
         std::optional<long> clientsPerTeam;
         std::optional<long> frequency;
 
         bool enableEvents = false;
         bool enableBiomes = false;
         bool enableAdmin = false;
+        bool enableProfile = false;
         std::optional<std::string> adminPassword;
     };
 
@@ -77,6 +79,14 @@ private:
      * @throws CliParseError if any required field is missing or invalid
      */
     ServerConfig finalize(const Builder &b) const;
+
+    /**
+     * @brief Enforce that --enable-admin is paired with a non-empty password.
+     *
+     * @param b populated builder
+     * @throws CliParseError if admin is enabled without an --admin-password
+     */
+    void validateAdminPassword(const Builder &b) const;
 
     /**
      * @brief Take the value token following @p flag, advancing @p index.
