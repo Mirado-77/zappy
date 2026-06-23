@@ -106,6 +106,16 @@ private:
     void onPlayerStarved(int playerId);
 
     /**
+     * @brief Disconnect the AI client of a player killed by an admin command.
+     *
+     * The world already marked the player DEAD; this notifies and drops its
+     * AI connection ("dead\n" then deferred drop once the buffer flushes).
+     *
+     * @param playerId id of the player killed by the GUI admin
+     */
+    void onPlayerKilledByAdmin(int playerId);
+
+    /**
      * @brief Deliver an AI command response to its client, if still connected.
      *
      * @param playerId player the response is addressed to

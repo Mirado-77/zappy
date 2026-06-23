@@ -54,43 +54,48 @@ private:
         std::string_view rest);
 
     /**
-     * @brief Parse tokens into integers, checking for non-negativity.
+     * @brief Parse the first @p count tokens into non-negative integers.
      *
      * @param tokens individual tokens
+     * @param count number of leading tokens to convert
      * @param args target vector to populate
-     * @return bool true if all tokens parsed successfully as non-negative
+     * @return bool true if every converted token was a non-negative integer
      */
     [[nodiscard]] static bool convertArgs(
-        const std::vector<std::string_view> &tokens,
+        const std::vector<std::string_view> &tokens, std::size_t count,
         std::vector<int> &args) noexcept;
 
     /**
-     * @brief Construct the ParsedGuiCommand.
+     * @brief Trimmed remainder of @p rest after the first @p count tokens.
      *
+     * @param rest the trimmed argument block
+     * @param tokens the tokens of @p rest
+     * @param count number of leading tokens consumed as integers
+     * @return std::string_view the raw remainder, empty if none
+     */
+    [[nodiscard]] static std::string_view rawAfter(std::string_view rest,
+        const std::vector<std::string_view> &tokens,
+        std::size_t count) noexcept;
+
+    /**
+     * @brief Build a command from its leading integers and optional raw tail.
+     *
+     * @param info matched command metadata
      * @param kind the command kind
-     * @param tokens the argument tokens
+     * @param rest the trimmed argument block
+     * @param tokens the tokens of @p rest
      * @return std::variant<ParsedGuiCommand, GuiParseError>
      */
     [[nodiscard]] static std::variant<ParsedGuiCommand,
-        GuiParseError> buildCommand(GuiCommandKind kind,
+        GuiParseError> buildMixed(const GuiCommandInfo &info,
+            GuiCommandKind kind, std::string_view rest,
             const std::vector<std::string_view> &tokens);
-
-    /**
-     * @brief Build a command whose payload is a raw, unparsed string argument.
-     *
-     * @param kind the command kind
-     * @param rest the trimmed argument block (the raw payload)
-     * @return std::variant<ParsedGuiCommand, GuiParseError> BAD_PARAMETER if empty
-     */
-    [[nodiscard]] static std::variant<ParsedGuiCommand,
-        GuiParseError> buildRawCommand(GuiCommandKind kind,
-            std::string_view rest);
 
     /**
      * @brief Resolve a matched command into a parse result.
      *
-     * Routes raw-argument commands to buildRawCommand and integer-argument
-     * commands through tokenize + arity validation + buildCommand.
+     * Tokenizes the argument block then validates the leading integers and the
+     * optional trailing raw argument against the command metadata.
      *
      * @param info matched command metadata
      * @param kind the command kind

@@ -8,6 +8,8 @@
 #include <utility>
 
 #include "server/gui/GuiDispatcher.hpp"
+#include "server/game/ElevationRules.hpp"
+#include "server/game/ResourceNameResolver.hpp"
 
 /**
  * @brief Construct a new Gui Dispatcher object.
@@ -30,7 +32,8 @@ zappy::server::gui::GuiDispatcher::GuiDispatcher(
       _setFrequency(std::move(setFrequency)),
       _clients(adminDeps.clients),
       _featureFlags(adminDeps.featureFlags),
-      _adminPassword(std::move(adminDeps.adminPassword))
+      _adminPassword(std::move(adminDeps.adminPassword)),
+      _onPlayerKilledByAdmin(std::move(adminDeps.onPlayerKilledByAdmin))
 {
 }
 
@@ -43,8 +46,8 @@ zappy::server::gui::GuiDispatcher::GuiDispatcher(
 std::vector<std::string> zappy::server::gui::GuiDispatcher::dispatchStandard(
     const protocol::gui::ParsedGuiCommand &cmd)
 {
-    static constexpr std::array<Handler,
-        protocol::gui::GUI_COMMAND_KIND_COUNT - 1> handlers = {
+    static constexpr std::array<Handler, static_cast<std::size_t>(
+        protocol::gui::GuiCommandKind::ADMIN)> handlers = {
             &GuiDispatcher::handleMsz, &GuiDispatcher::handleBct,
             &GuiDispatcher::handleMct, &GuiDispatcher::handleTna,
             &GuiDispatcher::handlePpo, &GuiDispatcher::handlePlv,
@@ -69,13 +72,65 @@ void zappy::server::gui::GuiDispatcher::dispatch(
     if (std::holds_alternative<protocol::gui::GuiParseError>(res)) {
         sendError(fd, std::get<protocol::gui::GuiParseError>(res));
     } else {
-        const auto &cmd = std::get<protocol::gui::ParsedGuiCommand>(res);
-        const auto responses =
-            (cmd.kind == protocol::gui::GuiCommandKind::ADMIN)
-            ? handleAdmin(fd, cmd) : dispatchStandard(cmd);
+        const auto responses = routeCommand(
+            fd, std::get<protocol::gui::ParsedGuiCommand>(res));
         for (const auto &response : responses)
             _onResponse(fd, response);
     }
+}
+
+/**
+ * @brief Route a parsed command to admin, admin-scoped or standard handling.
+ *
+ * @param fd client file descriptor
+ * @param cmd the parsed command
+ * @return std::vector<std::string> the response lines
+ */
+std::vector<std::string> zappy::server::gui::GuiDispatcher::routeCommand(
+    int fd, const protocol::gui::ParsedGuiCommand &cmd)
+{
+    std::vector<std::string> responses;
+
+    if (cmd.kind == protocol::gui::GuiCommandKind::ADMIN)
+        responses = handleAdmin(fd, cmd);
+    else if (isAdminCommand(cmd.kind))
+        responses = handleAdminScopedCommand(fd, cmd);
+    else
+        responses = dispatchStandard(cmd);
+    return responses;
+}
+
+/**
+ * @brief Execute an adm_* command, gated on the client being GUI_ADMIN.
+ *
+ * @param fd client file descriptor
+ * @param cmd the parsed adm_* command
+ * @return std::vector<std::string> the response lines
+ */
+std::vector<std::string>
+zappy::server::gui::GuiDispatcher::handleAdminScopedCommand(
+    int fd, const protocol::gui::ParsedGuiCommand &cmd)
+{
+    static constexpr std::array<AdminHandler, protocol::gui::
+        GUI_COMMAND_KIND_COUNT - static_cast<std::size_t>(
+            protocol::gui::GuiCommandKind::ADM_FLAG_ENABLE)> handlers = {
+        &GuiDispatcher::handleAdmFlagEnable,
+        &GuiDispatcher::handleAdmFlagDisable,
+        &GuiDispatcher::handleAdmFlagList,
+        &GuiDispatcher::handleAdmEventTrigger,
+        &GuiDispatcher::handleAdmTileSet,
+        &GuiDispatcher::handleAdmTileAdd,
+        &GuiDispatcher::handleAdmPlayerKill,
+        &GuiDispatcher::handleAdmPlayerTp,
+        &GuiDispatcher::handleAdmPlayerLevel};
+    const std::size_t idx = static_cast<std::size_t>(cmd.kind)
+        - static_cast<std::size_t>(
+            protocol::gui::GuiCommandKind::ADM_FLAG_ENABLE);
+    std::vector<std::string> responses = {"suc"};
+
+    if (_clients.get(fd).state() == client::ClientState::GUI_ADMIN)
+        responses = (this->*handlers[idx])(cmd);
+    return responses;
 }
 
 /**
@@ -430,4 +485,189 @@ void zappy::server::gui::GuiDispatcher::sendSyncTime(
     int fd, int frequency)
 {
     _onResponse(fd, "sgt " + std::to_string(frequency));
+}
+
+/**
+ * @brief Handle adm_flag_enable: enable a feature flag by name.
+ *
+ * @param cmd parsed command; rawArgument holds the flag name
+ * @return std::vector<std::string> "ok" or "ko" if the name is unknown
+ */
+std::vector<std::string> zappy::server::gui::GuiDispatcher::handleAdmFlagEnable(
+    const protocol::gui::ParsedGuiCommand &cmd)
+{
+    const auto flag = config::FeatureFlags::fromName(cmd.rawArgument);
+    std::vector<std::string> response = {"ko"};
+
+    if (flag) {
+        _featureFlags.enable(*flag);
+        response = {"ok"};
+    }
+    return response;
+}
+
+/**
+ * @brief Handle adm_flag_disable: disable a feature flag by name.
+ *
+ * @param cmd parsed command; rawArgument holds the flag name
+ * @return std::vector<std::string> "ok" or "ko" if the name is unknown
+ */
+std::vector<std::string>
+zappy::server::gui::GuiDispatcher::handleAdmFlagDisable(
+    const protocol::gui::ParsedGuiCommand &cmd)
+{
+    const auto flag = config::FeatureFlags::fromName(cmd.rawArgument);
+    std::vector<std::string> response = {"ko"};
+
+    if (flag) {
+        _featureFlags.disable(*flag);
+        response = {"ok"};
+    }
+    return response;
+}
+
+/**
+ * @brief Handle adm_flag_list: report every flag and its on/off state.
+ *
+ * @param cmd parsed command (unused)
+ * @return std::vector<std::string> one "adm_flag_list <name> <on|off>" line
+ */
+std::vector<std::string> zappy::server::gui::GuiDispatcher::handleAdmFlagList(
+    const protocol::gui::ParsedGuiCommand &cmd)
+{
+    std::vector<std::string> lines;
+
+    (void)cmd;
+    for (const auto &[flag, on] : _featureFlags.snapshot())
+        lines.push_back("adm_flag_list "
+            + std::string(config::FeatureFlags::toName(flag))
+            + (on ? " on" : " off"));
+    return lines;
+}
+
+/**
+ * @brief Handle adm_event_trigger: stub until the event bus (ZAP-48) exists.
+ *
+ * @param cmd parsed command (unused)
+ * @return std::vector<std::string> always "ko"
+ */
+std::vector<std::string>
+zappy::server::gui::GuiDispatcher::handleAdmEventTrigger(
+    const protocol::gui::ParsedGuiCommand &cmd)
+{
+    (void)cmd;
+    return {"ko"};
+}
+
+/**
+ * @brief Handle adm_tile_set: overwrite a resource count on a tile.
+ *
+ * @param cmd parsed command; arguments are x, y, n; rawArgument the resource
+ * @return std::vector<std::string> "ok" or "ko" on bad tile/resource
+ */
+std::vector<std::string> zappy::server::gui::GuiDispatcher::handleAdmTileSet(
+    const protocol::gui::ParsedGuiCommand &cmd)
+{
+    const int x = cmd.arguments[0];
+    const int y = cmd.arguments[1];
+    const int n = cmd.arguments[2];
+    const bool inBounds = x < _world.width() && y < _world.height();
+    const auto type = game::ResourceNameResolver::resolve(cmd.rawArgument);
+    std::vector<std::string> response = {"ko"};
+
+    if (inBounds && n >= 0 && type) {
+        _world.setTileResource(game::Position(x, y), *type, n);
+        response = {"ok"};
+    }
+    return response;
+}
+
+/**
+ * @brief Handle adm_tile_add: add to a resource count on a tile.
+ *
+ * @param cmd parsed command; arguments are x, y, n; rawArgument the resource
+ * @return std::vector<std::string> "ok" or "ko" on bad tile/resource
+ */
+std::vector<std::string> zappy::server::gui::GuiDispatcher::handleAdmTileAdd(
+    const protocol::gui::ParsedGuiCommand &cmd)
+{
+    const int x = cmd.arguments[0];
+    const int y = cmd.arguments[1];
+    const int n = cmd.arguments[2];
+    const bool inBounds = x < _world.width() && y < _world.height();
+    const auto type = game::ResourceNameResolver::resolve(cmd.rawArgument);
+    std::vector<std::string> response = {"ko"};
+
+    if (inBounds && n >= 0 && type) {
+        _world.addTileResource(game::Position(x, y), *type, n);
+        response = {"ok"};
+    }
+    return response;
+}
+
+/**
+ * @brief Handle adm_player_kill: kill a player and disconnect its AI client.
+ *
+ * @param cmd parsed command; arguments[0] is the player id
+ * @return std::vector<std::string> "ok" or "ko" if unknown/already dead
+ */
+std::vector<std::string> zappy::server::gui::GuiDispatcher::handleAdmPlayerKill(
+    const protocol::gui::ParsedGuiCommand &cmd)
+{
+    const int id = cmd.arguments[0];
+    std::vector<std::string> response = {"ko"};
+
+    if (_world.hasPlayer(id)
+        && _world.player(id).state() != game::PlayerState::DEAD) {
+        _world.killPlayer(id);
+        if (_onPlayerKilledByAdmin)
+            _onPlayerKilledByAdmin(id);
+        response = {"ok"};
+    }
+    return response;
+}
+
+/**
+ * @brief Handle adm_player_tp: teleport a player, wrapping the destination.
+ *
+ * @param cmd parsed command; arguments are id, x, y
+ * @return std::vector<std::string> "ok" or "ko" if the player is unknown
+ */
+std::vector<std::string> zappy::server::gui::GuiDispatcher::handleAdmPlayerTp(
+    const protocol::gui::ParsedGuiCommand &cmd)
+{
+    const int id = cmd.arguments[0];
+    const game::Position dest = game::Position(
+        cmd.arguments[1], cmd.arguments[2]).normalized(
+            _world.width(), _world.height());
+    std::vector<std::string> response = {"ko"};
+
+    if (_world.hasPlayer(id)) {
+        _world.movePlayer(id, dest);
+        response = {"ok"};
+    }
+    return response;
+}
+
+/**
+ * @brief Handle adm_player_level: set a player's elevation level.
+ *
+ * @param cmd parsed command; arguments are id, level
+ * @return std::vector<std::string> "ok" or "ko" if unknown/invalid level
+ */
+std::vector<std::string>
+zappy::server::gui::GuiDispatcher::handleAdmPlayerLevel(
+    const protocol::gui::ParsedGuiCommand &cmd)
+{
+    const int id = cmd.arguments[0];
+    const int level = cmd.arguments[1];
+    const bool validLevel = level >= 1
+        && level <= game::ElevationRules::maxLevel();
+    std::vector<std::string> response = {"ko"};
+
+    if (_world.hasPlayer(id) && validLevel) {
+        _world.setPlayerLevel(id, level);
+        response = {"ok"};
+    }
+    return response;
 }
