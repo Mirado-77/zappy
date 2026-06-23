@@ -38,24 +38,3 @@ int main(int argc, char **argv)
     }
     return exitCode;
 }
-
-/* naughty list
-zappy::gui::cli::CliParseError -> zappy::gui::ipc::SerializationError
-Server -> Gui
-cli::CliParser -> GuiArgParser
-zappy::gui::cli::CliParser::usage()-> zappy::gui::GuiArgParser::usage()
-zappy::gui::ipc::ServerInfo -> zappy::gui::ServerConfig
-
-
-modified files:
-#include "ipc/SerializationError.hpp"
-GuiArgParser.cpp
-GuiArgParser.hpp
-#include "gui/cli/ServerConfig.hpp" -> #include "gui/ipc/ServerInfo.hpp"
-    zappy::gui::ServerConfig -> zappy::gui::ipc::ServerInfo
-
-to-modify headers:
-#include "gui/Server.hpp" -> "gui/Gui.hpp"
-#include "gui/Constants.hpp" -> "gui/Constants.hpp"
-
-*/
