@@ -81,7 +81,8 @@ zappy::server::Server::Server(const cli::ServerConfig &config)
       _aiDispatcher(_world, _scheduler, _frequency,
           [this](int id, std::string r) { onAiResponse(id, std::move(r)); }),
       _guiDispatcher(_world,
-          gui::GuiAdminDeps{_clients, _featureFlags, _config.adminPassword()},
+          gui::GuiAdminDeps{_clients, _featureFlags, _config.adminPassword(),
+              [this](int playerId) { onPlayerKilledByAdmin(playerId); }},
           [this](int fd, std::string r) { onGuiResponse(fd, std::move(r)); },
           [this] { return _frequency; },
           [this](int freq) { updateFrequency(freq); }),
@@ -246,6 +247,23 @@ void zappy::server::Server::onPlayerStarved(int playerId)
     client.markForDrop();
     if (_world.hasPlayer(playerId))
         _world.killPlayer(playerId);
+    retunePollMask(*fd);
+}
+
+/**
+ * @brief Disconnect the AI client of a player killed by an admin command.
+ *
+ * @param playerId id of the player killed by the GUI admin
+ */
+void zappy::server::Server::onPlayerKilledByAdmin(int playerId)
+{
+    const std::optional<int> fd = _clients.findFdByPlayerId(playerId);
+    if (!fd)
+        return;
+    _aiDispatcher.stopPlayer(playerId);
+    client::Client &client = _clients.get(*fd);
+    client.buffer().queue_message("dead");
+    client.markForDrop();
     retunePollMask(*fd);
 }
 

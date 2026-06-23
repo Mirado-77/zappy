@@ -21,7 +21,7 @@ namespace zappy::protocol::gui {
  */
 struct GuiCommandInfo {
     std::string_view name;
-    int argCount;
+    int intArgCount;
     bool acceptsRawArgument;
 
     /**
@@ -45,7 +45,16 @@ inline constexpr std::array<GuiCommandInfo,
     {"pin", 1, false},
     {"sgt", 0, false},
     {"sst", 1, false},
-    {"admin", 1, true}
+    {"admin", 0, true},
+    {"adm_flag_enable", 0, true},
+    {"adm_flag_disable", 0, true},
+    {"adm_flag_list", 0, false},
+    {"adm_event_trigger", 0, true},
+    {"adm_tile_set", 3, true},
+    {"adm_tile_add", 3, true},
+    {"adm_player_kill", 1, false},
+    {"adm_player_tp", 3, false},
+    {"adm_player_level", 2, false}
 }};
 
 constexpr const GuiCommandInfo &GuiCommandInfo::guiCommandInfoFor(

@@ -41,7 +41,7 @@ struct AdminFixture {
     GuiDispatcher disp;
 
     AdminFixture(std::string password, bool adminEnabled)
-        : disp(world, GuiAdminDeps{clients, flags, std::move(password)},
+        : disp(world, GuiAdminDeps{clients, flags, std::move(password), {}},
             [this](int fd, std::string r) {
                 replies.push_back({fd, std::move(r)});
             },

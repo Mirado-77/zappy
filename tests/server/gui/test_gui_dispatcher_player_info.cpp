@@ -30,7 +30,7 @@ struct PlayerInfoFixture {
     zappy::server::client::ClientRegistry clients;
     zappy::server::config::FeatureFlags flags;
     GuiDispatcher disp{world,
-        zappy::server::gui::GuiAdminDeps{clients, flags, ""},
+        zappy::server::gui::GuiAdminDeps{clients, flags, "", {}},
         [this](int fd, std::string r) {
             replies.push_back({fd, std::move(r)});
         },
