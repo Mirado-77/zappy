@@ -42,3 +42,7 @@ Thumbs.db
 
 # Temporary files
 /tmp/
+
+
+# Python files
+src/ai/__pycache__/*

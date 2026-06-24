@@ -50,6 +50,8 @@ TEST_SRC = src/server/cli/CliParser.cpp \
 			src/server/gui/GuiLineBuilder.cpp \
 			src/server/gui/GuiNotifier.cpp \
 			src/server/config/FeatureFlags.cpp \
+			src/server/event/EventBus.cpp \
+			src/server/event/Storm.cpp \
 		    $(wildcard tests/cli/*.cpp) \
 			$(wildcard tests/server/config/*.cpp) \
 			$(wildcard tests/server/client/*.cpp) \
@@ -58,6 +60,7 @@ TEST_SRC = src/server/cli/CliParser.cpp \
 			$(wildcard tests/server/handshake/*.cpp) \
 			$(wildcard tests/server/ai/*.cpp) \
 			$(wildcard tests/server/gui/*.cpp) \
+			$(wildcard tests/server/event/*.cpp) \
 			$(wildcard tests/protocol/ai/*.cpp) \
 			$(wildcard tests/protocol/gui/*.cpp)
 

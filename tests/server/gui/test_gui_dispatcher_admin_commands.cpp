@@ -7,6 +7,7 @@
 
 #include <criterion/criterion.h>
 #include <algorithm>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -14,15 +15,21 @@
 #include <unistd.h>
 
 #include "server/gui/GuiDispatcher.hpp"
+#include "server/gui/GuiNotifier.hpp"
 #include "server/game/World.hpp"
 #include "server/game/IWorldObserver.hpp"
 #include "server/game/Position.hpp"
 #include "server/client/ClientState.hpp"
 #include "server/config/FeatureFlag.hpp"
+#include "server/event/Event.hpp"
+#include "server/event/EventBus.hpp"
+#include "server/scheduler/Clock.hpp"
+#include "server/scheduler/Scheduler.hpp"
 #include "posix/FileDescriptor.hpp"
 
 using zappy::server::gui::GuiDispatcher;
 using zappy::server::gui::GuiAdminDeps;
+using zappy::server::gui::GuiNotifier;
 using zappy::server::game::World;
 using zappy::server::game::Position;
 using zappy::server::game::Orientation;
@@ -34,6 +41,9 @@ using zappy::server::client::ClientRegistry;
 using zappy::server::client::ClientState;
 using zappy::server::config::FeatureFlags;
 using zappy::server::config::FeatureFlag;
+using zappy::server::event::EventBus;
+using zappy::server::scheduler::Scheduler;
+using zappy::server::scheduler::SteadyClock;
 using zappy::posix::FileDescriptor;
 
 namespace {
@@ -60,12 +70,16 @@ struct AdminCommandsFixture {
     int adminFd;
     int guiFd;
     int playerId;
+    SteadyClock clock;
+    Scheduler scheduler{clock};
+    GuiNotifier notifier{clients, world, [](int) {}};
+    EventBus eventBus{world, notifier, scheduler, flags};
     GuiDispatcher disp;
 
     AdminCommandsFixture()
         : disp(world,
             GuiAdminDeps{clients, flags, "secret",
-                [this](int id) { killed.push_back(id); }},
+                [this](int id) { killed.push_back(id); }, eventBus},
             [this](int fd, std::string r) {
                 replies.push_back({fd, std::move(r)});
             },
@@ -273,4 +287,59 @@ Test(gui_admin_commands, tile_set_fires_tile_changed_observer)
     fx.world.addObserver(observer);
     fx.disp.dispatch(fx.adminFd, "adm_tile_set 3 4 5 food");
     cr_assert(observer.tileChanged);
+}
+
+namespace {
+
+class IdleEvent : public zappy::server::event::Event {
+public:
+    std::string_view name() const noexcept override { return "idle"; }
+    std::string startBroadcast() const override { return "evt_idle_start"; }
+    std::string endBroadcast() const override { return "evt_idle_end"; }
+    bool applyTick(World &) override { return true; }
+    void onEnd(World &) override {}
+};
+
+} // namespace
+
+Test(gui_admin_commands, event_trigger_storm_returns_ok_when_events_on)
+{
+    AdminCommandsFixture fx;
+
+    fx.flags.enable(FeatureFlag::EVENTS);
+    fx.disp.dispatch(fx.adminFd, "adm_event_trigger storm");
+    cr_assert(fx.repliesAre({"ok"}));
+    cr_assert_eq(fx.eventBus.activeEventCount(), 1U);
+}
+
+Test(gui_admin_commands, event_trigger_returns_ko_for_unknown_event)
+{
+    AdminCommandsFixture fx;
+
+    fx.flags.enable(FeatureFlag::EVENTS);
+    fx.disp.dispatch(fx.adminFd, "adm_event_trigger bogus");
+    cr_assert(fx.repliesAre({"ko"}));
+}
+
+Test(gui_admin_commands, flag_disable_events_cancels_active_events)
+{
+    AdminCommandsFixture fx;
+
+    fx.flags.enable(FeatureFlag::EVENTS);
+    fx.eventBus.spawn(std::make_unique<IdleEvent>());
+    cr_assert_eq(fx.eventBus.activeEventCount(), 1U);
+    fx.disp.dispatch(fx.adminFd, "adm_flag_disable events");
+    cr_assert(fx.repliesAre({"ok"}));
+    cr_assert_eq(fx.eventBus.activeEventCount(), 0U);
+    cr_assert(!fx.flags.isEnabled(FeatureFlag::EVENTS));
+}
+
+Test(gui_admin_commands, flag_disable_admin_does_not_cancel_events)
+{
+    AdminCommandsFixture fx;
+
+    fx.flags.enable(FeatureFlag::EVENTS);
+    fx.eventBus.spawn(std::make_unique<IdleEvent>());
+    fx.disp.dispatch(fx.adminFd, "adm_flag_disable admin");
+    cr_assert_eq(fx.eventBus.activeEventCount(), 1U);
 }

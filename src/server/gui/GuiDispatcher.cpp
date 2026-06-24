@@ -10,6 +10,8 @@
 #include "server/gui/GuiDispatcher.hpp"
 #include "server/game/ElevationRules.hpp"
 #include "server/game/ResourceNameResolver.hpp"
+#include "server/event/EventBus.hpp"
+#include "server/event/Storm.hpp"
 
 /**
  * @brief Construct a new Gui Dispatcher object.
@@ -33,7 +35,8 @@ zappy::server::gui::GuiDispatcher::GuiDispatcher(
       _clients(adminDeps.clients),
       _featureFlags(adminDeps.featureFlags),
       _adminPassword(std::move(adminDeps.adminPassword)),
-      _onPlayerKilledByAdmin(std::move(adminDeps.onPlayerKilledByAdmin))
+      _onPlayerKilledByAdmin(std::move(adminDeps.onPlayerKilledByAdmin)),
+      _eventBus(adminDeps.eventBus)
 {
 }
 
@@ -521,6 +524,8 @@ zappy::server::gui::GuiDispatcher::handleAdmFlagDisable(
 
     if (flag) {
         _featureFlags.disable(*flag);
+        if (*flag == config::FeatureFlag::EVENTS)
+            _eventBus.cancelAll();
         response = {"ok"};
     }
     return response;
@@ -546,17 +551,41 @@ std::vector<std::string> zappy::server::gui::GuiDispatcher::handleAdmFlagList(
 }
 
 /**
- * @brief Handle adm_event_trigger: stub until the event bus (ZAP-48) exists.
+ * @brief Build the event matching @p name, if any concrete type exists yet.
  *
- * @param cmd parsed command (unused)
- * @return std::vector<std::string> always "ko"
+ * @param name requested event name
+ * @return std::unique_ptr<event::Event> the event, or nullptr if unknown
+ */
+std::unique_ptr<zappy::server::event::Event>
+zappy::server::gui::GuiDispatcher::createEventByName(
+    std::string_view name) const
+{
+    std::unique_ptr<event::Event> result;
+
+    if (name == "storm")
+        result = std::make_unique<event::Storm>(
+            game::Position(_world.width() / 2, _world.height() / 2),
+            STORM_DEFAULT_RADIUS, game::Orientation::EAST,
+            STORM_DEFAULT_PUSH_INTERVAL, STORM_DEFAULT_DURATION);
+    return result;
+}
+
+/**
+ * @brief Handle adm_event_trigger: spawn the named event on the bus.
+ *
+ * @param cmd parsed command; rawArgument holds the event name
+ * @return std::vector<std::string> "ok" if spawned, "ko" otherwise
  */
 std::vector<std::string>
 zappy::server::gui::GuiDispatcher::handleAdmEventTrigger(
     const protocol::gui::ParsedGuiCommand &cmd)
 {
-    (void)cmd;
-    return {"ko"};
+    std::vector<std::string> response = {"ko"};
+    auto event = createEventByName(cmd.rawArgument);
+
+    if (event && _eventBus.spawn(std::move(event)))
+        response = {"ok"};
+    return response;
 }
 
 /**

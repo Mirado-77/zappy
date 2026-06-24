@@ -10,6 +10,7 @@
 
     #include <array>
     #include <functional>
+    #include <memory>
     #include <string>
     #include <string_view>
     #include <vector>
@@ -20,19 +21,26 @@
     #include "server/config/FeatureFlags.hpp"
     #include "protocol/gui/GuiCommandParser.hpp"
 
+namespace zappy::server::event {
+class Event;
+class EventBus;
+} // namespace zappy::server::event
+
 namespace zappy::server::gui {
 
 /**
- * @brief Bundle of admin-authentication dependencies for the dispatcher.
+ * @brief Bundle of admin dependencies for the dispatcher.
  *
  * Grouped into one parameter so the constructor stays within the argument
- * limit while still owning the registry, feature flags and admin password.
+ * limit while still owning the registry, feature flags, admin password, the
+ * kill callback and the event bus used by the admin command handlers.
  */
 struct GuiAdminDeps {
     client::ClientRegistry &clients;
     config::FeatureFlags &featureFlags;
     std::string adminPassword;
     std::function<void(int)> onPlayerKilledByAdmin;
+    event::EventBus &eventBus;
 };
 
 /**
@@ -91,8 +99,25 @@ private:
     config::FeatureFlags &_featureFlags;
     std::string _adminPassword;
     std::function<void(int)> _onPlayerKilledByAdmin;
+    event::EventBus &_eventBus;
 
     void sendError(int fd, protocol::gui::GuiParseError err);
+
+    static constexpr int STORM_DEFAULT_RADIUS = 3;
+    static constexpr int STORM_DEFAULT_PUSH_INTERVAL = 2;
+    static constexpr int STORM_DEFAULT_DURATION = 10;
+
+    /**
+     * @brief Instantiate the event matching @p name, if any exists yet.
+     *
+     * Currently recognises "storm" (default parameters); ZAP-50/51 extend it
+     * to build flood and meteor events. Unknown names yield nullptr.
+     *
+     * @param name requested event name
+     * @return std::unique_ptr<event::Event> the event, or nullptr if unknown
+     */
+    [[nodiscard]] std::unique_ptr<event::Event> createEventByName(
+        std::string_view name) const;
 
     /**
      * @brief Whether @p kind is an admin-scoped (adm_*) command.

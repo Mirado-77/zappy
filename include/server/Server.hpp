@@ -13,6 +13,7 @@
     #include "server/gui/GuiNotifier.hpp"
     #include "server/cli/ServerConfig.hpp"
     #include "server/config/FeatureFlags.hpp"
+    #include "server/event/EventBus.hpp"
     #include "server/client/ClientRegistry.hpp"
     #include "server/game/FoodScheduler.hpp"
     #include "server/game/RefillScheduler.hpp"
@@ -156,8 +157,9 @@ private:
     game::RefillScheduler _refillScheduler;
     game::FoodScheduler _foodScheduler;
     ai::AiDispatcher _aiDispatcher;
-    gui::GuiDispatcher _guiDispatcher;
     gui::GuiNotifier _guiNotifier;
+    event::EventBus _eventBus;
+    gui::GuiDispatcher _guiDispatcher;
     handshake::HandshakeHandler _handshake;
 };
 

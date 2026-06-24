@@ -11,7 +11,11 @@
 #include <vector>
 
 #include "server/gui/GuiDispatcher.hpp"
+#include "server/gui/GuiNotifier.hpp"
 #include "server/game/World.hpp"
+#include "server/event/EventBus.hpp"
+#include "server/scheduler/Clock.hpp"
+#include "server/scheduler/Scheduler.hpp"
 
 using zappy::server::gui::GuiDispatcher;
 using zappy::server::game::World;
@@ -26,8 +30,13 @@ struct Fixture {
     int frequency = 100;
     zappy::server::client::ClientRegistry clients;
     zappy::server::config::FeatureFlags flags;
+    zappy::server::scheduler::SteadyClock clock;
+    zappy::server::scheduler::Scheduler scheduler{clock};
+    zappy::server::gui::GuiNotifier notifier{clients, world, [](int) {}};
+    zappy::server::event::EventBus eventBus{
+        world, notifier, scheduler, flags};
     GuiDispatcher disp{world,
-        zappy::server::gui::GuiAdminDeps{clients, flags, "", {}},
+        zappy::server::gui::GuiAdminDeps{clients, flags, "", {}, eventBus},
         [this](int fd, std::string r) {
             replies.push_back({fd, std::move(r)});
         },
