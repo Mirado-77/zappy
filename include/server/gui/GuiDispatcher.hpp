@@ -112,6 +112,8 @@ private:
     static constexpr int FLOOD_DEFAULT_HEIGHT = 3;
     static constexpr int FLOOD_DEFAULT_DURATION = 8;
 
+    static constexpr int METEOR_DEFAULT_RADIUS = 1;
+
     /**
      * @brief Instantiate the event matching @p name, if any exists yet.
      *

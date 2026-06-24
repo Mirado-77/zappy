@@ -13,6 +13,7 @@
 #include "server/event/EventBus.hpp"
 #include "server/event/Storm.hpp"
 #include "server/event/Flood.hpp"
+#include "server/event/Meteor.hpp"
 
 /**
  * @brief Construct a new Gui Dispatcher object.
@@ -572,6 +573,10 @@ zappy::server::gui::GuiDispatcher::createEventByName(
         result = std::make_unique<event::Flood>(
             game::Position(FLOOD_DEFAULT_ORIGIN, FLOOD_DEFAULT_ORIGIN),
             FLOOD_DEFAULT_WIDTH, FLOOD_DEFAULT_HEIGHT, FLOOD_DEFAULT_DURATION);
+    else if (name == "meteor")
+        result = std::make_unique<event::Meteor>(
+            game::Position(_world.width() / 2, _world.height() / 2),
+            METEOR_DEFAULT_RADIUS, _onPlayerKilledByAdmin);
     return result;
 }
 
