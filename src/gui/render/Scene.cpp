@@ -21,17 +21,17 @@ Vector3 world_pos(int x, int y)
 
 } // namespace
 
-void Scene::sync(const state::GameState &state)
+void Scene::sync(const board_data::BoardData &board)
 {
-    ensure_world(state);
-    for (const auto &kv : state.players())
+    ensure_world(board);
+    for (const auto &kv : board.players())
         sync_player(kv.first, kv.second);
 }
 
-void Scene::ensure_world(const state::GameState &state)
+void Scene::ensure_world(const board_data::BoardData &board)
 {
-    int w = state.width();
-    int h = state.height();
+    int w = board.width();
+    int h = board.height();
     if (w <= 0 || h <= 0)
         return;
     if (_world && w == _width && h == _height)
@@ -41,7 +41,7 @@ void Scene::ensure_world(const state::GameState &state)
     _height = h;
 }
 
-void Scene::sync_player(int id, const state::Player &player)
+void Scene::sync_player(int id, const board_data::PlayerData &player)
 {
     auto [it, inserted] = _slots.try_emplace(id);
     Slot &slot = it->second;

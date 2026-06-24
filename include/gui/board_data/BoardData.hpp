@@ -1,36 +1,25 @@
 /*
 ** EPITECH PROJECT, 2026
-** Zappy
+** BoardData.hpp
 ** File description:
-** GUI-side mirror of the server world
+** BoardData
 */
 
-#ifndef GUI_STATE_GAMESTATE_HPP_
-    #define GUI_STATE_GAMESTATE_HPP_
-
-    #include <array>
+#ifndef BOARDDATA_HPP_
+    #define BOARDDATA_HPP_
     #include <cstddef>
     #include <string>
     #include <unordered_map>
     #include <vector>
 
+    #include "gui/board_data/GraphicalEvent.hpp"
+    #include "gui/board_data/TileData.hpp"
+    #include "gui/ipc/ServerInfo.hpp"
     #include "gui/net/ServerEvent.hpp"
 
-namespace zappy::gui::state {
+namespace zappy::gui::board_data {
 
-constexpr std::size_t RESOURCE_COUNT = 7;
-
-using Resources = std::array<int, RESOURCE_COUNT>;
-
-enum class Orientation { NORTH = 1, EAST = 2, SOUTH = 3, WEST = 4 };
-
-struct Tile {
-    int x = 0;
-    int y = 0;
-    Resources res{};
-};
-
-struct Player {
+struct PlayerData {
     int id = 0;
     int x = 0;
     int y = 0;
@@ -41,7 +30,7 @@ struct Player {
     bool alive = true;
 };
 
-struct Egg {
+struct EggData {
     int id = 0;
     int player_id = -1;
     int x = 0;
@@ -49,20 +38,24 @@ struct Egg {
     bool alive = true;
 };
 
-class GameState {
+class BoardData {
 public:
+    explicit BoardData(const ipc::ServerInfo &server_info);
+
     void apply(const net::ServerEvent &ev);
 
     [[nodiscard]] int width() const noexcept { return _width; }
     [[nodiscard]] int height() const noexcept { return _height; }
     [[nodiscard]] int time_unit() const noexcept { return _time_unit; }
-    [[nodiscard]] const Tile &tile(int x, int y) const;
-    [[nodiscard]] const std::unordered_map<int, Player> &players() const
-        noexcept { return _players; }
-    [[nodiscard]] const std::unordered_map<int, Egg> &eggs() const
-        noexcept { return _eggs; }
-    [[nodiscard]] const std::vector<std::string> &teams() const
-        noexcept { return _teams; }
+    [[nodiscard]] TileData &get_tile_value(std::size_t x, std::size_t y);
+    [[nodiscard]] const std::unordered_map<int, PlayerData> &players()
+        const noexcept { return _players; }
+    [[nodiscard]] const std::unordered_map<int, EggData> &eggs()
+        const noexcept { return _eggs; }
+    [[nodiscard]] const std::vector<std::string> &teams()
+        const noexcept { return _teams; }
+    [[nodiscard]] const std::vector<GraphicalEvent> &events()
+        const noexcept { return _events; }
     [[nodiscard]] bool game_ended() const noexcept { return _ended; }
     [[nodiscard]] const std::string &winner() const noexcept { return _winner; }
 
@@ -79,22 +72,31 @@ private:
     void on_enw(const net::ServerEvent &);
     void on_edi(const net::ServerEvent &);
     void on_seg(const net::ServerEvent &);
+    void on_pbc(const net::ServerEvent &);
+    void on_pic(const net::ServerEvent &);
+    void on_pie(const net::ServerEvent &);
+    void on_pex(const net::ServerEvent &);
+    void on_pfk(const net::ServerEvent &);
 
     void resize_tiles();
+    void push_player_event(GraphicalEventKind kind, int player_id,
+        std::string text);
     [[nodiscard]] std::size_t idx(int x, int y) const noexcept
         { return static_cast<std::size_t>(y) * _width + x; }
 
+    ipc::ServerInfo _server_info;
     int _width = 0;
     int _height = 0;
     int _time_unit = 100;
-    std::vector<Tile> _tiles;
-    std::unordered_map<int, Player> _players;
-    std::unordered_map<int, Egg> _eggs;
+    std::vector<TileData> _tiles;
+    std::unordered_map<int, PlayerData> _players;
+    std::unordered_map<int, EggData> _eggs;
     std::vector<std::string> _teams;
+    std::vector<GraphicalEvent> _events;
     bool _ended = false;
     std::string _winner;
 };
 
-} // namespace zappy::gui::state
+} // namespace zappy::gui::board_data
 
-#endif /* !GUI_STATE_GAMESTATE_HPP_ */
+#endif /* BOARDDATA_HPP_ */

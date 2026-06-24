@@ -181,7 +181,7 @@ void ServerLink::send_bootstrap()
 void ServerLink::process_line(const std::string &line)
 {
     if (_state == HandshakeState::WAIT_WELCOME) {
-        if (line.rfind("WELCOME", 0) == 0) {
+        if (line.rfind(std::string(WELCOME_LINE), 0) == 0) {
             send_bootstrap();
             _state = HandshakeState::READY;
         }
