@@ -14,8 +14,9 @@
 
 class model{
     public:
-        model(std::string name);
+        model(std::string name = "", bool load = true, Vector3 pos = {0.0f, 0.0f, 0.0f});
         ~model();
+        bool isloaded();
         void Update_anim();
         void load_anim();
         void load_texture();
@@ -24,12 +25,14 @@ class model{
         void Draw_model(float scale = 1.0f);
         void change_color(Color cl);
         void set_shader(Shader shader);
+        Color get_color();
         void move_model(Vector3 rotationAxis, float rotationAngle, Vector3 scale);
         void set_pos(Vector3 pos);
         void set_base_pos(Vector3 pos);
         Vector3 get_pos();
         Vector3 get_base_pos();
         void set_anim_index(int anime_index);
+        void load();
         //void Load_model(std::string name);
         //void update_model_anim();
     protected:
@@ -44,6 +47,7 @@ class model{
         Vector3 _pos;
         Vector3 _base_pos;
         Texture2D _texture;
+        bool loaded;
 };
 
 #endif /* !MODEL_HPP_ */

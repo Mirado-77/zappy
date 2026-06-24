@@ -19,6 +19,7 @@ class world {
         void draw_world();
         void set_tile_model(int x, int y, int model_index);
         void set_shader(Shader shader);
+        float get_wave_pos(int x, int y);
     protected:
     private:
         void load_palette();

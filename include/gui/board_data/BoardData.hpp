@@ -61,7 +61,8 @@ public:
     [[nodiscard]] int width() const noexcept { return _width; }
     [[nodiscard]] int height() const noexcept { return _height; }
     [[nodiscard]] int time_unit() const noexcept { return _time_unit; }
-    [[nodiscard]] TileData &get_tile_value(std::size_t x, std::size_t y);
+    [[nodiscard]] const TileData &get_tile_value(std::size_t x,
+        std::size_t y) const;
     [[nodiscard]] const std::vector<TileData> &tiles() const noexcept
         { return _tiles; }
     [[nodiscard]] const std::unordered_map<int, PlayerData> &players()

@@ -7,19 +7,33 @@
 
 #include "gui/model.hpp"
 
-model::model(std::string name)
+model::model(std::string name, bool load, Vector3 pos)
     : _anim(nullptr) ,_animeCount(0)
     , _current_frame(0), _anim_index(0),
-    _color(WHITE), _name(name), _pos({0.0f, 0.0f, 0.0f}),
-    _base_pos({0.0f, 0.0f, 0.0f})
+    _color(WHITE), _name(name), _pos(pos),
+    _base_pos(pos), loaded(load)
 
 {
-    this->_model = LoadModel(name.c_str());
+    if (load)
+        this->_model = LoadModel(_name.c_str());
 }
 
 model::~model()
 {
     UnloadModel(this->_model);
+}
+
+void model::load()
+{
+    if (this->loaded)
+        return;
+    this->_model = LoadModel(_name.c_str());
+    this->loaded = true;
+}
+
+bool model::isloaded()
+{
+    return this->loaded;
 }
 
 void model::Update_anim()
@@ -36,6 +50,11 @@ void model::switch_index_anime()
 void model::Draw_model(float scale)
 {
     DrawModel(this->_model, this->_pos, scale, this->_color);
+}
+
+Color model::get_color()
+{
+    return this->_color;
 }
 
 void model::change_color(Color cl)

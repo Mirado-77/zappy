@@ -23,6 +23,18 @@ constexpr std::array<const char *, 6> PALETTE_PATHS = {
     "src/gui/assets/ocean_tile.glb"
 };
 
+float wave_at(int x, int y, double time, float scale)
+{
+    const float phase = static_cast<float>(x + y) * 0.4f;
+
+    return sinf(static_cast<float>(time * 3.0) + phase) * scale;
+}
+
+float wave_scale(double time)
+{
+    return (2.0f + static_cast<float>(sin(time))) * 0.2f;
+}
+
 } // namespace
 
 world::world(int x, int y)
@@ -57,10 +69,16 @@ void world::set_shader(Shader shader)
         tile->set_shader(shader);
 }
 
+float world::get_wave_pos(int x, int y)
+{
+    const double time = GetTime();
+
+    return wave_at(x, y, time, wave_scale(time));
+}
+
 void world::draw_tile(int x, int y, double time, float scale)
 {
-    const float phase = static_cast<float>(x + y) * 0.4f;
-    const float wave = sinf(static_cast<float>(time * 3.0) + phase) * scale;
+    const float wave = wave_at(x, y, time, scale);
     model *tile = this->_palette[this->_index[y][x]].get();
 
     tile->set_pos({static_cast<float>(x) * TILE_UNIT, wave,
@@ -71,7 +89,7 @@ void world::draw_tile(int x, int y, double time, float scale)
 void world::draw_world()
 {
     const double time = GetTime();
-    const float scale = (2.0f + static_cast<float>(sin(time))) * 0.2f;
+    const float scale = wave_scale(time);
 
     for (int y = 0; y < this->_height; ++y)
         for (int x = 0; x < this->_width; ++x)

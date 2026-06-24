@@ -10,6 +10,7 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <utility>
 
 namespace zappy::gui::render {
 
@@ -27,19 +28,6 @@ constexpr std::array<int, board_data::BIOME_COUNT> BIOME_MODELS = {
 
 constexpr int OCEAN_MODEL = 5;
 
-Vector3 world_pos(int x, int y)
-{
-    return {static_cast<float>(x) * TILE_UNIT, 0.0f,
-        static_cast<float>(y) * TILE_UNIT};
-}
-
-BoundingBox player_box(int x, int y)
-{
-    const Vector3 p = world_pos(x, y);
-    return {{p.x - ROBOT_HALF, ROBOT_LOW, p.z - ROBOT_HALF},
-        {p.x + ROBOT_HALF, ROBOT_HIGH, p.z + ROBOT_HALF}};
-}
-
 Vector3 dir_vec(board_data::Orientation dir)
 {
     switch (dir) {
@@ -52,14 +40,55 @@ Vector3 dir_vec(board_data::Orientation dir)
 
 } // namespace
 
+Vector3 Scene::world_pos(int x, int y) const
+{
+    const float wave = _world ? _world->get_wave_pos(x, y) : 0.0f;
+
+    return {static_cast<float>(x) * TILE_UNIT, wave,
+        static_cast<float>(y) * TILE_UNIT};
+}
+
+BoundingBox Scene::player_box(int x, int y) const
+{
+    const Vector3 p = world_pos(x, y);
+
+    return {{p.x - ROBOT_HALF, ROBOT_LOW, p.z - ROBOT_HALF},
+        {p.x + ROBOT_HALF, ROBOT_HIGH, p.z + ROBOT_HALF}};
+}
+
+void Scene::set_shader(Shader shader)
+{
+    _shader = shader;
+    _has_shader = true;
+    if (_world)
+        _world->set_shader(shader);
+    for (auto &kv : _slots)
+        kv.second.robot->set_shader(shader);
+}
+
+void Scene::drain_meteors(board_data::BoardData &board)
+{
+    for (const auto &m : board.take_pending_meteors())
+        _meteors.push_back({m.x, m.y, m.radius, GetTime()});
+}
+
+void Scene::sync_items(const board_data::BoardData &board)
+{
+    for (int x = 0; x < _width; ++x)
+        for (int y = 0; y < _height; ++y)
+            sync_item(board.get_tile_value(x, y),
+                std::make_pair(static_cast<std::size_t>(x),
+                    static_cast<std::size_t>(y)));
+}
+
 void Scene::sync(board_data::BoardData &board)
 {
     ensure_world(board);
     apply_biome_models(board);
-    for (const auto &m : board.take_pending_meteors())
-        _meteors.push_back({m.x, m.y, m.radius, GetTime()});
+    drain_meteors(board);
     for (const auto &kv : board.players())
         sync_player(kv.first, kv.second);
+    sync_items(board);
 }
 
 int Scene::tile_model_index(const board_data::TileData &tile) const
@@ -77,16 +106,6 @@ void Scene::apply_biome_models(const board_data::BoardData &board)
         return;
     for (const auto &tile : board.tiles())
         _world->set_tile_model(tile.x, tile.y, tile_model_index(tile));
-}
-
-void Scene::set_shader(Shader shader)
-{
-    _shader = shader;
-    _has_shader = true;
-    if (_world)
-        _world->set_shader(shader);
-    for (auto &kv : _slots)
-        kv.second.robot->set_shader(shader);
 }
 
 void Scene::ensure_world(const board_data::BoardData &board)
@@ -122,6 +141,32 @@ void Scene::sync_player(int id, const board_data::PlayerData &player)
         slot.robot->death();
         slot.dead = true;
     }
+}
+
+void Scene::sync_item(const board_data::TileData &tile,
+    std::pair<std::size_t, std::size_t> coords)
+{
+    auto [it, inserted] = _items.try_emplace(coords);
+    std::unique_ptr<Item> &item_ptr = it->second;
+
+    if (inserted)
+        item_ptr = std::make_unique<::Item>(tile.res,
+            world_pos(static_cast<int>(coords.first),
+                static_cast<int>(coords.second)));
+    else
+        item_ptr->sync(tile.res);
+}
+
+void Scene::sync_egg(int id, const board_data::EggData &egg)
+{
+    auto [it, inserted] = _eggs.try_emplace(id);
+    EggSlot &slot = it->second;
+
+    if (inserted)
+        slot.egg = std::make_unique<::Egg>();
+    slot.egg->set_pos(world_pos(egg.x, egg.y));
+    if (!egg.alive && !slot.dead)
+        slot.dead = true;
 }
 
 void Scene::rotate_to(Slot &slot, int target)
@@ -193,6 +238,10 @@ void Scene::draw(const board_data::BoardData &board)
         _world->draw_world();
     for (auto &kv : _slots)
         kv.second.robot->draw();
+    for (auto &eg : _eggs)
+        eg.second.egg->draw();
+    for (auto &kv : _items)
+        kv.second->draw();
     if (_show_storm && board.storm().has_value())
         draw_storm(*board.storm());
     draw_meteors();

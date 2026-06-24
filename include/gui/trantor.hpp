@@ -39,13 +39,12 @@ class trantor {
         void set_pos(Vector3 pos);
         void set_shader(Shader shader);
         void draw();
+        static std::unique_ptr<model> _mod;
     protected:
     private:
-        model _mod;
         TRANTOR_STATE _state;
         int _angle;
-        Vector3 _rotattion_axe;
+        Vector3 _rotation_axis;
 };
-
 
 #endif /* !TRANTOR_HPP_ */

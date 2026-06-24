@@ -61,7 +61,7 @@ std::vector<std::string> BoardData::take_outbox()
     return std::exchange(_outbox, {});
 }
 
-TileData &BoardData::get_tile_value(std::size_t x, std::size_t y)
+const TileData &BoardData::get_tile_value(std::size_t x, std::size_t y) const
 {
     if (static_cast<int>(x) >= _width || static_cast<int>(y) >= _height)
         throw std::out_of_range("get_tile_value() out of bounds");
