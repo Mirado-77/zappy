@@ -18,6 +18,7 @@ class world {
         world(int x, int y);
         ~world();
         void draw_world();
+        float get_wave_pos(int x, int y);
     protected:
     private:
         std::vector<std::unique_ptr<model>> init_model(float y, float x);

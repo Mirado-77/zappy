@@ -57,3 +57,10 @@ void world::model_animation(std::double_t time, float scale)
         }
     }
 }
+
+float world::get_wave_pos(int x, int y)
+{
+    Vector3 pos = this->_map[y][x]->get_pos();
+    return pos.y;
+}
+
