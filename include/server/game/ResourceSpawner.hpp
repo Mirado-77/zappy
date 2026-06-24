@@ -10,7 +10,9 @@
 
     #include <cstdint>
     #include <random>
+    #include <vector>
 
+    #include "server/game/Biome.hpp"
     #include "server/game/Constants.hpp"
 
 namespace zappy::server::game {
@@ -63,6 +65,53 @@ private:
      * @param count number of units to drop
      */
     void spawnOne(World &world, ResourceType type, int count);
+
+    /**
+     * @brief Scatter @p count units of @p type weighted by biome multipliers.
+     *
+     * @param world world to seed in place
+     * @param type resource being dropped
+     * @param count number of units to drop
+     */
+    void spawnOneWithBiomes(World &world, ResourceType type, int count);
+
+    /**
+     * @brief Biome-weighted target count for @p type across the whole map.
+     *
+     * @param world world supplying the per-tile biomes
+     * @param type resource to size
+     * @return int the clamped, rounded target count
+     */
+    [[nodiscard]] int targetCountForWithBiomes(
+        const World &world, ResourceType type) const;
+
+    /**
+     * @brief Whether any tile carries a non-PLAIN biome.
+     *
+     * @param world world to scan
+     * @return bool true if biome variation is present
+     */
+    [[nodiscard]] bool hasBiomeVariation(const World &world) const;
+
+    /**
+     * @brief Drop @p count units of @p type using the matching spawn strategy.
+     *
+     * @param world world to seed in place
+     * @param type resource being dropped
+     * @param count number of units to drop
+     * @param biomes whether to weight placement by biome multipliers
+     */
+    void spawnUnits(World &world, ResourceType type, int count, bool biomes);
+
+    /**
+     * @brief Per-tile spawn weight of resource @p index, in row-major order.
+     *
+     * @param world world supplying the per-tile biomes
+     * @param index inventory index of the resource
+     * @return std::vector<double> one weight per tile
+     */
+    [[nodiscard]] std::vector<double> tileWeights(
+        const World &world, std::size_t index) const;
 
     /**
      * @brief Total units of @p type currently present across all tiles.

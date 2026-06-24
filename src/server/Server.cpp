@@ -18,6 +18,8 @@
 #include <sys/socket.h>
 
 #include "server/game/EggSpawner.hpp"
+#include "server/game/BiomeMapGenerator.hpp"
+#include "server/config/FeatureFlag.hpp"
 
 namespace {
 
@@ -58,9 +60,9 @@ std::string resolveLocalIp()
  * @brief Initialise all members from the validated configuration.
  *
  * Member order matches the declaration order in Server.hpp:
- * _config → _featureFlags → _listener → _poll → _world → _resourceSpawner →
- * _clients → _clock → _scheduler → _refillScheduler → _foodScheduler →
- * _aiDispatcher → _handshake.
+ * _config   _listener   _poll   _world   _resourceSpawner   _clients  
+ * _clock   _scheduler   _refillScheduler   _foodScheduler   _aiDispatcher  
+ * _handshake.
  *
  * @param config validated CLI configuration
  */
@@ -97,6 +99,10 @@ zappy::server::Server::Server(const cli::ServerConfig &config)
               << (_config.initialEnabledFlags().empty()
                   ? "all disabled (strict mode)" : "some enabled via CLI")
               << "\n";
+    if (_featureFlags.isEnabled(config::FeatureFlag::BIOMES)) {
+        game::BiomeMapGenerator biomeGen;
+        biomeGen.generate(_world);
+    }
     _resourceSpawner.spawnInitial(_world);
     game::EggSpawner eggSpawner;
     eggSpawner.spawnInitial(_world);

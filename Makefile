@@ -37,6 +37,7 @@ TEST_SRC = src/server/cli/CliParser.cpp \
 			src/server/game/Team.cpp \
 			src/server/game/World.cpp \
 			src/server/game/ResourceSpawner.cpp \
+			src/server/game/BiomeMapGenerator.cpp \
 			src/server/game/EggSpawner.cpp \
 			src/server/game/RefillScheduler.cpp \
 			src/server/game/FoodScheduler.cpp \
@@ -52,6 +53,8 @@ TEST_SRC = src/server/cli/CliParser.cpp \
 			src/server/config/FeatureFlags.cpp \
 			src/server/event/EventBus.cpp \
 			src/server/event/Storm.cpp \
+			src/server/event/Flood.cpp \
+			src/server/event/Meteor.cpp \
 		    $(wildcard tests/cli/*.cpp) \
 			$(wildcard tests/server/config/*.cpp) \
 			$(wildcard tests/server/client/*.cpp) \
@@ -105,6 +108,7 @@ tests_run:
 		-L$(PROTOCOL_LIB_DIR) -lzappy_protocol \
 		-o $(TEST_BIN) $(TEST_LDLIBS)
 	./$(TEST_BIN)
+	python3 -m pytest tests/ia/ -q
 
 tests_cov: TEST_CXXFLAGS += $(COV_FLAGS)
 tests_cov: TEST_LDLIBS += $(COV_FLAGS)

@@ -51,6 +51,11 @@ void trantor::set_pos(Vector3 pos)
     this->_mod->set_pos(pos);
 };
 
+void trantor::set_shader(Shader shader)
+{
+    this->_mod->set_shader(shader);
+};
+
 void trantor::draw()
 {
     this->_mod->Update_anim();

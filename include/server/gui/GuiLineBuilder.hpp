@@ -141,6 +141,14 @@ public:
     [[nodiscard]] std::string pdi(int playerId) const;
 
     /**
+     * @brief Build the "ppf #n N X Y O L q0..q6" aggregated profile line.
+     *
+     * @param playerId player ID
+     * @return std::string the formatted line
+     */
+    [[nodiscard]] std::string ppf(int playerId) const;
+
+    /**
      * @brief Build the "enw #e #n X Y" line for a laid egg.
      *
      * @param eggId egg ID
@@ -179,6 +187,27 @@ public:
      * @return std::string the formatted line
      */
     [[nodiscard]] std::string smg(const std::string &message) const;
+
+    /**
+     * @brief Build the "evt_flood_tile X Y on|off" custom flood line.
+     *
+     * @param x tile horizontal coordinate
+     * @param y tile vertical coordinate
+     * @param flooded true for "on", false for "off"
+     * @return std::string the formatted line
+     */
+    [[nodiscard]] std::string evtFloodTile(int x, int y, bool flooded) const;
+
+    /**
+     * @brief Build the "evt_biome_set X Y <name>" custom biome line.
+     *
+     * @param x tile horizontal coordinate
+     * @param y tile vertical coordinate
+     * @param biome the tile's biome
+     * @return std::string the formatted line
+     */
+    [[nodiscard]] std::string evtBiomeSet(int x, int y,
+        game::Biome biome) const;
 
 private:
     const game::World &_world;

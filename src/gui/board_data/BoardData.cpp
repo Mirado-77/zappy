@@ -7,6 +7,7 @@
 
 #include "gui/board_data/BoardData.hpp"
 
+#include <sstream>
 #include <stdexcept>
 #include <utility>
 
@@ -38,8 +39,26 @@ void BoardData::apply(const net::ServerEvent &ev)
         case K::PIE: on_pie(ev); break;
         case K::PEX: on_pex(ev); break;
         case K::PFK: on_pfk(ev); break;
+        case K::OK: on_admin_ok(ev); break;
+        case K::KO: on_admin_fail("ko"); break;
+        case K::SBP: on_sbp(); break;
+        case K::SUC: on_suc(); break;
+        case K::ADM_FLAG_LIST: on_adm_flag_list(ev); break;
+        case K::PPF: on_ppf(ev); break;
+        case K::EVT_BIOME_SET: on_evt_biome_set(ev); break;
+        case K::EVT_STORM_START:
+        case K::EVT_STORM_TICK: on_storm_set(ev); break;
+        case K::EVT_STORM_END: on_storm_end(); break;
+        case K::EVT_METEOR_IMPACT: on_meteor_impact(ev); break;
+        case K::EVT_METEOR_END: break;
+        case K::EVT_FLOOD_TILE: on_evt_flood_tile(ev); break;
         default: break;
     }
+}
+
+std::vector<std::string> BoardData::take_outbox()
+{
+    return std::exchange(_outbox, {});
 }
 
 const TileData &BoardData::get_tile_value(std::size_t x, std::size_t y) const
@@ -75,6 +94,8 @@ void BoardData::push_player_event(GraphicalEventKind kind, int player_id,
 void BoardData::on_msz(const net::ServerEvent &ev)
 {
     if (ev.ints.size() < 2)
+        return;
+    if (ev.ints[0] == _width && ev.ints[1] == _height)
         return;
     _width = ev.ints[0];
     _height = ev.ints[1];
@@ -235,6 +256,154 @@ void BoardData::on_pfk(const net::ServerEvent &ev)
     if (ev.ints.empty())
         return;
     push_player_event(GraphicalEventKind::FORK, ev.ints[0], {});
+}
+
+void BoardData::set_admin_status(std::string code)
+{
+    _admin_status = std::move(code);
+    ++_admin_status_seq;
+}
+
+void BoardData::on_admin_ok(const net::ServerEvent &)
+{
+    set_admin_status("ok");
+    if (!_admin_pending)
+        return;
+    _admin_pending = false;
+    _is_admin = true;
+    _outbox.emplace_back("adm_flag_list\n");
+}
+
+void BoardData::on_admin_fail(std::string code)
+{
+    set_admin_status(std::move(code));
+    _admin_pending = false;
+}
+
+void BoardData::on_adm_flag_list(const net::ServerEvent &ev)
+{
+    const std::size_t sep = ev.text.find(' ');
+    if (sep == std::string::npos)
+        return;
+    const std::string name = ev.text.substr(0, sep);
+    const std::string state = ev.text.substr(sep + 1);
+    _feature_flags[name] = (state == "on");
+}
+
+void BoardData::on_suc()
+{
+    if (_ppf_pending) {
+        _ppf_pending = false;
+        _profile_disabled = true;
+        return;
+    }
+    on_admin_fail("suc");
+}
+
+void BoardData::on_sbp()
+{
+    if (_ppf_pending) {
+        _ppf_pending = false;
+        return;
+    }
+    on_admin_fail("sbp");
+}
+
+void BoardData::set_selected_player(int id)
+{
+    _selected_player_id = id;
+    _profile_disabled = false;
+    _ppf_pending = true;
+    _outbox.emplace_back("ppf #" + std::to_string(id) + "\n");
+}
+
+void BoardData::clear_selection() noexcept
+{
+    _selected_player_id = -1;
+    _ppf_pending = false;
+    _profile_disabled = false;
+}
+
+bool BoardData::fill_from_ppf(PlayerData &p, const std::string &text)
+{
+    std::istringstream iss(text);
+    std::string team;
+    int x = 0;
+    int y = 0;
+    int o = 0;
+    int l = 0;
+    Resources inv{};
+
+    if (!(iss >> team >> x >> y >> o >> l))
+        return false;
+    for (std::size_t i = 0; i < RESOURCE_COUNT; ++i)
+        if (!(iss >> inv[i]))
+            return false;
+    p.team = team;
+    p.x = x;
+    p.y = y;
+    p.level = l;
+    p.orient = static_cast<Orientation>(o);
+    p.inventory = inv;
+    return true;
+}
+
+void BoardData::on_ppf(const net::ServerEvent &ev)
+{
+    if (ev.ints.empty())
+        return;
+    auto it = _players.find(ev.ints[0]);
+    if (it != _players.end() && fill_from_ppf(it->second, ev.text)) {
+        _ppf_pending = false;
+        _profile_disabled = false;
+    }
+}
+
+void BoardData::on_evt_biome_set(const net::ServerEvent &ev)
+{
+    if (ev.ints.size() < 2)
+        return;
+    const int x = ev.ints[0];
+    const int y = ev.ints[1];
+    if (x < 0 || y < 0 || x >= _width || y >= _height)
+        return;
+    _tiles[idx(x, y)].biome = biome_from_name(ev.text);
+}
+
+void BoardData::on_storm_set(const net::ServerEvent &ev)
+{
+    if (ev.ints.size() < 4)
+        return;
+    _storm = StormZone{ev.ints[0], ev.ints[1], ev.ints[2],
+        static_cast<Orientation>(ev.ints[3])};
+}
+
+void BoardData::on_storm_end()
+{
+    _storm.reset();
+}
+
+void BoardData::on_meteor_impact(const net::ServerEvent &ev)
+{
+    if (ev.ints.size() < 3)
+        return;
+    _pending_meteors.push_back({ev.ints[0], ev.ints[1], ev.ints[2]});
+}
+
+std::vector<MeteorImpact> BoardData::take_pending_meteors()
+{
+    return std::exchange(_pending_meteors, {});
+}
+
+void BoardData::on_evt_flood_tile(const net::ServerEvent &ev)
+{
+    if (ev.ints.size() < 2)
+        return;
+    const int x = ev.ints[0];
+    const int y = ev.ints[1];
+    if (x < 0 || y < 0 || x >= _width || y >= _height)
+        return;
+    _tiles[idx(x, y)].flooded = (ev.text == "on");
 }
 
 } // namespace zappy::gui::board_data

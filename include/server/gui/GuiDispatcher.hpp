@@ -11,6 +11,7 @@
     #include <array>
     #include <functional>
     #include <memory>
+    #include <optional>
     #include <string>
     #include <string_view>
     #include <vector>
@@ -107,17 +108,36 @@ private:
     static constexpr int STORM_DEFAULT_PUSH_INTERVAL = 2;
     static constexpr int STORM_DEFAULT_DURATION = 10;
 
+    static constexpr int FLOOD_DEFAULT_ORIGIN = 1;
+    static constexpr int FLOOD_DEFAULT_WIDTH = 3;
+    static constexpr int FLOOD_DEFAULT_HEIGHT = 3;
+    static constexpr int FLOOD_DEFAULT_DURATION = 8;
+
+    static constexpr int METEOR_DEFAULT_RADIUS = 1;
+
     /**
-     * @brief Instantiate the event matching @p name, if any exists yet.
+     * @brief Parse "<name> [X Y [R]]" and instantiate the matching event.
      *
-     * Currently recognises "storm" (default parameters); ZAP-50/51 extend it
-     * to build flood and meteor events. Unknown names yield nullptr.
+     * Position and radius are optional; when absent the per-event defaults
+     * are used. Unknown names yield nullptr.
      *
-     * @param name requested event name
+     * @param raw the raw argument string (name plus optional X Y R)
      * @return std::unique_ptr<event::Event> the event, or nullptr if unknown
      */
     [[nodiscard]] std::unique_ptr<event::Event> createEventByName(
-        std::string_view name) const;
+        std::string_view raw) const;
+
+    /**
+     * @brief Build the named event with optional centre and radius overrides.
+     *
+     * @param name requested event name
+     * @param center optional zone centre (per-event default when empty)
+     * @param radius optional zone radius (per-event default when empty)
+     * @return std::unique_ptr<event::Event> the event, or nullptr if unknown
+     */
+    [[nodiscard]] std::unique_ptr<event::Event> makeEvent(
+        std::string_view name, std::optional<game::Position> center,
+        std::optional<int> radius) const;
 
     /**
      * @brief Whether @p kind is an admin-scoped (adm_*) command.
@@ -202,6 +222,8 @@ private:
     void sendSyncPlayerInventory(int fd, const game::Player &player);
     void sendSyncEggs(int fd);
     void sendSyncTime(int fd, int frequency);
+    void sendSyncBiomes(int fd);
+    void sendSyncBiomeTile(int fd, int x, int y);
 
     [[nodiscard]] std::vector<std::string> handleMsz(
         const std::vector<int> &args);
@@ -220,6 +242,18 @@ private:
     [[nodiscard]] std::vector<std::string> handleSgt(
         const std::vector<int> &args);
     [[nodiscard]] std::vector<std::string> handleSst(
+        const std::vector<int> &args);
+
+    /**
+     * @brief Handle the ppf command: aggregated player profile snapshot.
+     *
+     * Gated on the PROFILE feature flag; behaves as an unknown command
+     * ("suc") when the flag is off, "sbp" for an unknown player id.
+     *
+     * @param args command arguments: the player id
+     * @return std::vector<std::string> the ppf line, "suc" or "sbp"
+     */
+    [[nodiscard]] std::vector<std::string> handlePpf(
         const std::vector<int> &args);
 
     /**

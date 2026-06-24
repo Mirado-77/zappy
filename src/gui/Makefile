@@ -36,6 +36,7 @@ CXXFLAGS += -iquote $(ROOT)/include/
 CXXFLAGS += -I$(POSIX_LIB_DIR)/include
 CXXFLAGS += -I$(NET_LIB_DIR)/include
 CXXFLAGS += -I$(PROTOCOL_LIB_DIR)/include
+CXXFLAGS += -I$(ROOT)/libs/raygui/include
 
 LDFLAGS  = -L$(NET_LIB_DIR) -lzappy_net
 LDFLAGS += -L$(POSIX_LIB_DIR) -lzappy_posix

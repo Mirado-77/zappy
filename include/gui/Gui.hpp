@@ -13,6 +13,8 @@
     #include "gui/ipc/ServerInfo.hpp"
     #include "gui/net/ServerLink.hpp"
     #include "gui/render/Renderer.hpp"
+    #include "gui/ui/AdminPanel.hpp"
+    #include "gui/ui/PlayerPanel.hpp"
 
 namespace zappy::gui {
 
@@ -39,6 +41,8 @@ private:
     board_data::BoardData _board;
     std::optional<net::ServerLink> _link;
     std::optional<render::Renderer> _renderer;
+    std::optional<ui::AdminPanel> _admin;
+    std::optional<ui::PlayerPanel> _player;
 };
 
 } // namespace zappy::gui

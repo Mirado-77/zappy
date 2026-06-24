@@ -51,10 +51,10 @@ public:
      * @brief Process @p line received from a HANDSHAKE-state @p client.
      *
      * Trims leading/trailing whitespace, then:
-     * - "GRAPHIC" → promotes to GUI, returns PROMOTED.
-     * - Known team with a waiting egg → consumes the egg, promotes to AI,
+     * - "GRAPHIC"   promotes to GUI, returns PROMOTED.
+     * - Known team with a waiting egg   consumes the egg, promotes to AI,
      *   queues `<waiting-eggs>\n` and `<w> <h>\n`, returns PROMOTED.
-     * - Anything else → queues `ko\n`, returns DROP.
+     * - Anything else   queues `ko\n`, returns DROP.
      *
      * @param client HANDSHAKE-state client (mutated in place)
      * @param line raw line received from the network (no trailing newline)

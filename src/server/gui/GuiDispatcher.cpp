@@ -5,6 +5,8 @@
 ** GuiDispatcher implementation
 */
 
+#include <optional>
+#include <sstream>
 #include <utility>
 
 #include "server/gui/GuiDispatcher.hpp"
@@ -12,6 +14,8 @@
 #include "server/game/ResourceNameResolver.hpp"
 #include "server/event/EventBus.hpp"
 #include "server/event/Storm.hpp"
+#include "server/event/Flood.hpp"
+#include "server/event/Meteor.hpp"
 
 /**
  * @brief Construct a new Gui Dispatcher object.
@@ -55,7 +59,7 @@ std::vector<std::string> zappy::server::gui::GuiDispatcher::dispatchStandard(
             &GuiDispatcher::handleMct, &GuiDispatcher::handleTna,
             &GuiDispatcher::handlePpo, &GuiDispatcher::handlePlv,
             &GuiDispatcher::handlePin, &GuiDispatcher::handleSgt,
-            &GuiDispatcher::handleSst};
+            &GuiDispatcher::handleSst, &GuiDispatcher::handlePpf};
     const std::size_t idx = static_cast<std::size_t>(cmd.kind);
 
     return (this->*handlers[idx])(cmd.arguments);
@@ -341,6 +345,24 @@ std::vector<std::string> zappy::server::gui::GuiDispatcher::handleSst(
 }
 
 /**
+ * @brief Handle the ppf command: aggregated player profile snapshot.
+ *
+ * @param args command arguments: the player id
+ * @return std::vector<std::string> the ppf line, "suc" or "sbp"
+ */
+std::vector<std::string> zappy::server::gui::GuiDispatcher::handlePpf(
+    const std::vector<int> &args)
+{
+    std::vector<std::string> response = {"sbp"};
+
+    if (!_featureFlags.isEnabled(config::FeatureFlag::PROFILE))
+        response = {"suc"};
+    else if (_world.hasPlayer(args[0]))
+        response = {_lineBuilder.ppf(args[0])};
+    return response;
+}
+
+/**
  * @brief Send the complete initial state sync to a promoted GUI client.
  *
  * @param fd client file descriptor
@@ -355,6 +377,7 @@ void zappy::server::gui::GuiDispatcher::sendInitialSync(
     sendSyncPlayers(fd);
     sendSyncEggs(fd);
     sendSyncTime(fd, frequency);
+    sendSyncBiomes(fd);
 }
 
 /**
@@ -392,6 +415,34 @@ void zappy::server::gui::GuiDispatcher::sendSyncTile(
     int fd, int x, int y)
 {
     _onResponse(fd, _lineBuilder.bct(x, y));
+}
+
+/**
+ * @brief Send one evt_biome_set line per non-PLAIN tile to the client.
+ *
+ * @param fd client file descriptor
+ */
+void zappy::server::gui::GuiDispatcher::sendSyncBiomes(int fd)
+{
+    for (int y = 0; y < _world.height(); ++y)
+        for (int x = 0; x < _world.width(); ++x)
+            sendSyncBiomeTile(fd, x, y);
+}
+
+/**
+ * @brief Send the biome line for a single tile, skipping PLAIN tiles.
+ *
+ * @param fd client file descriptor
+ * @param x tile horizontal coordinate
+ * @param y tile vertical coordinate
+ */
+void zappy::server::gui::GuiDispatcher::sendSyncBiomeTile(
+    int fd, int x, int y)
+{
+    const game::Biome biome = _world.tileAt(game::Position(x, y)).biome();
+
+    if (biome != game::Biome::PLAIN)
+        _onResponse(fd, _lineBuilder.evtBiomeSet(x, y, biome));
 }
 
 /**
@@ -493,8 +544,11 @@ void zappy::server::gui::GuiDispatcher::sendSyncTime(
 /**
  * @brief Handle adm_flag_enable: enable a feature flag by name.
  *
+ * BIOMES is boot-only terrain generation: toggling it at runtime cannot
+ * regenerate the map, so the request is rejected with "ko".
+ *
  * @param cmd parsed command; rawArgument holds the flag name
- * @return std::vector<std::string> "ok" or "ko" if the name is unknown
+ * @return std::vector<std::string> "ok", or "ko" if unknown or boot-only
  */
 std::vector<std::string> zappy::server::gui::GuiDispatcher::handleAdmFlagEnable(
     const protocol::gui::ParsedGuiCommand &cmd)
@@ -502,7 +556,7 @@ std::vector<std::string> zappy::server::gui::GuiDispatcher::handleAdmFlagEnable(
     const auto flag = config::FeatureFlags::fromName(cmd.rawArgument);
     std::vector<std::string> response = {"ko"};
 
-    if (flag) {
+    if (flag && *flag != config::FeatureFlag::BIOMES) {
         _featureFlags.enable(*flag);
         response = {"ok"};
     }
@@ -512,8 +566,11 @@ std::vector<std::string> zappy::server::gui::GuiDispatcher::handleAdmFlagEnable(
 /**
  * @brief Handle adm_flag_disable: disable a feature flag by name.
  *
+ * BIOMES is boot-only terrain generation: toggling it at runtime cannot
+ * undo the generated map, so the request is rejected with "ko".
+ *
  * @param cmd parsed command; rawArgument holds the flag name
- * @return std::vector<std::string> "ok" or "ko" if the name is unknown
+ * @return std::vector<std::string> "ok", or "ko" if unknown or boot-only
  */
 std::vector<std::string>
 zappy::server::gui::GuiDispatcher::handleAdmFlagDisable(
@@ -522,7 +579,7 @@ zappy::server::gui::GuiDispatcher::handleAdmFlagDisable(
     const auto flag = config::FeatureFlags::fromName(cmd.rawArgument);
     std::vector<std::string> response = {"ko"};
 
-    if (flag) {
+    if (flag && *flag != config::FeatureFlag::BIOMES) {
         _featureFlags.disable(*flag);
         if (*flag == config::FeatureFlag::EVENTS)
             _eventBus.cancelAll();
@@ -557,17 +614,45 @@ std::vector<std::string> zappy::server::gui::GuiDispatcher::handleAdmFlagList(
  * @return std::unique_ptr<event::Event> the event, or nullptr if unknown
  */
 std::unique_ptr<zappy::server::event::Event>
-zappy::server::gui::GuiDispatcher::createEventByName(
-    std::string_view name) const
+zappy::server::gui::GuiDispatcher::makeEvent(std::string_view name,
+    std::optional<game::Position> center, std::optional<int> radius) const
 {
-    std::unique_ptr<event::Event> result;
+    const game::Position def(_world.width() / 2, _world.height() / 2);
 
     if (name == "storm")
-        result = std::make_unique<event::Storm>(
-            game::Position(_world.width() / 2, _world.height() / 2),
-            STORM_DEFAULT_RADIUS, game::Orientation::EAST,
+        return std::make_unique<event::Storm>(center.value_or(def),
+            radius.value_or(STORM_DEFAULT_RADIUS), game::Orientation::EAST,
             STORM_DEFAULT_PUSH_INTERVAL, STORM_DEFAULT_DURATION);
-    return result;
+    if (name == "meteor")
+        return std::make_unique<event::Meteor>(center.value_or(def),
+            radius.value_or(METEOR_DEFAULT_RADIUS), _onPlayerKilledByAdmin);
+    if (name == "flood")
+        return std::make_unique<event::Flood>(
+            center.value_or(game::Position(FLOOD_DEFAULT_ORIGIN,
+                FLOOD_DEFAULT_ORIGIN)),
+            radius.value_or(FLOOD_DEFAULT_WIDTH),
+            radius.value_or(FLOOD_DEFAULT_HEIGHT), FLOOD_DEFAULT_DURATION);
+    return nullptr;
+}
+
+std::unique_ptr<zappy::server::event::Event>
+zappy::server::gui::GuiDispatcher::createEventByName(
+    std::string_view raw) const
+{
+    std::istringstream iss{std::string(raw)};
+    std::string name;
+    int x = 0;
+    int y = 0;
+    int r = 0;
+    std::optional<game::Position> center;
+    std::optional<int> radius;
+
+    iss >> name;
+    if (static_cast<bool>(iss >> x >> y))
+        center = game::Position(x, y);
+    if (static_cast<bool>(iss >> r))
+        radius = r;
+    return makeEvent(name, center, radius);
 }
 
 /**
