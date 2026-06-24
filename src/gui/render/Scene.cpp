@@ -13,7 +13,7 @@ namespace zappy::gui {
 
 constexpr float TILE_UNIT = 6.0f;
 
-Vector3 Scene::world_pos(int x, int y)
+Vector3 render::Scene::world_pos(int x, int y)
 {
     float wave = this->_world->get_wave_pos(x, y);
 
@@ -21,13 +21,8 @@ Vector3 Scene::world_pos(int x, int y)
         static_cast<float>(y) * TILE_UNIT};
 }
 
-<<<<<<< Updated upstream
-void Scene::sync(const board_data::BoardData &board)
-=======
-} // namespace
 
 void render::Scene::sync(const board_data::BoardData &board)
->>>>>>> Stashed changes
 {
     ensure_world(board);
     for (const auto &player : board.players()) {
@@ -93,8 +88,7 @@ void render::Scene::rotate_to(Slot &slot, int target)
     slot.orientation = target;
 }
 
-<<<<<<< Updated upstream
-void Scene::sync_egg(int id, const board_data::EggData &egg)
+void render::Scene::sync_egg(int id, const board_data::EggData &egg)
 {
     auto [it, inserted] = this->_eggs.try_emplace(id);
     EggSlot &slot = it->second;
@@ -107,22 +101,16 @@ void Scene::sync_egg(int id, const board_data::EggData &egg)
     }
 }
 
-void Scene::draw()
-=======
 void render::Scene::draw()
->>>>>>> Stashed changes
 {
     if (_world)
         _world->draw_world();
     for (auto &kv : _slots)
         kv.second.robot->draw();
-<<<<<<< Updated upstream
     for (auto &eg : _eggs)
         eg.second.egg->draw();
-=======
     for (auto &kv : _items)
         kv.second->draw();
->>>>>>> Stashed changes
 }
 
 } // namespace zappy::gui
