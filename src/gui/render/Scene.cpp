@@ -18,6 +18,7 @@ constexpr float TILE_UNIT = 6.0f;
 constexpr float ROBOT_HALF = 2.5f;
 constexpr float ROBOT_LOW = -1.0f;
 constexpr float ROBOT_HIGH = 6.0f;
+constexpr double METEOR_DURATION = 1.5;
 
 constexpr std::array<int, board_data::BIOME_COUNT> BIOME_MODELS = {
     0, 1, 2, 3, 4, 4
@@ -48,10 +49,12 @@ Vector3 dir_vec(board_data::Orientation dir)
 
 } // namespace
 
-void Scene::sync(const board_data::BoardData &board)
+void Scene::sync(board_data::BoardData &board)
 {
     ensure_world(board);
     apply_biome_models(board);
+    for (const auto &m : board.take_pending_meteors())
+        _meteors.push_back({m.x, m.y, m.radius, GetTime()});
     for (const auto &kv : board.players())
         sync_player(kv.first, kv.second);
 }
@@ -132,6 +135,35 @@ void Scene::draw_storm(const board_data::StormZone &storm)
     draw_storm_arrow(c, storm.direction);
 }
 
+void Scene::draw_meteor(const MeteorView &view)
+{
+    const double elapsed = GetTime() - view.start_time;
+    const float ratio = static_cast<float>(elapsed / METEOR_DURATION);
+
+    if (ratio >= 1.0f)
+        return;
+    const Vector3 base = world_pos(view.x, view.y);
+    const float full = static_cast<float>(view.radius) * TILE_UNIT;
+    const float rad = full * (0.4f + ratio * 0.6f);
+    const auto a = static_cast<unsigned char>(255.0f * (1.0f - ratio));
+    const auto ga = static_cast<unsigned char>(100.0f * (1.0f - ratio));
+
+    DrawSphere({base.x, full * 0.5f, base.z}, rad, {255, 100, 0, a});
+    DrawCylinder({base.x, 0.15f, base.z}, full, full, 0.05f, 32,
+        {255, 200, 0, ga});
+}
+
+void Scene::draw_meteors()
+{
+    const double now = GetTime();
+
+    for (const auto &m : _meteors)
+        draw_meteor(m);
+    std::erase_if(_meteors, [now](const MeteorView &m) {
+        return now - m.start_time >= METEOR_DURATION;
+    });
+}
+
 void Scene::draw(const board_data::BoardData &board)
 {
     if (_world)
@@ -140,6 +172,7 @@ void Scene::draw(const board_data::BoardData &board)
         kv.second.robot->draw();
     if (_show_storm && board.storm().has_value())
         draw_storm(*board.storm());
+    draw_meteors();
 }
 
 std::optional<int> Scene::pick_player(Vector2 screen, const Camera &cam) const

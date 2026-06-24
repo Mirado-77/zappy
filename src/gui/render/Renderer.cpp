@@ -56,6 +56,9 @@ void Renderer::overlay(const board_data::BoardData &board)
     ::draw::Draw_text(line2, {10, 35}, 20, DARKGRAY);
     if (board.game_ended())
         ::draw::Draw_text("WINNER: " + board.winner(), {10, 60}, 20, MAROON);
+    if (_scene.active_meteors() > 0)
+        ::draw::Draw_text("METEOR x"
+            + std::to_string(_scene.active_meteors()), {10, 110}, 20, RED);
 }
 
 void Renderer::storm_overlay(const board_data::BoardData &board)

@@ -46,6 +46,12 @@ struct StormZone {
     Orientation direction = Orientation::NORTH;
 };
 
+struct MeteorImpact {
+    int x = 0;
+    int y = 0;
+    int radius = 0;
+};
+
 class BoardData {
 public:
     explicit BoardData(const ipc::ServerInfo &server_info);
@@ -85,6 +91,7 @@ public:
     void clear_selection() noexcept;
     [[nodiscard]] const std::optional<StormZone> &storm() const noexcept
         { return _storm; }
+    [[nodiscard]] std::vector<MeteorImpact> take_pending_meteors();
 
 private:
     void on_msz(const net::ServerEvent &);
@@ -113,6 +120,7 @@ private:
     void on_evt_biome_set(const net::ServerEvent &);
     void on_storm_set(const net::ServerEvent &);
     void on_storm_end();
+    void on_meteor_impact(const net::ServerEvent &);
     bool fill_from_ppf(PlayerData &p, const std::string &text);
     void set_admin_status(std::string code);
 
@@ -143,6 +151,7 @@ private:
     bool _ppf_pending = false;
     bool _profile_disabled = false;
     std::optional<StormZone> _storm;
+    std::vector<MeteorImpact> _pending_meteors;
 };
 
 } // namespace zappy::gui::board_data

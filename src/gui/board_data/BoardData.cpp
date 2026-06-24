@@ -49,6 +49,8 @@ void BoardData::apply(const net::ServerEvent &ev)
         case K::EVT_STORM_START:
         case K::EVT_STORM_TICK: on_storm_set(ev); break;
         case K::EVT_STORM_END: on_storm_end(); break;
+        case K::EVT_METEOR_IMPACT: on_meteor_impact(ev); break;
+        case K::EVT_METEOR_END: break;
         default: break;
     }
 }
@@ -378,6 +380,18 @@ void BoardData::on_storm_set(const net::ServerEvent &ev)
 void BoardData::on_storm_end()
 {
     _storm.reset();
+}
+
+void BoardData::on_meteor_impact(const net::ServerEvent &ev)
+{
+    if (ev.ints.size() < 3)
+        return;
+    _pending_meteors.push_back({ev.ints[0], ev.ints[1], ev.ints[2]});
+}
+
+std::vector<MeteorImpact> BoardData::take_pending_meteors()
+{
+    return std::exchange(_pending_meteors, {});
 }
 
 } // namespace zappy::gui::board_data
