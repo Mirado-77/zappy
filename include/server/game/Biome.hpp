@@ -43,12 +43,12 @@ struct BiomeInfo {
  * @brief Biome descriptions indexed by static_cast<size_t>(Biome).
  */
 inline constexpr std::array<BiomeInfo, BIOME_COUNT> BIOME_INFOS = {{
-    {"plain",      true,  {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}},
-    {"valley",     true,  {2.0, 0.5, 1.0, 1.5, 1.0, 0.5, 0.5}},
-    {"plateau",    true,  {1.0, 1.5, 1.5, 1.0, 1.0, 1.0, 1.0}},
-    {"mountain",   false, {0.0, 2.0, 1.5, 1.0, 0.5, 1.5, 1.5}},
-    {"peak",       false, {0.0, 1.0, 1.0, 0.5, 0.5, 2.0, 3.0}},
-    {"snow_plain", true,  {0.5, 1.0, 1.0, 0.5, 1.5, 1.0, 1.0}}
+    {"plain", true, {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}},
+    {"valley", true, {2.0, 0.5, 1.0, 1.5, 1.0, 0.5, 0.5}},
+    {"plateau", true, {1.0, 1.5, 1.5, 1.0, 1.0, 1.0, 1.0}},
+    {"mountain", false, {0.0, 2.0, 1.5, 1.0, 0.5, 1.5, 1.5}},
+    {"peak", false, {0.0, 1.0, 1.0, 0.5, 0.5, 2.0, 3.0}},
+    {"snow_plain", true, {0.5, 1.0, 1.0, 0.5, 1.5, 1.0, 1.0}}
 }};
 
 /**
