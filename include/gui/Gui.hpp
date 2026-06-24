@@ -8,6 +8,9 @@
 #ifndef GUI_HPP_
     #define GUI_HPP_
     #include "gui/ipc/ServerInfo.hpp"
+    #include <cstdbool>
+    #include "net/Listener.hpp"
+    #include "net/PollLoop.hpp"
 /*
     #include "server/ai/AiDispatcher.hpp"
     #include "server/gui/GuiDispatcher.hpp"
@@ -21,8 +24,6 @@
     #include "server/handshake/HandshakeHandler.hpp"
     #include "server/scheduler/Clock.hpp"
     #include "server/scheduler/Scheduler.hpp"
-    #include "net/Listener.hpp"
-    #include "net/PollLoop.hpp"
 */
 
 namespace zappy::gui {
@@ -60,6 +61,11 @@ private:
     void init();
 
     /**
+     * @brief display the window
+     */
+    void display();
+
+    /**
      * @brief pull the server info and then display
      */
     void update();
@@ -80,9 +86,10 @@ private:
     void Broadcast();
 
     ipc::ServerInfo _server_info;
-/*
-    net::Listener _listener;
+    bool running;
     net::PollLoop _poll;
+    net::Listener _listener;
+/*
     game::World _world;
     scheduler::SteadyClock _clock;
     scheduler::Scheduler _scheduler{_clock};

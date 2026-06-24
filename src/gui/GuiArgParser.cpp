@@ -17,6 +17,7 @@
 #include "gui/GuiArgParser.hpp"
 #include "gui/ipc/SerializationError.hpp"
 #include "gui/Constants.hpp"
+#include "gui/ipc/ServerInfo.hpp"
 
 namespace zappy::gui {
 

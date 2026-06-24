@@ -10,6 +10,7 @@
     #include <cstdint>
     #include <string>
     #include <utility>
+    #include <iostream>
 
 namespace zappy::gui::ipc {
 
@@ -42,6 +43,15 @@ public:
      * @return std::string the namespace
      */
     std::string server_hostname() const noexcept { return _server_hostname; }
+
+    friend std::ostream& operator<<(std::ostream& os,
+                                    const ServerInfo& server)
+    {
+        return os << "ServerInfo { "
+                  << "hostname: " << server._server_hostname
+                  << ", port: " << server._port
+                  << " }";
+    }
 
 private:
     const std::uint16_t _port;

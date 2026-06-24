@@ -24,15 +24,10 @@
 /**
  * @brief Initialise all members from the validated configuration.
  *
- * Member order matches the declaration order in Server.hpp:
- * _config → _featureFlags → _listener → _poll → _world → _resourceSpawner →
- * _clients → _clock → _scheduler → _refillScheduler → _foodScheduler →
- * _aiDispatcher → _handshake.
- *
  * @param config validated CLI configuration
  */
 zappy::gui::Gui::Gui(const ipc::ServerInfo &server_info)
-    : _server_info(server_info)
+    : _server_info(server_info), running(false)
 {
 }
 
@@ -41,7 +36,6 @@ zappy::gui::Gui::Gui(const ipc::ServerInfo &server_info)
  */
 void zappy::gui::Gui::connectServer()
 {
-/*
     std::optional<posix::FileDescriptor> conn =
         _listener.accept_connection();
     while (conn) {
@@ -58,7 +52,6 @@ void zappy::gui::Gui::connectServer()
         retunePollMask(cfd);
         conn = _listener.accept_connection();
     }
-*/
 }
 
 /**
@@ -104,25 +97,49 @@ void zappy::gui::Gui::Broadcast()
 
 zappy::gui::Gui::~Gui()
 {
-    ; // destroy the window
-}
-
-void zappy::gui::Gui::run()
-{
-    ;
+    std::cerr << "destroying the gui" << std::endl; // dprintf
 }
 
 void zappy::gui::Gui::pullServerInfo()
 {
-    ;
+    std::cerr << "pulling server info" << std::endl; // dprintf
 }
 
 void zappy::gui::Gui::init()
 {
-    ;
+    std::cerr << "initing the gui" << std::endl; // dprintf
+}
+
+void zappy::gui::Gui::display()
+{
+    std::cerr << "displaying the gui" << std::endl; // dprintf
 }
 
 void zappy::gui::Gui::update()
 {
-    ;
+    std::cerr << "updating the gui {" << std::endl; // dprintf
+    std::cerr << "\t"; // dprintf
+    pullServerInfo();
+    std::cerr << "\t"; // dprintf
+    display();
+    std::cerr << "}" << std::endl; // dprintf
+}
+
+void zappy::gui::Gui::run()
+{
+    std::cerr << "running the gui {" << std::endl; // dprintf
+    std::cerr << "\t"; // dprintf
+    init();
+    std::cerr << "\t"; // dprintf
+    pullServerInfo();
+    std::cerr << "\t"; // dprintf
+    display();
+    std::cerr << "} loop {" << std::endl; // dprintf
+    running = true;
+    while (running) {
+        std::cerr << "\t"; // dprintf
+        update();
+        sleep(1);
+    }
+    std::cerr << "}" << std::endl; // dprintf
 }
