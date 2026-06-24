@@ -46,6 +46,9 @@ void BoardData::apply(const net::ServerEvent &ev)
         case K::ADM_FLAG_LIST: on_adm_flag_list(ev); break;
         case K::PPF: on_ppf(ev); break;
         case K::EVT_BIOME_SET: on_evt_biome_set(ev); break;
+        case K::EVT_STORM_START:
+        case K::EVT_STORM_TICK: on_storm_set(ev); break;
+        case K::EVT_STORM_END: on_storm_end(); break;
         default: break;
     }
 }
@@ -362,6 +365,19 @@ void BoardData::on_evt_biome_set(const net::ServerEvent &ev)
     if (x < 0 || y < 0 || x >= _width || y >= _height)
         return;
     _tiles[idx(x, y)].biome = biome_from_name(ev.text);
+}
+
+void BoardData::on_storm_set(const net::ServerEvent &ev)
+{
+    if (ev.ints.size() < 4)
+        return;
+    _storm = StormZone{ev.ints[0], ev.ints[1], ev.ints[2],
+        static_cast<Orientation>(ev.ints[3])};
+}
+
+void BoardData::on_storm_end()
+{
+    _storm.reset();
 }
 
 } // namespace zappy::gui::board_data

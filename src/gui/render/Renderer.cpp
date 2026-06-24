@@ -18,6 +18,16 @@ namespace {
 constexpr int WIN_WIDTH = 1280;
 constexpr int WIN_HEIGHT = 720;
 
+const char *dir_char(board_data::Orientation dir)
+{
+    switch (dir) {
+        case board_data::Orientation::NORTH: return "N";
+        case board_data::Orientation::EAST: return "E";
+        case board_data::Orientation::SOUTH: return "S";
+        default: return "W";
+    }
+}
+
 } // namespace
 
 Renderer::Renderer()
@@ -46,6 +56,18 @@ void Renderer::overlay(const board_data::BoardData &board)
     ::draw::Draw_text(line2, {10, 35}, 20, DARKGRAY);
     if (board.game_ended())
         ::draw::Draw_text("WINNER: " + board.winner(), {10, 60}, 20, MAROON);
+}
+
+void Renderer::storm_overlay(const board_data::BoardData &board)
+{
+    if (!board.storm().has_value())
+        return;
+    const auto &s = *board.storm();
+    const std::string line = "STORM center=(" + std::to_string(s.center_x)
+        + "," + std::to_string(s.center_y) + ")  R=" + std::to_string(s.radius)
+        + "  dir=" + dir_char(s.direction);
+
+    ::draw::Draw_text(line, {10, 85}, 20, ORANGE);
 }
 
 void Renderer::update_cursor()
@@ -90,12 +112,15 @@ void Renderer::draw(board_data::BoardData &board, ui::AdminPanel &admin,
     handle_pick(board, admin, player);
     if (IsKeyPressed(KEY_B) && !admin.capturing_keyboard())
         _scene.set_show_biomes(!_scene.show_biomes());
+    if (IsKeyPressed(KEY_T) && !admin.capturing_keyboard())
+        _scene.set_show_storm(!_scene.show_storm());
     ::draw::Start_Draw();
     ClearBackground(RAYWHITE);
     _camera.Begin_mode_3d();
-    _scene.draw();
+    _scene.draw(board);
     _camera.End_mode_3d();
     overlay(board);
+    storm_overlay(board);
     if (IsCursorHidden())
         draw_crosshair();
     admin.draw();

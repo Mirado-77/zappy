@@ -30,6 +30,7 @@ public:
 
 private:
     void overlay(const board_data::BoardData &board);
+    void storm_overlay(const board_data::BoardData &board);
     void update_cursor();
     void handle_pick(board_data::BoardData &board, ui::AdminPanel &admin,
         ui::PlayerPanel &player);

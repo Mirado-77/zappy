@@ -8,6 +8,7 @@
 #ifndef BOARDDATA_HPP_
     #define BOARDDATA_HPP_
     #include <cstddef>
+    #include <optional>
     #include <string>
     #include <unordered_map>
     #include <vector>
@@ -36,6 +37,13 @@ struct EggData {
     int x = 0;
     int y = 0;
     bool alive = true;
+};
+
+struct StormZone {
+    int center_x = 0;
+    int center_y = 0;
+    int radius = 0;
+    Orientation direction = Orientation::NORTH;
 };
 
 class BoardData {
@@ -75,6 +83,8 @@ public:
         { return _profile_disabled; }
     void set_selected_player(int id);
     void clear_selection() noexcept;
+    [[nodiscard]] const std::optional<StormZone> &storm() const noexcept
+        { return _storm; }
 
 private:
     void on_msz(const net::ServerEvent &);
@@ -101,6 +111,8 @@ private:
     void on_sbp();
     void on_ppf(const net::ServerEvent &);
     void on_evt_biome_set(const net::ServerEvent &);
+    void on_storm_set(const net::ServerEvent &);
+    void on_storm_end();
     bool fill_from_ppf(PlayerData &p, const std::string &text);
     void set_admin_status(std::string code);
 
@@ -130,6 +142,7 @@ private:
     int _selected_player_id = -1;
     bool _ppf_pending = false;
     bool _profile_disabled = false;
+    std::optional<StormZone> _storm;
 };
 
 } // namespace zappy::gui::board_data

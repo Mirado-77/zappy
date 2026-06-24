@@ -36,6 +36,16 @@ BoundingBox player_box(int x, int y)
         {p.x + ROBOT_HALF, ROBOT_HIGH, p.z + ROBOT_HALF}};
 }
 
+Vector3 dir_vec(board_data::Orientation dir)
+{
+    switch (dir) {
+        case board_data::Orientation::NORTH: return {0.0f, 0.0f, 1.0f};
+        case board_data::Orientation::EAST: return {1.0f, 0.0f, 0.0f};
+        case board_data::Orientation::SOUTH: return {0.0f, 0.0f, -1.0f};
+        default: return {-1.0f, 0.0f, 0.0f};
+    }
+}
+
 } // namespace
 
 void Scene::sync(const board_data::BoardData &board)
@@ -102,12 +112,34 @@ void Scene::rotate_to(Slot &slot, int target)
     slot.orientation = target;
 }
 
-void Scene::draw()
+void Scene::draw_storm_arrow(Vector3 center, board_data::Orientation dir)
+{
+    const Vector3 d = dir_vec(dir);
+    const Vector3 base = {center.x, 1.0f, center.z};
+    const Vector3 mid = {base.x + d.x * 4.0f, base.y, base.z + d.z * 4.0f};
+    const Vector3 tip = {base.x + d.x * 6.0f, base.y, base.z + d.z * 6.0f};
+
+    DrawCylinderEx(base, mid, 0.3f, 0.3f, 8, YELLOW);
+    DrawCylinderEx(mid, tip, 0.9f, 0.0f, 12, ORANGE);
+}
+
+void Scene::draw_storm(const board_data::StormZone &storm)
+{
+    const Vector3 c = world_pos(storm.center_x, storm.center_y);
+    const float r = static_cast<float>(storm.radius) * TILE_UNIT;
+
+    DrawCylinder({c.x, 0.2f, c.z}, r, r, 0.05f, 32, {80, 120, 200, 90});
+    draw_storm_arrow(c, storm.direction);
+}
+
+void Scene::draw(const board_data::BoardData &board)
 {
     if (_world)
         _world->draw_world();
     for (auto &kv : _slots)
         kv.second.robot->draw();
+    if (_show_storm && board.storm().has_value())
+        draw_storm(*board.storm());
 }
 
 std::optional<int> Scene::pick_player(Vector2 screen, const Camera &cam) const

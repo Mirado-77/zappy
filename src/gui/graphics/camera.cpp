@@ -40,6 +40,8 @@ static Vector3 free_movement()
         - (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN))) * speed;
     mov.y = static_cast<float>((IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT))
         - (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT))) * speed;
+    mov.z = static_cast<float>(IsKeyDown(KEY_SPACE)
+        - IsKeyDown(KEY_LEFT_CONTROL)) * speed;
     return mov;
 }
 
