@@ -58,9 +58,9 @@ std::string resolveLocalIp()
  * @brief Initialise all members from the validated configuration.
  *
  * Member order matches the declaration order in Server.hpp:
- * _config → _featureFlags → _listener → _poll → _world → _resourceSpawner →
- * _clients → _clock → _scheduler → _refillScheduler → _foodScheduler →
- * _aiDispatcher → _handshake.
+ * _config   _listener   _poll   _world   _resourceSpawner   _clients  
+ * _clock   _scheduler   _refillScheduler   _foodScheduler   _aiDispatcher  
+ * _handshake.
  *
  * @param config validated CLI configuration
  */

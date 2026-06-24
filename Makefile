@@ -105,6 +105,7 @@ tests_run:
 		-L$(PROTOCOL_LIB_DIR) -lzappy_protocol \
 		-o $(TEST_BIN) $(TEST_LDLIBS)
 	./$(TEST_BIN)
+	python3 -m pytest tests/ia/ -q
 
 tests_cov: TEST_CXXFLAGS += $(COV_FLAGS)
 tests_cov: TEST_LDLIBS += $(COV_FLAGS)
