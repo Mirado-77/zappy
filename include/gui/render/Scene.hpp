@@ -14,9 +14,22 @@
     #include "gui/board_data/BoardData.hpp"
     #include "gui/world.hpp"
     #include "gui/trantor.hpp"
+<<<<<<< Updated upstream
     #include "gui/Egg.hpp"
+=======
+    #include "gui/Item.hpp"
+>>>>>>> Stashed changes
 
 namespace zappy::gui::render {
+
+struct PairHash {
+    std::size_t operator()(
+        const std::pair<std::size_t, std::size_t>& p
+    ) const noexcept
+    {
+        return std::hash<std::size_t>{}(p.first) ^ (std::hash<std::size_t>{}(p.second) << 1);
+    }
+};
 
 class Scene {
 public:
@@ -37,12 +50,20 @@ private:
     Vector3 world_pos(int x, int y);
     void ensure_world(const board_data::BoardData &board);
     void sync_player(int id, const board_data::PlayerData &player);
+<<<<<<< Updated upstream
     void sync_egg(int id, const board_data::EggData &egg);
+=======
+    void sync_item(const board_data::TileData &tile, std::pair<std::size_t, std::size_t> coords);
+>>>>>>> Stashed changes
     void rotate_to(Slot &slot, int target);
 
     std::unique_ptr<::world> _world;
     std::unordered_map<int, Slot> _slots;
+<<<<<<< Updated upstream
     std::unordered_map<int, EggSlot> _eggs;
+=======
+    std::unordered_map<std::pair<std::size_t, std::size_t>, std::unique_ptr<::Item>, PairHash> _items;
+>>>>>>> Stashed changes
     int _width = 0;
     int _height = 0;
 };

@@ -6,6 +6,7 @@
 */
 
 #include "gui/render/Renderer.hpp"
+#include "gui/utils.hpp"
 
 #include <string>
 
@@ -37,16 +38,16 @@ bool Renderer::should_close()
 
 void Renderer::overlay(const board_data::BoardData &board)
 {
-    std::string line1 = "map " + std::to_string(board.width()) + "x"
+    std::string hud_map_info = "map " + std::to_string(board.width()) + "x"
         + std::to_string(board.height()) + "  tu "
         + std::to_string(board.time_unit());
-    std::string line2 = "players " + std::to_string(board.players().size())
+    std::string hud_players_info = "players " + std::to_string(board.players().size())
         + "  teams " + std::to_string(board.teams().size());
 
-    ::draw::Draw_text(line1, {10, 10}, 20, DARKGRAY);
-    ::draw::Draw_text(line2, {10, 35}, 20, DARKGRAY);
+    ::draw::Draw_text(hud_map_info, {HUD_PADDING, HUD_PADDING}, 20, DARKGRAY);
+    ::draw::Draw_text(hud_players_info, {HUD_PADDING, HUD_PADDING + HUD_LINE_SPACING}, 20, DARKGRAY);
     if (board.game_ended())
-        ::draw::Draw_text("WINNER: " + board.winner(), {10, 60}, 20, MAROON);
+        ::draw::Draw_text("WINNER: " + board.winner(), {HUD_PADDING, HUD_CENTER}, 20, MAROON);
 }
 
 void Renderer::draw(const board_data::BoardData &board)

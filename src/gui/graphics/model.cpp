@@ -39,6 +39,11 @@ void model::Draw_model(float scale)
     DrawModel(this->_model, this->_pos, scale, this->_color);
 }
 
+Color model::get_color()
+{
+    return this->_color;
+}
+
 void model::change_color(Color cl)
 {
     this->_color = cl;

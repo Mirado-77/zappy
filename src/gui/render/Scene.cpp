@@ -6,8 +6,10 @@
 */
 
 #include "gui/render/Scene.hpp"
+#include <raylib.h>
+#include <utility>
 
-namespace zappy::gui::render {
+namespace zappy::gui {
 
 constexpr float TILE_UNIT = 6.0f;
 
@@ -19,14 +21,27 @@ Vector3 Scene::world_pos(int x, int y)
         static_cast<float>(y) * TILE_UNIT};
 }
 
+<<<<<<< Updated upstream
 void Scene::sync(const board_data::BoardData &board)
+=======
+} // namespace
+
+void render::Scene::sync(const board_data::BoardData &board)
+>>>>>>> Stashed changes
 {
     ensure_world(board);
-    for (const auto &kv : board.players())
-        sync_player(kv.first, kv.second);
+    for (const auto &player : board.players()) {
+        sync_player(player.first, player.second);
+    }
+    for (std::size_t x = 0; x < static_cast<std::size_t>(board.width()); ++x) {
+        for (std::size_t y = 0; y < static_cast<std::size_t>(board.height()); ++y) {
+            const board_data::TileData &tile = board.get_tile_value(x, y);
+            sync_item(tile, std::make_pair(x, y));
+        }
+    }
 }
 
-void Scene::ensure_world(const board_data::BoardData &board)
+void render::Scene::ensure_world(const board_data::BoardData &board)
 {
     int w = board.width();
     int h = board.height();
@@ -39,7 +54,7 @@ void Scene::ensure_world(const board_data::BoardData &board)
     _height = h;
 }
 
-void Scene::sync_player(int id, const board_data::PlayerData &player)
+void render::Scene::sync_player(int id, const board_data::PlayerData &player)
 {
     auto [it, inserted] = _slots.try_emplace(id);
     Slot &slot = it->second;
@@ -55,7 +70,16 @@ void Scene::sync_player(int id, const board_data::PlayerData &player)
     }
 }
 
-void Scene::rotate_to(Slot &slot, int target)
+    // std::vector<TileData> _tiles;
+void render::Scene::sync_item(const board_data::TileData &tile, std::pair<std::size_t, std::size_t> coords)
+{
+    auto [it, inserted] = _items.try_emplace(coords);
+    std::unique_ptr<Item> &item_ptr = it->second;
+    if (inserted)
+        item_ptr = std::make_unique<::Item>(tile.res, world_pos(coords.first, coords.second));
+}
+
+void render::Scene::rotate_to(Slot &slot, int target)
 {
     int diff = ((target - slot.orientation) % 4 + 4) % 4;
     if (diff == 0)
@@ -69,6 +93,7 @@ void Scene::rotate_to(Slot &slot, int target)
     slot.orientation = target;
 }
 
+<<<<<<< Updated upstream
 void Scene::sync_egg(int id, const board_data::EggData &egg)
 {
     auto [it, inserted] = this->_eggs.try_emplace(id);
@@ -83,13 +108,21 @@ void Scene::sync_egg(int id, const board_data::EggData &egg)
 }
 
 void Scene::draw()
+=======
+void render::Scene::draw()
+>>>>>>> Stashed changes
 {
     if (_world)
         _world->draw_world();
     for (auto &kv : _slots)
         kv.second.robot->draw();
+<<<<<<< Updated upstream
     for (auto &eg : _eggs)
         eg.second.egg->draw();
+=======
+    for (auto &kv : _items)
+        kv.second->draw();
+>>>>>>> Stashed changes
 }
 
-} // namespace zappy::gui::render
+} // namespace zappy::gui
