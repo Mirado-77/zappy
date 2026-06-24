@@ -15,7 +15,6 @@ void draw::End_Draw()
 void draw::Start_Draw()
 {
     BeginDrawing();
-
 }
 
 void draw::Draw_text(std::string text, Vector2 pos, int fontsize, Color color)
