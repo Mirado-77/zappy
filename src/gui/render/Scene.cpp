@@ -70,8 +70,11 @@ void render::Scene::sync_item(const board_data::TileData &tile, std::pair<std::s
 {
     auto [it, inserted] = _items.try_emplace(coords);
     std::unique_ptr<Item> &item_ptr = it->second;
-    if (inserted)
+    if (inserted) {
         item_ptr = std::make_unique<::Item>(tile.res, world_pos(coords.first, coords.second));
+    } else {
+        item_ptr->sync(tile.res);
+    }
 }
 
 void render::Scene::rotate_to(Slot &slot, int target)

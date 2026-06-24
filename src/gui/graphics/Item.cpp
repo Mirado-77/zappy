@@ -66,11 +66,15 @@ static Color get_mineral_color(const zappy::gui::board_data::Resources resources
     return color_buffer.mean();
 }
 
-static std::string get_item_texture_path(const zappy::gui::board_data::Resources resources)
+std::unique_ptr<model>& Item::get_item_model()
 {
-    ItemType majority_item_type = (ItemType)*std::max_element(resources.begin(), resources.end());
+    ItemType majority_item_type = (ItemType)*std::max_element(_resources.begin(), _resources.end());
+    std::string texture_path = mineral_info.find(majority_item_type)->second.texture_path;
 
-    return mineral_info.find(majority_item_type)->second.texture_path;
+    if (texture_path == FOOD_PATH) {
+        return this->_mod_food;
+    } else
+        return this->_mod_mineral;
 }
 
 static float get_mineral_scale(const zappy::gui::board_data::Resources resources)
@@ -100,20 +104,32 @@ static float get_mineral_scale(const zappy::gui::board_data::Resources resources
 }
 
 Item::Item(const zappy::gui::board_data::Resources resources, Vector3 pos)
-    : _resources(resources), _mod(get_item_texture_path(resources), pos)
+    : _resources(resources), _pos(pos)
+{   
+    _mineral_color = get_mineral_color(resources);
+}
+
+void Item::sync(const zappy::gui::board_data::Resources resources)
 {
-    _mod.change_color(get_mineral_color(resources));
+    if (!_mod_food->isloaded())
+        _mod_food->load();
+    if (!_mod_mineral->isloaded())
+        _mod_mineral->load();
+    _mineral_color = get_mineral_color(resources);
+    _resources = resources;
 }
 
 void Item::draw()
 {
-    Color crystal_color = this->_mod.get_color();
     if (
-            (crystal_color.r == DEFAULT_COLOR.r)
-        &&  (crystal_color.g == DEFAULT_COLOR.g)
-        &&  (crystal_color.b == DEFAULT_COLOR.b)
-        &&  (crystal_color.a == DEFAULT_COLOR.a)
+            (_mineral_color.r == DEFAULT_COLOR.r)
+        &&  (_mineral_color.g == DEFAULT_COLOR.g)
+        &&  (_mineral_color.b == DEFAULT_COLOR.b)
+        &&  (_mineral_color.a == DEFAULT_COLOR.a)
     )
         return;
-    this->_mod.Draw_model(get_mineral_scale(_resources));
+    std::unique_ptr<model>& model_to_display = get_item_model();
+    model_to_display->set_pos(_pos);
+    model_to_display->change_color(_mineral_color);
+    model_to_display->Draw_model(get_mineral_scale(_resources));
 }

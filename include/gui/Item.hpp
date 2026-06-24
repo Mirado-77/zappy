@@ -56,14 +56,19 @@ public:
     size_t a;
 };
 
-class Item{
+class Item {
 public:
     Item(const zappy::gui::board_data::Resources resources, Vector3 pos);
     ~Item() = default;
     void draw();
+    void sync(const zappy::gui::board_data::Resources resources);
+    static std::unique_ptr<model> _mod_food;
+    static std::unique_ptr<model> _mod_mineral;
 private:
+    std::unique_ptr<model>& get_item_model();
     zappy::gui::board_data::Resources _resources;
-    model _mod;
+    Color _mineral_color;
+    Vector3 _pos;
 };
 
 #endif /* !ITEM_HPP_ */

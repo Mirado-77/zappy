@@ -8,16 +8,17 @@
 #include "gui/Egg.hpp"
 
 Egg::Egg()
-    :_mod(EGG_PATH)
 {
+    if (!_mod->isloaded())
+        _mod->load();
 }
 
 void Egg::draw()
 {
-    this->_mod.Draw_model();
+    this->_mod->Draw_model();
 }
 
 void Egg::set_pos(Vector3 pos)
 {
-    this->_mod.set_pos(pos);
+    this->_mod->set_pos(pos);
 }
