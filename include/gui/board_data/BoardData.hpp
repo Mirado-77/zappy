@@ -67,6 +67,12 @@ public:
         { return _admin_status_seq; }
     void mark_admin_pending() noexcept { _admin_pending = true; }
     [[nodiscard]] std::vector<std::string> take_outbox();
+    [[nodiscard]] int selected_player_id() const noexcept
+        { return _selected_player_id; }
+    [[nodiscard]] bool profile_disabled() const noexcept
+        { return _profile_disabled; }
+    void set_selected_player(int id);
+    void clear_selection() noexcept;
 
 private:
     void on_msz(const net::ServerEvent &);
@@ -89,6 +95,10 @@ private:
     void on_admin_ok(const net::ServerEvent &);
     void on_admin_fail(std::string code);
     void on_adm_flag_list(const net::ServerEvent &);
+    void on_suc();
+    void on_sbp();
+    void on_ppf(const net::ServerEvent &);
+    bool fill_from_ppf(PlayerData &p, const std::string &text);
     void set_admin_status(std::string code);
 
     void resize_tiles();
@@ -114,6 +124,9 @@ private:
     std::vector<std::string> _outbox;
     std::string _admin_status;
     unsigned _admin_status_seq = 0;
+    int _selected_player_id = -1;
+    bool _ppf_pending = false;
+    bool _profile_disabled = false;
 };
 
 } // namespace zappy::gui::board_data

@@ -30,13 +30,14 @@ AdminPanel::AdminPanel(net::ServerLink &link, board_data::BoardData &board)
 
 void AdminPanel::handle_toggle()
 {
-    if (!IsKeyPressed(KEY_F2))
-        return;
-    _visible = !_visible;
-    if (_visible)
-        EnableCursor();
-    else
-        DisableCursor();
+    if (IsKeyPressed(KEY_F2))
+        _visible = !_visible;
+}
+
+bool AdminPanel::blocks_point(Vector2 p) const
+{
+    return _visible
+        && CheckCollisionPointRec(p, {PANEL_X, PANEL_Y, PANEL_W, PANEL_H});
 }
 
 void AdminPanel::sync_status()
@@ -66,10 +67,8 @@ void AdminPanel::draw()
 
 void AdminPanel::draw_window()
 {
-    if (GuiWindowBox({PANEL_X, PANEL_Y, PANEL_W, PANEL_H}, "Admin")) {
+    if (GuiWindowBox({PANEL_X, PANEL_Y, PANEL_W, PANEL_H}, "Admin"))
         _visible = false;
-        DisableCursor();
-    }
 }
 
 void AdminPanel::submit_login()

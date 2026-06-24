@@ -23,7 +23,7 @@ struct VerbInfo {
     bool has_tail;
 };
 
-constexpr std::array<VerbInfo, 27> VERBS = {{
+constexpr std::array<VerbInfo, 28> VERBS = {{
     {"msz", EventKind::MSZ, 2, false}, {"sgt", EventKind::SGT, 1, false},
     {"sst", EventKind::SST, 1, false}, {"tna", EventKind::TNA, 0, true},
     {"bct", EventKind::BCT, 9, false}, {"pnw", EventKind::PNW, 5, true},
@@ -37,7 +37,8 @@ constexpr std::array<VerbInfo, 27> VERBS = {{
     {"seg", EventKind::SEG, 0, true}, {"smg", EventKind::SMG, 0, true},
     {"suc", EventKind::SUC, 0, false}, {"sbp", EventKind::SBP, 0, false},
     {"ok", EventKind::OK, 0, false}, {"ko", EventKind::KO, 0, false},
-    {"adm_flag_list", EventKind::ADM_FLAG_LIST, 0, true}
+    {"adm_flag_list", EventKind::ADM_FLAG_LIST, 0, true},
+    {"ppf", EventKind::PPF, 1, true}
 }};
 
 std::string_view trim(std::string_view s) noexcept

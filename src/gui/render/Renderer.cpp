@@ -27,7 +27,6 @@ Renderer::Renderer()
     _camera.set_mode(CAMERA_FREE);
     SetTargetFPS(60);
     _window.Set_window_state(FLAG_WINDOW_RESIZABLE);
-    DisableCursor();
 }
 
 bool Renderer::should_close()
@@ -49,17 +48,56 @@ void Renderer::overlay(const board_data::BoardData &board)
         ::draw::Draw_text("WINNER: " + board.winner(), {10, 60}, 20, MAROON);
 }
 
-void Renderer::draw(const board_data::BoardData &board, ui::AdminPanel &admin)
+void Renderer::update_cursor()
+{
+    const bool look = IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
+
+    if (look && !IsCursorHidden())
+        DisableCursor();
+    if (!look && IsCursorHidden())
+        EnableCursor();
+}
+
+void Renderer::handle_pick(board_data::BoardData &board, ui::AdminPanel &admin,
+    ui::PlayerPanel &player)
+{
+    const Vector2 mouse = GetMousePosition();
+
+    if (!board.is_admin() || IsMouseButtonDown(MOUSE_BUTTON_RIGHT)
+        || !IsMouseButtonPressed(MOUSE_BUTTON_LEFT)
+        || admin.blocks_point(mouse) || player.blocks_point(mouse))
+        return;
+    const auto id = _scene.pick_player(mouse, _camera.cam);
+    if (id)
+        board.set_selected_player(*id);
+}
+
+void Renderer::draw_crosshair()
+{
+    const int cx = GetScreenWidth() / 2;
+    const int cy = GetScreenHeight() / 2;
+
+    DrawLine(cx - 8, cy, cx + 8, cy, DARKGRAY);
+    DrawLine(cx, cy - 8, cx, cy + 8, DARKGRAY);
+}
+
+void Renderer::draw(board_data::BoardData &board, ui::AdminPanel &admin,
+    ui::PlayerPanel &player)
 {
     _scene.sync(board);
-    _camera.update_camera();
+    update_cursor();
+    _camera.update_free_rmb(!admin.capturing_keyboard());
+    handle_pick(board, admin, player);
     ::draw::Start_Draw();
     ClearBackground(RAYWHITE);
     _camera.Begin_mode_3d();
     _scene.draw();
     _camera.End_mode_3d();
     overlay(board);
+    if (IsCursorHidden())
+        draw_crosshair();
     admin.draw();
+    player.draw();
     ::draw::End_Draw();
 }
 

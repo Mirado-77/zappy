@@ -7,6 +7,7 @@
 
 #include "gui/board_data/BoardData.hpp"
 
+#include <sstream>
 #include <stdexcept>
 #include <utility>
 
@@ -40,9 +41,10 @@ void BoardData::apply(const net::ServerEvent &ev)
         case K::PFK: on_pfk(ev); break;
         case K::OK: on_admin_ok(ev); break;
         case K::KO: on_admin_fail("ko"); break;
-        case K::SBP: on_admin_fail("sbp"); break;
-        case K::SUC: on_admin_fail("suc"); break;
+        case K::SBP: on_sbp(); break;
+        case K::SUC: on_suc(); break;
         case K::ADM_FLAG_LIST: on_adm_flag_list(ev); break;
+        case K::PPF: on_ppf(ev); break;
         default: break;
     }
 }
@@ -277,6 +279,75 @@ void BoardData::on_adm_flag_list(const net::ServerEvent &ev)
     const std::string name = ev.text.substr(0, sep);
     const std::string state = ev.text.substr(sep + 1);
     _feature_flags[name] = (state == "on");
+}
+
+void BoardData::on_suc()
+{
+    if (_ppf_pending) {
+        _ppf_pending = false;
+        _profile_disabled = true;
+        return;
+    }
+    on_admin_fail("suc");
+}
+
+void BoardData::on_sbp()
+{
+    if (_ppf_pending) {
+        _ppf_pending = false;
+        return;
+    }
+    on_admin_fail("sbp");
+}
+
+void BoardData::set_selected_player(int id)
+{
+    _selected_player_id = id;
+    _profile_disabled = false;
+    _ppf_pending = true;
+    _outbox.emplace_back("ppf #" + std::to_string(id) + "\n");
+}
+
+void BoardData::clear_selection() noexcept
+{
+    _selected_player_id = -1;
+    _ppf_pending = false;
+    _profile_disabled = false;
+}
+
+bool BoardData::fill_from_ppf(PlayerData &p, const std::string &text)
+{
+    std::istringstream iss(text);
+    std::string team;
+    int x = 0;
+    int y = 0;
+    int o = 0;
+    int l = 0;
+    Resources inv{};
+
+    if (!(iss >> team >> x >> y >> o >> l))
+        return false;
+    for (std::size_t i = 0; i < RESOURCE_COUNT; ++i)
+        if (!(iss >> inv[i]))
+            return false;
+    p.team = team;
+    p.x = x;
+    p.y = y;
+    p.level = l;
+    p.orient = static_cast<Orientation>(o);
+    p.inventory = inv;
+    return true;
+}
+
+void BoardData::on_ppf(const net::ServerEvent &ev)
+{
+    if (ev.ints.empty())
+        return;
+    auto it = _players.find(ev.ints[0]);
+    if (it != _players.end() && fill_from_ppf(it->second, ev.text)) {
+        _ppf_pending = false;
+        _profile_disabled = false;
+    }
 }
 
 } // namespace zappy::gui::board_data

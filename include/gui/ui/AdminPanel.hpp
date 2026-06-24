@@ -8,6 +8,8 @@
 #ifndef GUI_UI_ADMINPANEL_HPP_
     #define GUI_UI_ADMINPANEL_HPP_
 
+    #include <raylib.h>
+
     #include <string>
 
     #include "gui/board_data/BoardData.hpp"
@@ -20,6 +22,10 @@ public:
     AdminPanel(net::ServerLink &link, board_data::BoardData &board);
 
     void draw();
+    [[nodiscard]] bool visible() const noexcept { return _visible; }
+    [[nodiscard]] bool capturing_keyboard() const noexcept
+        { return _visible && _password_edit; }
+    [[nodiscard]] bool blocks_point(Vector2 p) const;
 
 private:
     void handle_toggle();

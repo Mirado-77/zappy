@@ -12,11 +12,21 @@ namespace zappy::gui::render {
 namespace {
 
 constexpr float TILE_UNIT = 6.0f;
+constexpr float ROBOT_HALF = 2.5f;
+constexpr float ROBOT_LOW = -1.0f;
+constexpr float ROBOT_HIGH = 6.0f;
 
 Vector3 world_pos(int x, int y)
 {
     return {static_cast<float>(x) * TILE_UNIT, 0.0f,
         static_cast<float>(y) * TILE_UNIT};
+}
+
+BoundingBox player_box(int x, int y)
+{
+    const Vector3 p = world_pos(x, y);
+    return {{p.x - ROBOT_HALF, ROBOT_LOW, p.z - ROBOT_HALF},
+        {p.x + ROBOT_HALF, ROBOT_HIGH, p.z + ROBOT_HALF}};
 }
 
 } // namespace
@@ -50,6 +60,8 @@ void Scene::sync_player(int id, const board_data::PlayerData &player)
         slot.orientation = static_cast<int>(player.orient);
     }
     slot.robot->set_pos(world_pos(player.x, player.y));
+    slot.x = player.x;
+    slot.y = player.y;
     rotate_to(slot, static_cast<int>(player.orient));
     if (!player.alive && !slot.dead) {
         slot.robot->death();
@@ -77,6 +89,27 @@ void Scene::draw()
         _world->draw_world();
     for (auto &kv : _slots)
         kv.second.robot->draw();
+}
+
+std::optional<int> Scene::pick_player(Vector2 screen, const Camera &cam) const
+{
+    const Ray ray = GetScreenToWorldRay(screen, cam);
+    float best = 0.0f;
+    int found = -1;
+
+    for (const auto &kv : _slots) {
+        if (kv.second.dead)
+            continue;
+        const RayCollision hit =
+            GetRayCollisionBox(ray, player_box(kv.second.x, kv.second.y));
+        if (hit.hit && (found < 0 || hit.distance < best)) {
+            best = hit.distance;
+            found = kv.first;
+        }
+    }
+    if (found < 0)
+        return std::nullopt;
+    return found;
 }
 
 } // namespace zappy::gui::render

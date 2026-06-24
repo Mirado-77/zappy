@@ -8,7 +8,10 @@
 #ifndef GUI_RENDER_SCENE_HPP_
     #define GUI_RENDER_SCENE_HPP_
 
+    #include <raylib.h>
+
     #include <memory>
+    #include <optional>
     #include <unordered_map>
 
     #include "gui/board_data/BoardData.hpp"
@@ -21,12 +24,16 @@ class Scene {
 public:
     void sync(const board_data::BoardData &board);
     void draw();
+    [[nodiscard]] std::optional<int> pick_player(Vector2 screen,
+        const Camera &cam) const;
 
 private:
     struct Slot {
         std::unique_ptr<::trantor> robot;
         int orientation = 1;
         bool dead = false;
+        int x = 0;
+        int y = 0;
     };
 
     void ensure_world(const board_data::BoardData &board);
