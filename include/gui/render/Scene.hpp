@@ -34,6 +34,8 @@ public:
     void set_show_biomes(bool value) noexcept { _show_biomes = value; }
     [[nodiscard]] bool show_storm() const noexcept { return _show_storm; }
     void set_show_storm(bool value) noexcept { _show_storm = value; }
+    [[nodiscard]] bool show_flood() const noexcept { return _show_flood; }
+    void set_show_flood(bool value) noexcept { _show_flood = value; }
 
 private:
     struct Slot {
@@ -59,6 +61,7 @@ private:
     void draw_storm_arrow(Vector3 center, board_data::Orientation dir);
     void draw_meteor(const MeteorView &view);
     void draw_meteors();
+    void draw_flood_overlays(const board_data::BoardData &board);
 
     std::unique_ptr<::world> _world;
     std::unordered_map<int, Slot> _slots;
@@ -67,6 +70,7 @@ private:
     int _height = 0;
     bool _show_biomes = true;
     bool _show_storm = true;
+    bool _show_flood = true;
 };
 
 } // namespace zappy::gui::render

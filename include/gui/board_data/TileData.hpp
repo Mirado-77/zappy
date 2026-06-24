@@ -29,6 +29,7 @@ struct TileData {
     int y = 0;
     Resources res{};
     Biome biome = Biome::PLAIN;
+    bool flooded = false;
 };
 
 } // namespace zappy::gui::board_data

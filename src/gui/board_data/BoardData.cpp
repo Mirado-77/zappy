@@ -51,6 +51,7 @@ void BoardData::apply(const net::ServerEvent &ev)
         case K::EVT_STORM_END: on_storm_end(); break;
         case K::EVT_METEOR_IMPACT: on_meteor_impact(ev); break;
         case K::EVT_METEOR_END: break;
+        case K::EVT_FLOOD_TILE: on_evt_flood_tile(ev); break;
         default: break;
     }
 }
@@ -392,6 +393,17 @@ void BoardData::on_meteor_impact(const net::ServerEvent &ev)
 std::vector<MeteorImpact> BoardData::take_pending_meteors()
 {
     return std::exchange(_pending_meteors, {});
+}
+
+void BoardData::on_evt_flood_tile(const net::ServerEvent &ev)
+{
+    if (ev.ints.size() < 2)
+        return;
+    const int x = ev.ints[0];
+    const int y = ev.ints[1];
+    if (x < 0 || y < 0 || x >= _width || y >= _height)
+        return;
+    _tiles[idx(x, y)].flooded = (ev.text == "on");
 }
 
 } // namespace zappy::gui::board_data

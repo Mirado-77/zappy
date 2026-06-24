@@ -121,6 +121,7 @@ private:
     void on_storm_set(const net::ServerEvent &);
     void on_storm_end();
     void on_meteor_impact(const net::ServerEvent &);
+    void on_evt_flood_tile(const net::ServerEvent &);
     bool fill_from_ppf(PlayerData &p, const std::string &text);
     void set_admin_status(std::string code);
 

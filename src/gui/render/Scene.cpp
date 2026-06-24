@@ -8,6 +8,7 @@
 #include "gui/render/Scene.hpp"
 
 #include <array>
+#include <cmath>
 #include <cstddef>
 
 namespace zappy::gui::render {
@@ -164,10 +165,27 @@ void Scene::draw_meteors()
     });
 }
 
+void Scene::draw_flood_overlays(const board_data::BoardData &board)
+{
+    const double t = GetTime();
+
+    for (const auto &tile : board.tiles()) {
+        if (!tile.flooded)
+            continue;
+        const Vector3 p = world_pos(tile.x, tile.y);
+        const float wob = sinf(static_cast<float>(t * 2.0)
+            + static_cast<float>(tile.x + tile.y) * 0.5f) * 0.05f;
+        DrawCube({p.x, 0.45f + wob, p.z}, TILE_UNIT, 0.2f, TILE_UNIT,
+            {30, 120, 220, 180});
+    }
+}
+
 void Scene::draw(const board_data::BoardData &board)
 {
     if (_world)
         _world->draw_world();
+    if (_show_flood)
+        draw_flood_overlays(board);
     for (auto &kv : _slots)
         kv.second.robot->draw();
     if (_show_storm && board.storm().has_value())

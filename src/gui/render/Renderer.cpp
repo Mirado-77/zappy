@@ -28,6 +28,16 @@ const char *dir_char(board_data::Orientation dir)
     }
 }
 
+int count_flooded(const board_data::BoardData &board)
+{
+    int count = 0;
+
+    for (const auto &tile : board.tiles())
+        if (tile.flooded)
+            ++count;
+    return count;
+}
+
 } // namespace
 
 Renderer::Renderer()
@@ -59,6 +69,10 @@ void Renderer::overlay(const board_data::BoardData &board)
     if (_scene.active_meteors() > 0)
         ::draw::Draw_text("METEOR x"
             + std::to_string(_scene.active_meteors()), {10, 110}, 20, RED);
+    const int floods = count_flooded(board);
+    if (floods > 0)
+        ::draw::Draw_text("FLOOD tiles=" + std::to_string(floods),
+            {10, 135}, 20, BLUE);
 }
 
 void Renderer::storm_overlay(const board_data::BoardData &board)
@@ -117,6 +131,8 @@ void Renderer::draw(board_data::BoardData &board, ui::AdminPanel &admin,
         _scene.set_show_biomes(!_scene.show_biomes());
     if (IsKeyPressed(KEY_T) && !admin.capturing_keyboard())
         _scene.set_show_storm(!_scene.show_storm());
+    if (IsKeyPressed(KEY_F) && !admin.capturing_keyboard())
+        _scene.set_show_flood(!_scene.show_flood());
     ::draw::Start_Draw();
     ClearBackground(RAYWHITE);
     _camera.Begin_mode_3d();
