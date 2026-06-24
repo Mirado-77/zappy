@@ -13,6 +13,7 @@
 
     #include "server/game/Position.hpp"
     #include "server/game/Constants.hpp"
+    #include "server/game/Biome.hpp"
 
 namespace zappy::server::game {
 
@@ -174,6 +175,14 @@ public:
      * @param flooded true if now flooded, false if dried out
      */
     virtual void onTileFloodChanged(Position pos, bool flooded) = 0;
+
+    /**
+     * @brief A tile's terrain biome changed.
+     *
+     * @param pos the affected tile
+     * @param biome the new biome
+     */
+    virtual void onTileBiomeChanged(Position pos, Biome biome) = 0;
 };
 
 /**
@@ -201,6 +210,7 @@ public:
     void onPlayerDroppedResource(int, ResourceType) override {}
     void onPlayerPickedUpResource(int, ResourceType) override {}
     void onTileFloodChanged(Position, bool) override {}
+    void onTileBiomeChanged(Position, Biome) override {}
 };
 
 } // namespace zappy::server::game

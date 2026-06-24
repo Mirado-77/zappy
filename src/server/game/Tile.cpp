@@ -145,3 +145,23 @@ bool zappy::server::game::Tile::isFlooded() const noexcept
 {
     return _flooded;
 }
+
+/**
+ * @brief Set the tile's terrain biome.
+ *
+ * @param biome the biome to assign
+ */
+void zappy::server::game::Tile::setBiome(Biome biome) noexcept
+{
+    _biome = biome;
+}
+
+/**
+ * @brief The tile's terrain biome.
+ *
+ * @return Biome the current biome (PLAIN by default)
+ */
+zappy::server::game::Biome zappy::server::game::Tile::biome() const noexcept
+{
+    return _biome;
+}
