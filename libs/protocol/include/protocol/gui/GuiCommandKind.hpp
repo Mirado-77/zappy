@@ -25,6 +25,7 @@ enum class GuiCommandKind {
     PIN,
     SGT,
     SST,
+    PPF,
     ADMIN,
     ADM_FLAG_ENABLE,
     ADM_FLAG_DISABLE,
@@ -37,7 +38,7 @@ enum class GuiCommandKind {
     ADM_PLAYER_LEVEL
 };
 
-constexpr std::size_t GUI_COMMAND_KIND_COUNT = 19;
+constexpr std::size_t GUI_COMMAND_KIND_COUNT = 20;
 
 } // namespace zappy::protocol::gui
 

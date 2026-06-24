@@ -57,7 +57,7 @@ std::vector<std::string> zappy::server::gui::GuiDispatcher::dispatchStandard(
             &GuiDispatcher::handleMct, &GuiDispatcher::handleTna,
             &GuiDispatcher::handlePpo, &GuiDispatcher::handlePlv,
             &GuiDispatcher::handlePin, &GuiDispatcher::handleSgt,
-            &GuiDispatcher::handleSst};
+            &GuiDispatcher::handleSst, &GuiDispatcher::handlePpf};
     const std::size_t idx = static_cast<std::size_t>(cmd.kind);
 
     return (this->*handlers[idx])(cmd.arguments);
@@ -340,6 +340,24 @@ std::vector<std::string> zappy::server::gui::GuiDispatcher::handleSst(
         return {"sbp"};
     _setFrequency(args[0]);
     return {};
+}
+
+/**
+ * @brief Handle the ppf command: aggregated player profile snapshot.
+ *
+ * @param args command arguments: the player id
+ * @return std::vector<std::string> the ppf line, "suc" or "sbp"
+ */
+std::vector<std::string> zappy::server::gui::GuiDispatcher::handlePpf(
+    const std::vector<int> &args)
+{
+    std::vector<std::string> response = {"sbp"};
+
+    if (!_featureFlags.isEnabled(config::FeatureFlag::PROFILE))
+        response = {"suc"};
+    else if (_world.hasPlayer(args[0]))
+        response = {_lineBuilder.ppf(args[0])};
+    return response;
 }
 
 /**
