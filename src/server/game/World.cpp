@@ -536,6 +536,19 @@ void zappy::server::game::World::addTileResource(
 }
 
 /**
+ * @brief Set a tile's runtime flood state and notify observers.
+ *
+ * @param pos tile position
+ * @param value true to flood, false to dry out
+ */
+void zappy::server::game::World::setTileFlooded(Position pos, bool value)
+{
+    tileAt(pos).setFlooded(value);
+    notifyTileChanged(pos);
+    notifyTileFloodChanged(pos, value);
+}
+
+/**
  * @brief Register an observer for subsequent mutations.
  *
  * @param observer observer to add
@@ -567,6 +580,19 @@ void zappy::server::game::World::notifyTileChanged(Position pos)
 {
     for (auto &observer : _observers)
         observer.get().onTileChanged(pos);
+}
+
+/**
+ * @brief Notify observers a tile's flood state changed.
+ *
+ * @param pos the affected tile
+ * @param flooded true if now flooded, false if dried out
+ */
+void zappy::server::game::World::notifyTileFloodChanged(
+    Position pos, bool flooded)
+{
+    for (auto &observer : _observers)
+        observer.get().onTileFloodChanged(pos, flooded);
 }
 
 /**

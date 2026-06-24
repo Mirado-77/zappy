@@ -379,6 +379,14 @@ public:
     void addTileResource(Position pos, ResourceType type, int qty);
 
     /**
+     * @brief Set a tile's runtime flood state and notify observers.
+     *
+     * @param pos tile position
+     * @param value true to flood, false to dry out
+     */
+    void setTileFlooded(Position pos, bool value);
+
+    /**
      * @brief Register an observer for subsequent mutations.
      *
      * @param observer observer to add
@@ -443,6 +451,7 @@ private:
     void notifyPlayerInventoryChanged(int id);
     void notifyPlayerDroppedResource(int playerId, ResourceType type);
     void notifyPlayerPickedUpResource(int playerId, ResourceType type);
+    void notifyTileFloodChanged(Position pos, bool flooded);
     void notifyPlayerStateChanged(int id);
     void notifyPlayerRemoved(int id);
     void notifyEggAdded(int id);

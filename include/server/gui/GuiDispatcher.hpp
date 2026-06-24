@@ -107,6 +107,11 @@ private:
     static constexpr int STORM_DEFAULT_PUSH_INTERVAL = 2;
     static constexpr int STORM_DEFAULT_DURATION = 10;
 
+    static constexpr int FLOOD_DEFAULT_ORIGIN = 1;
+    static constexpr int FLOOD_DEFAULT_WIDTH = 3;
+    static constexpr int FLOOD_DEFAULT_HEIGHT = 3;
+    static constexpr int FLOOD_DEFAULT_DURATION = 8;
+
     /**
      * @brief Instantiate the event matching @p name, if any exists yet.
      *

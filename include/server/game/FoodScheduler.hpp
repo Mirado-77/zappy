@@ -66,11 +66,16 @@ public:
 
 private:
     /**
-     * @brief Delay between two consumptions in milliseconds.
+     * @brief Delay before @p playerId next consumes food, in milliseconds.
      *
+     * A player standing on a flooded tile consumes food
+     * @c FOOD_FLOOD_MULTIPLIER times faster.
+     *
+     * @param playerId player whose tile state drives the interval
      * @return scheduler::Duration the consumption interval
      */
-    [[nodiscard]] scheduler::Duration consumptionInterval() const noexcept;
+    [[nodiscard]] scheduler::Duration consumptionInterval(
+        int playerId) const noexcept;
 
     /**
      * @brief Consume one food unit; reschedule or signal starvation.

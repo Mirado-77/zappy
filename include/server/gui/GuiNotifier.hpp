@@ -79,6 +79,7 @@ public:
     void onPlayerPickedUpResource(int id, game::ResourceType type) override;
     void onEggAdded(int id) override;
     void onEggRemoved(int id) override;
+    void onTileFloodChanged(game::Position pos, bool flooded) override;
 
 private:
     client::ClientRegistry &_clients;

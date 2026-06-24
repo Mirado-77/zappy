@@ -166,6 +166,14 @@ public:
      * @param type resource type
      */
     virtual void onPlayerPickedUpResource(int id, ResourceType type) = 0;
+
+    /**
+     * @brief A tile's flood state changed.
+     *
+     * @param pos the affected tile
+     * @param flooded true if now flooded, false if dried out
+     */
+    virtual void onTileFloodChanged(Position pos, bool flooded) = 0;
 };
 
 /**
@@ -192,6 +200,7 @@ public:
     void onPlayerEjected(int) override {}
     void onPlayerDroppedResource(int, ResourceType) override {}
     void onPlayerPickedUpResource(int, ResourceType) override {}
+    void onTileFloodChanged(Position, bool) override {}
 };
 
 } // namespace zappy::server::game

@@ -95,10 +95,25 @@ public:
      */
     void removeEgg(int id) noexcept;
 
+    /**
+     * @brief Mark the tile as flooded or dry (a runtime event effect).
+     *
+     * @param value true to flood, false to dry out
+     */
+    void setFlooded(bool value) noexcept;
+
+    /**
+     * @brief Whether the tile is currently flooded.
+     *
+     * @return bool true if flooded
+     */
+    [[nodiscard]] bool isFlooded() const noexcept;
+
 private:
     Inventory _resources{};
     std::vector<int> _playerIds;
     std::vector<int> _eggIds;
+    bool _flooded = false;
 };
 
 } // namespace zappy::server::game
