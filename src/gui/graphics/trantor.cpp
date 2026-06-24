@@ -6,10 +6,11 @@
 */
 
 #include "gui/trantor.hpp"
+#include "gui/utils.hpp"
 
 trantor::trantor()
 : _mod(TRANTOR_PATH), _state(YES),
-    _angle(0), _rotattion_axe({0, 0, 0})
+    _angle(NO_ANGLE), _rotation_axis(UP_DIRECTION)
 {
     this->_mod.load_anim();
     this->_mod.set_anim_index(YES);
@@ -51,5 +52,5 @@ void trantor::set_pos(Vector3 pos)
 void trantor::draw()
 {
     this->_mod.Update_anim();
-    this->_mod.move_model({0, 90, 0}, this->_angle, {0.5, 0.5, 0.5});
+    this->_mod.move_model(_rotation_axis, this->_angle, DEFAULT_TRANTORIAN_SCALE);
 };

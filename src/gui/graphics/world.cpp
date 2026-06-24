@@ -16,7 +16,6 @@ world::world(int x, int y)
 
 world::~world()
 {
-
 }
 
 void world::draw_world()
