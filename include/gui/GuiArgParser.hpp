@@ -24,17 +24,24 @@ namespace zappy::gui {
  */
 class GuiArgParser {
 public:
-    GuiArgParser() = default;
-
     /**
      * @brief Parse a command line into a validated configuration.
      *
      * @param argc argument count from @c main()
      * @param argv argument vector from @c main()
-     * @return std::optional<ipc::ServerInfo> the configuration, or std::nullopt when @c --help was asked
+     * @return ipc::ServerInfo the validated configuration
      * @throws SerializationError on any invalid input
      */
-    std::optional<ipc::ServerInfo> parse(int argc, const char *const argv[]) const;
+    static ipc::ServerInfo parse(int argc, const char *const argv[]);
+
+    /**
+     * @brief Whether @c --help appears in the argument vector.
+     *
+     * @param argc argument count from @c main()
+     * @param argv argument vector from @c main()
+     * @return bool true if help was requested
+     */
+    static bool wantsHelp(int argc, const char *const argv[]);
 
     /**
      * @brief The usage / help message.
@@ -59,7 +66,7 @@ private:
      * @param out builder to populate
      * @throws CliParseError on any invalid token
      */
-    void collect(const std::vector<std::string> &args, Builder &out) const;
+    static void collect(const std::vector<std::string> &args, Builder &out);
 
     /**
      * @brief Validate the builder and build the config.
@@ -68,7 +75,7 @@ private:
      * @return ServerInfo the validated configuration
      * @throws CliParseError if any required field is missing or invalid
      */
-    ipc::ServerInfo finalize(const Builder &b) const;
+    static ipc::ServerInfo finalize(const Builder &b);
 
 
     /**
@@ -80,8 +87,8 @@ private:
      * @return const std::string& reference to the consumed value
      * @throws CliParseError if no value follows the flag
      */
-    const std::string &takeValue(const std::vector<std::string> &args,
-        std::size_t &index, std::string_view flag) const;
+    static const std::string &takeValue(const std::vector<std::string> &args,
+        std::size_t &index, std::string_view flag);
 
     /**
      * @brief Take an integer flag value, advancing @p index.
@@ -92,8 +99,8 @@ private:
      * @return long the parsed integer
      * @throws CliParseError if the value is missing or not a valid integer
      */
-    long takeInteger(const std::vector<std::string> &args, std::size_t &index,
-    std::string_view flag) const;
+    static long takeInteger(const std::vector<std::string> &args,
+        std::size_t &index, std::string_view flag);
 
 };
 

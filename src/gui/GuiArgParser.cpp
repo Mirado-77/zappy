@@ -12,7 +12,6 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include <iostream>
 
 #include "gui/GuiArgParser.hpp"
 #include "gui/ipc/SerializationError.hpp"
@@ -22,7 +21,7 @@
 namespace zappy::gui {
 
 const std::string &GuiArgParser::takeValue(const std::vector<std::string> &args,
-    std::size_t &index, std::string_view flag) const
+    std::size_t &index, std::string_view flag)
 {
     if (index + 1 >= args.size())
         throw ipc::SerializationError("missing value for " + std::string(flag));
@@ -31,7 +30,7 @@ const std::string &GuiArgParser::takeValue(const std::vector<std::string> &args,
 
 /// @brief Parse a whole token as a base-10 integer; reject any extra char.
 long GuiArgParser::takeInteger(const std::vector<std::string> &args,
-    std::size_t &index, std::string_view flag) const
+    std::size_t &index, std::string_view flag)
 {
     const std::string &token = takeValue(args, index, flag);
     std::size_t consumed = 0;
@@ -48,7 +47,7 @@ long GuiArgParser::takeInteger(const std::vector<std::string> &args,
     return value;
 }
 
-void GuiArgParser::collect(const std::vector<std::string> &args, Builder &out) const
+void GuiArgParser::collect(const std::vector<std::string> &args, Builder &out)
 {
     for (std::size_t i = 1; i < args.size(); ++i) {
         const std::string &arg = args[i];
@@ -61,7 +60,7 @@ void GuiArgParser::collect(const std::vector<std::string> &args, Builder &out) c
     }
 }
 
-ipc::ServerInfo GuiArgParser::finalize(const Builder &b) const
+ipc::ServerInfo GuiArgParser::finalize(const Builder &b)
 {
     const long port = b.port.value_or(kDefaultPort);
     if (port <= 0 || port > std::numeric_limits<std::uint16_t>::max())
@@ -82,27 +81,24 @@ std::string GuiArgParser::usage()
     return gui_help;
 }
 
-std::optional<ipc::ServerInfo> GuiArgParser::parse(int argc, const char *const argv[]) const
+ipc::ServerInfo GuiArgParser::parse(int argc, const char *const argv[])
 {
-    std::optional<ipc::ServerInfo> result;
     std::vector<std::string> args;
-    bool helpRequested = false;
+    Builder builder;
 
     args.reserve(static_cast<std::size_t>(argc < 0 ? 0 : argc));
     for (int i = 0; i < argc; ++i)
         args.emplace_back(argv[i]);
-    for (const std::string &arg : args) {
-        if (arg == "--help")
-            helpRequested = true;
-    }
-    if (!helpRequested) {
-        Builder builder;
-        collect(args, builder);
-        result.emplace(finalize(builder));
-    } else {
-        std::cerr << usage();
-    }
-    return result;
+    collect(args, builder);
+    return finalize(builder);
 }
 
-} // namespace zappy::server::cli
+bool GuiArgParser::wantsHelp(int argc, const char *const argv[])
+{
+    for (int i = 1; i < argc; ++i)
+        if (std::string_view(argv[i]) == "--help")
+            return true;
+    return false;
+}
+
+} // namespace zappy::gui

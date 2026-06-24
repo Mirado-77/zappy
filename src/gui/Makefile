@@ -14,14 +14,14 @@ OBJ_DIR = $(BUILD_DIR)/obj
 DBG_DIR = $(BUILD_DIR)/debug
 SRC_EXTENSION = .cpp
 
-# POSIX_LIB_DIR = $(ROOT)/libs/posix
-# POSIX_LIB = $(POSIX_LIB_DIR)/libzappy_posix.a
-# 
-# NET_LIB_DIR = $(ROOT)/libs/net
-# NET_LIB = $(NET_LIB_DIR)/libzappy_net.a
-# 
-# PROTOCOL_LIB_DIR = $(ROOT)/libs/protocol
-# PROTOCOL_LIB = $(PROTOCOL_LIB_DIR)/libzappy_protocol.a
+POSIX_LIB_DIR = $(ROOT)/libs/posix
+POSIX_LIB = $(POSIX_LIB_DIR)/libzappy_posix.a
+
+NET_LIB_DIR = $(ROOT)/libs/net
+NET_LIB = $(NET_LIB_DIR)/libzappy_net.a
+
+PROTOCOL_LIB_DIR = $(ROOT)/libs/protocol
+PROTOCOL_LIB = $(PROTOCOL_LIB_DIR)/libzappy_protocol.a
 
 SRC = $(wildcard *$(SRC_EXTENSION)) \
 		$(wildcard **/*$(SRC_EXTENSION)) \
@@ -33,12 +33,14 @@ DEBUG_OBJ = $(SRC:%$(SRC_EXTENSION)=$(DBG_DIR)/%.debug.o)
 CXX = g++
 CXXFLAGS = -std=c++20 -Wall -Wextra
 CXXFLAGS += -iquote $(ROOT)/include/
-# CXXFLAGS += -I$(POSIX_LIB_DIR)/include
-# CXXFLAGS += -I$(NET_LIB_DIR)/include
-# CXXFLAGS += -I$(PROTOCOL_LIB_DIR)/include
-# 
-# LDFLAGS = -L$(NET_LIB_DIR) -lzappy_net -L$(POSIX_LIB_DIR) -lzappy_posix
-# LDFLAGS += -L$(PROTOCOL_LIB_DIR) -lzappy_protocol
+CXXFLAGS += -I$(POSIX_LIB_DIR)/include
+CXXFLAGS += -I$(NET_LIB_DIR)/include
+CXXFLAGS += -I$(PROTOCOL_LIB_DIR)/include
+
+LDFLAGS  = -L$(NET_LIB_DIR) -lzappy_net
+LDFLAGS += -L$(POSIX_LIB_DIR) -lzappy_posix
+LDFLAGS += -L$(PROTOCOL_LIB_DIR) -lzappy_protocol
+LDFLAGS += -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 
 DEBUG_CFLAGS = -g3 -fsanitize=address -DDEBUG
 DEBUG_LDFLAGS = -fsanitize=address

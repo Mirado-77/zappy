@@ -7,97 +7,40 @@
 
 #ifndef GUI_HPP_
     #define GUI_HPP_
+    #include <optional>
+
+    #include "gui/board_data/BoardData.hpp"
     #include "gui/ipc/ServerInfo.hpp"
-    #include <cstdbool>
-    #include "net/Listener.hpp"
-    #include "net/PollLoop.hpp"
-/*
-    #include "server/ai/AiDispatcher.hpp"
-    #include "server/gui/GuiDispatcher.hpp"
-    #include "server/gui/GuiNotifier.hpp"
-    #include "server/config/FeatureFlags.hpp"
-    #include "server/client/ClientRegistry.hpp"
-    #include "server/game/FoodScheduler.hpp"
-    #include "server/game/RefillScheduler.hpp"
-    #include "server/game/ResourceSpawner.hpp"
-    #include "server/game/World.hpp"
-    #include "server/handshake/HandshakeHandler.hpp"
-    #include "server/scheduler/Clock.hpp"
-    #include "server/scheduler/Scheduler.hpp"
-*/
+    #include "gui/net/ServerLink.hpp"
+    #include "gui/render/Renderer.hpp"
 
 namespace zappy::gui {
 
-/**
- * @brief Top-level orchestrator owning the listener, poll loop and client registry.
- */
 class Gui {
 public:
-    /**
-     * @brief Build the gui from a validated server info.
-     *
-     * @param config the parsed CLI configuration
-     */
     explicit Gui(const ipc::ServerInfo &server_info);
     ~Gui();
 
     Gui(const Gui &) = delete;
     Gui &operator=(const Gui &) = delete;
 
-    /**
-     * @brief Run the event loop until SIGINT.
-     */
     void run();
 
+    [[nodiscard]] const board_data::BoardData &board() const noexcept
+        { return _board; }
+
 private:
-    /**
-     * @brief Read lines from standard input and broadcast them to all GUI clients.
-     */
-    void pullServerInfo();
-
-    /**
-     * @brief pull the server info and start the window
-     */
-    void init();
-
-    /**
-     * @brief display the window
-     */
-    void display();
-
-    /**
-     * @brief pull the server info and then display
-     */
-    void update();
-
-    /**
-     * @brief conect to the server
-     */
     void connectServer();
-
-    /**
-     * @brief pull events from server and dispatch them
-     */
     void handleServerEvents();
 
-    /**
-     * @brief Broadcast a message to the server.
-     */
-    void Broadcast();
+    static constexpr int POLL_TIMEOUT_MS = 0;
 
     ipc::ServerInfo _server_info;
-    bool running;
-    net::PollLoop _poll;
-    net::Listener _listener;
-/*
-    game::World _world;
-    scheduler::SteadyClock _clock;
-    scheduler::Scheduler _scheduler{_clock};
-    int _frequency;
-    handshake::HandshakeHandler _handshake;
-*/
+    board_data::BoardData _board;
+    std::optional<net::ServerLink> _link;
+    std::optional<render::Renderer> _renderer;
 };
 
-} // namespace zappy::server
+} // namespace zappy::gui
 
 #endif /* GUI_HPP_ */

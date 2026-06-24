@@ -6,5 +6,3 @@
 */
 
 #include "gui/board_data/GraphicalEvent.hpp"
-
-zappy::gui::board_data::GraphicalEvent::GraphicalEvent() {}

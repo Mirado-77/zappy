@@ -6,5 +6,3 @@
 */
 
 #include "gui/board_data/TileData.hpp"
-
-zappy::gui::board_data::TileData::TileData() {}

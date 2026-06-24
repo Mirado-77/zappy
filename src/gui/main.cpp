@@ -24,12 +24,12 @@ int main(int argc, char **argv)
 {
     int exitCode = zappy::gui::SUCCESS;
 
+    if (zappy::gui::GuiArgParser::wantsHelp(argc, argv)) {
+        std::cout << zappy::gui::GuiArgParser::usage();
+        return zappy::gui::SUCCESS;
+    }
     try {
-        const auto server_cordinates = zappy::gui::GuiArgParser{}.parse(argc, argv);
-        if (server_cordinates) {
-            std::cerr << "got server_cordinates! : " << *server_cordinates << std::endl; // dpritnf
-            zappy::gui::Gui(*server_cordinates).run();
-        }
+        zappy::gui::Gui(zappy::gui::GuiArgParser::parse(argc, argv)).run();
     } catch (const zappy::gui::ipc::SerializationError &error) {
         std::cerr << "Error: " << error.what() << "\n"
                   << zappy::gui::GuiArgParser::usage();
