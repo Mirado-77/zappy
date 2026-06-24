@@ -15,7 +15,8 @@ on:
 
 env:
   MIRROR_URL: ${{ vars.MIRROR_URL }}
-  EXECUTABLES: "zappy_server zappy_gui zappy_ai"
+  # zappy_gui exclu : raylib absente du container Epitech
+  EXECUTABLES: "zappy_server zappy_ai"
 
 jobs:
   check-repo:
@@ -51,7 +52,7 @@ jobs:
       - name: Compile project with Make
         run: |
           echo "Build..."
-          make
+          make zappy_server zappy_ai
 
           for exe in ${{ env.EXECUTABLES }}; do
             if [ ! -f "$exe" ]; then
