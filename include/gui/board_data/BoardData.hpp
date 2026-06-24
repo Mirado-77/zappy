@@ -48,6 +48,8 @@ public:
     [[nodiscard]] int height() const noexcept { return _height; }
     [[nodiscard]] int time_unit() const noexcept { return _time_unit; }
     [[nodiscard]] TileData &get_tile_value(std::size_t x, std::size_t y);
+    [[nodiscard]] const std::vector<TileData> &tiles() const noexcept
+        { return _tiles; }
     [[nodiscard]] const std::unordered_map<int, PlayerData> &players()
         const noexcept { return _players; }
     [[nodiscard]] const std::unordered_map<int, EggData> &eggs()
@@ -98,6 +100,7 @@ private:
     void on_suc();
     void on_sbp();
     void on_ppf(const net::ServerEvent &);
+    void on_evt_biome_set(const net::ServerEvent &);
     bool fill_from_ppf(PlayerData &p, const std::string &text);
     void set_admin_status(std::string code);
 

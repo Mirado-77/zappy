@@ -88,6 +88,8 @@ void Renderer::draw(board_data::BoardData &board, ui::AdminPanel &admin,
     update_cursor();
     _camera.update_free_rmb(!admin.capturing_keyboard());
     handle_pick(board, admin, player);
+    if (IsKeyPressed(KEY_B) && !admin.capturing_keyboard())
+        _scene.set_show_biomes(!_scene.show_biomes());
     ::draw::Start_Draw();
     ClearBackground(RAYWHITE);
     _camera.Begin_mode_3d();

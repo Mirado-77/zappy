@@ -26,6 +26,8 @@ public:
     void draw();
     [[nodiscard]] std::optional<int> pick_player(Vector2 screen,
         const Camera &cam) const;
+    [[nodiscard]] bool show_biomes() const noexcept { return _show_biomes; }
+    void set_show_biomes(bool value) noexcept { _show_biomes = value; }
 
 private:
     struct Slot {
@@ -39,11 +41,13 @@ private:
     void ensure_world(const board_data::BoardData &board);
     void sync_player(int id, const board_data::PlayerData &player);
     void rotate_to(Slot &slot, int target);
+    void apply_biome_models(const board_data::BoardData &board);
 
     std::unique_ptr<::world> _world;
     std::unordered_map<int, Slot> _slots;
     int _width = 0;
     int _height = 0;
+    bool _show_biomes = true;
 };
 
 } // namespace zappy::gui::render

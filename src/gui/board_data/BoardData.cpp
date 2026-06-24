@@ -45,6 +45,7 @@ void BoardData::apply(const net::ServerEvent &ev)
         case K::SUC: on_suc(); break;
         case K::ADM_FLAG_LIST: on_adm_flag_list(ev); break;
         case K::PPF: on_ppf(ev); break;
+        case K::EVT_BIOME_SET: on_evt_biome_set(ev); break;
         default: break;
     }
 }
@@ -87,6 +88,8 @@ void BoardData::push_player_event(GraphicalEventKind kind, int player_id,
 void BoardData::on_msz(const net::ServerEvent &ev)
 {
     if (ev.ints.size() < 2)
+        return;
+    if (ev.ints[0] == _width && ev.ints[1] == _height)
         return;
     _width = ev.ints[0];
     _height = ev.ints[1];
@@ -348,6 +351,17 @@ void BoardData::on_ppf(const net::ServerEvent &ev)
         _ppf_pending = false;
         _profile_disabled = false;
     }
+}
+
+void BoardData::on_evt_biome_set(const net::ServerEvent &ev)
+{
+    if (ev.ints.size() < 2)
+        return;
+    const int x = ev.ints[0];
+    const int y = ev.ints[1];
+    if (x < 0 || y < 0 || x >= _width || y >= _height)
+        return;
+    _tiles[idx(x, y)].biome = biome_from_name(ev.text);
 }
 
 } // namespace zappy::gui::board_data

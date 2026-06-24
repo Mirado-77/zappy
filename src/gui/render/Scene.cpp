@@ -7,6 +7,9 @@
 
 #include "gui/render/Scene.hpp"
 
+#include <array>
+#include <cstddef>
+
 namespace zappy::gui::render {
 
 namespace {
@@ -15,6 +18,10 @@ constexpr float TILE_UNIT = 6.0f;
 constexpr float ROBOT_HALF = 2.5f;
 constexpr float ROBOT_LOW = -1.0f;
 constexpr float ROBOT_HIGH = 6.0f;
+
+constexpr std::array<int, board_data::BIOME_COUNT> BIOME_MODELS = {
+    0, 1, 2, 3, 4, 4
+};
 
 Vector3 world_pos(int x, int y)
 {
@@ -34,8 +41,20 @@ BoundingBox player_box(int x, int y)
 void Scene::sync(const board_data::BoardData &board)
 {
     ensure_world(board);
+    apply_biome_models(board);
     for (const auto &kv : board.players())
         sync_player(kv.first, kv.second);
+}
+
+void Scene::apply_biome_models(const board_data::BoardData &board)
+{
+    if (!_world)
+        return;
+    for (const auto &tile : board.tiles()) {
+        const int index = _show_biomes
+            ? BIOME_MODELS[static_cast<std::size_t>(tile.biome)] : 0;
+        _world->set_tile_model(tile.x, tile.y, index);
+    }
 }
 
 void Scene::ensure_world(const board_data::BoardData &board)

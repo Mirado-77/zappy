@@ -11,18 +11,21 @@
     #include <raymath.h>
     #include <memory>
     #include <vector>
-    #define TILE_PATH "src/gui/assets/farm_grass-tile.glb"
 
 class world {
     public:
         world(int x, int y);
         ~world();
         void draw_world();
+        void set_tile_model(int x, int y, int model_index);
     protected:
     private:
-        std::vector<std::unique_ptr<model>> init_model(float y, float x);
-        void model_animation(std::double_t time, float scale);
-        std::vector<std::vector<std::unique_ptr<model>>> _map;
+        void load_palette();
+        void draw_tile(int x, int y, double time, float scale);
+        std::vector<std::unique_ptr<model>> _palette;
+        std::vector<std::vector<int>> _index;
+        int _width;
+        int _height;
 
 };
 
