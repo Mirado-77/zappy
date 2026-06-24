@@ -73,6 +73,32 @@ Test(gui_command_parser, all_9_valid_commands_parse)
     cr_assert_eq(std::get<ParsedGuiCommand>(res_sst).arguments[0], 100);
 }
 
+Test(gui_command_parser, ppf_parses_with_and_without_hash)
+{
+    auto withHash = GuiCommandParser::parse("ppf #5");
+    auto noHash = GuiCommandParser::parse("ppf 5");
+
+    cr_assert(std::holds_alternative<ParsedGuiCommand>(withHash));
+    cr_assert(std::get<ParsedGuiCommand>(withHash).kind
+        == GuiCommandKind::PPF);
+    cr_assert_eq(std::get<ParsedGuiCommand>(withHash).arguments[0], 5);
+    cr_assert(std::holds_alternative<ParsedGuiCommand>(noHash));
+    cr_assert(std::get<ParsedGuiCommand>(noHash).kind == GuiCommandKind::PPF);
+    cr_assert_eq(std::get<ParsedGuiCommand>(noHash).arguments[0], 5);
+}
+
+Test(gui_command_parser, ppf_invalid_args_give_bad_parameter_error)
+{
+    std::vector<std::string_view> cases = {"ppf", "ppf #abc", "ppf 1 2"};
+
+    for (const auto &c : cases) {
+        auto res = GuiCommandParser::parse(c);
+        cr_assert(std::holds_alternative<GuiParseError>(res));
+        cr_assert(std::get<GuiParseError>(res)
+            == GuiParseError::BAD_PARAMETER);
+    }
+}
+
 Test(gui_command_parser, unknown_command_gives_unknown_command_error)
 {
     std::vector<std::string_view> cases = {"Bogus", "msZ", "", "   ", "\t", "\r", "Msz", "MSZ"};

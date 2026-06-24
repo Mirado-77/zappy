@@ -85,6 +85,28 @@ std::string zappy::server::gui::GuiLineBuilder::pin(int playerId) const
     return line;
 }
 
+/**
+ * @brief Build the "ppf #n N X Y O L q0..q6" aggregated profile line.
+ *
+ * @param playerId player ID
+ * @return std::string the formatted line
+ */
+std::string zappy::server::gui::GuiLineBuilder::ppf(int playerId) const
+{
+    const game::Player &player = _world.player(playerId);
+    std::string line = "ppf #" + std::to_string(playerId) + " "
+        + player.team() + " " + std::to_string(player.position().x()) + " "
+        + std::to_string(player.position().y()) + " "
+        + std::to_string(static_cast<int>(player.orientation())) + " "
+        + std::to_string(player.level());
+
+    for (std::size_t i = 0; i < game::RESOURCE_COUNT; ++i) {
+        line += " " + std::to_string(
+            player.resource(static_cast<game::ResourceType>(i)));
+    }
+    return line;
+}
+
 std::string zappy::server::gui::GuiLineBuilder::pnw(int playerId) const
 {
     const game::Player &player = _world.player(playerId);

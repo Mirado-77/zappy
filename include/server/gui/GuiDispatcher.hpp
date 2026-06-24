@@ -232,6 +232,18 @@ private:
         const std::vector<int> &args);
 
     /**
+     * @brief Handle the ppf command: aggregated player profile snapshot.
+     *
+     * Gated on the PROFILE feature flag; behaves as an unknown command
+     * ("suc") when the flag is off, "sbp" for an unknown player id.
+     *
+     * @param args command arguments: the player id
+     * @return std::vector<std::string> the ppf line, "suc" or "sbp"
+     */
+    [[nodiscard]] std::vector<std::string> handlePpf(
+        const std::vector<int> &args);
+
+    /**
      * @brief adm_flag_enable: turn a feature flag on by name.
      *
      * @param cmd parsed command; rawArgument holds the flag name

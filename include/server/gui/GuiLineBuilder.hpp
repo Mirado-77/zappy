@@ -141,6 +141,14 @@ public:
     [[nodiscard]] std::string pdi(int playerId) const;
 
     /**
+     * @brief Build the "ppf #n N X Y O L q0..q6" aggregated profile line.
+     *
+     * @param playerId player ID
+     * @return std::string the formatted line
+     */
+    [[nodiscard]] std::string ppf(int playerId) const;
+
+    /**
      * @brief Build the "enw #e #n X Y" line for a laid egg.
      *
      * @param eggId egg ID
