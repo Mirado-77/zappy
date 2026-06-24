@@ -34,6 +34,9 @@ void render::Scene::sync(const board_data::BoardData &board)
             sync_item(tile, std::make_pair(x, y));
         }
     }
+    for (const auto &egg : board.eggs()) {
+        sync_egg(egg.first, egg.second);
+    }
 }
 
 void render::Scene::ensure_world(const board_data::BoardData &board)
@@ -75,6 +78,7 @@ void render::Scene::sync_item(const board_data::TileData &tile, std::pair<std::s
     } else {
         item_ptr->sync(tile.res);
     }
+    item_ptr->set_pos( world_pos(coords.first, coords.second));
 }
 
 void render::Scene::rotate_to(Slot &slot, int target)
@@ -104,6 +108,18 @@ void render::Scene::sync_egg(int id, const board_data::EggData &egg)
     }
 }
 
+void render::Scene::sync_incant(int id, const board_data::GraphicalEvent &event)
+{
+    if (event.kind != board_data::GraphicalEventKind::INCANTATION_START)
+        return;
+    auto [it, inserted] = this->_incantation.try_emplace(id);
+    Incant &slot = it->second;
+    if (inserted) {
+        slot.incant = std::make_unique<::Incantation>();
+    }
+    slot.incant->set_pos(world_pos(event.x, event.y));
+}
+
 void render::Scene::draw()
 {
     if (_world)
@@ -114,6 +130,8 @@ void render::Scene::draw()
         eg.second.egg->draw();
     for (auto &kv : _items)
         kv.second->draw();
+    for (auto &ic : _incantation)
+        ic.second.incant->draw();
 }
 
 } // namespace zappy::gui

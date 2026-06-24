@@ -105,7 +105,7 @@ static float get_mineral_scale(const zappy::gui::board_data::Resources resources
 
 Item::Item(const zappy::gui::board_data::Resources resources, Vector3 pos)
     : _resources(resources), _pos(pos)
-{   
+{
     _mineral_color = get_mineral_color(resources);
 }
 
@@ -132,4 +132,9 @@ void Item::draw()
     model_to_display->set_pos(_pos);
     model_to_display->change_color(_mineral_color);
     model_to_display->Draw_model(get_mineral_scale(_resources));
+}
+
+void Item::set_pos(Vector3 pos)
+{
+    this->_pos = pos;
 }

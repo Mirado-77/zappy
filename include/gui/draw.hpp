@@ -10,6 +10,7 @@
     #include <iostream>
     #include <raylib.h>
     #include <raymath.h>
+    #include <rlgl.h>
 
 class draw {
     public:
@@ -20,6 +21,8 @@ class draw {
         static void Draw_rec(Vector2 pos, int width, int height, Color color);
         static void Draw_rec_line(Vector2 pos, int width, int height, Color color);
         static void Draw_grid(int slice, float spacing);
+        static void DrawTextureIn3D(Texture2D texture, Vector3 position, Vector3 normal, Vector3 up,
+                     float width, float height, Rectangle source, Color tint);
     protected:
     private:
 

@@ -16,6 +16,8 @@
     #include "gui/trantor.hpp"
     #include "gui/Egg.hpp"
     #include "gui/Item.hpp"
+    #include "gui/board_data/GraphicalEvent.hpp"
+    #include "gui/Incantation.hpp"
 
 namespace zappy::gui::render {
 
@@ -44,17 +46,25 @@ private:
         std::unique_ptr<::Egg> egg;
         bool dead = false;
     };
+
+    struct Incant {
+        std::unique_ptr<::Incantation> incant;
+        bool dead = false;
+    };
+
     Vector3 world_pos(int x, int y);
     void ensure_world(const board_data::BoardData &board);
     void sync_player(int id, const board_data::PlayerData &player);
     void sync_egg(int id, const board_data::EggData &egg);
     void sync_item(const board_data::TileData &tile, std::pair<std::size_t, std::size_t> coords);
     void rotate_to(Slot &slot, int target);
+    void sync_incant(int id, const board_data::GraphicalEvent &event);
 
     std::unique_ptr<::world> _world;
     std::unordered_map<int, Slot> _slots;
     std::unordered_map<int, EggSlot> _eggs;
     std::unordered_map<std::pair<std::size_t, std::size_t>, std::unique_ptr<::Item>, PairHash> _items;
+    std::unordered_map<int, Incant> _incantation;
     int _width = 0;
     int _height = 0;
 };
