@@ -60,6 +60,7 @@ class Item {
 public:
     Item(const zappy::gui::board_data::Resources resources, Vector3 pos);
     ~Item() = default;
+    void set_pos(Vector3 pos);
     void draw();
     void sync(const zappy::gui::board_data::Resources resources);
     static std::unique_ptr<model> _mod_food;
