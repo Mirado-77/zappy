@@ -12,6 +12,7 @@ model::model(std::string name)
     , _current_frame(0), _anim_index(0),
     _color(WHITE), _name(name), _pos({0.0f, 0.0f, 0.0f}),
     _base_pos({0.0f, 0.0f, 0.0f})
+
 {
     this->_model = LoadModel(name.c_str());
 }
@@ -76,4 +77,18 @@ Vector3 model::get_base_pos()
 void model::set_anim_index(int anime_index)
 {
     this->_anim_index = anime_index;
+}
+
+void model::load_texture()
+{
+    this->_texture = LoadTexture(_name.c_str());
+    this->_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture
+        = this->_texture;
+}
+
+void model::load_texture(std::string name)
+{
+    this->_texture = LoadTexture(name.c_str());
+    this->_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture
+        = this->_texture;
 }

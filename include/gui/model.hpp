@@ -19,6 +19,7 @@ class model{
         void Update_anim();
         void load_anim();
         void load_texture();
+        void load_texture(std::string name);
         void switch_index_anime();
         void Draw_model(float scale = 1.0f);
         void change_color(Color cl);
@@ -41,6 +42,7 @@ class model{
         std::string _name;
         Vector3 _pos;
         Vector3 _base_pos;
+        Texture2D _texture;
 };
 
 #endif /* !MODEL_HPP_ */
