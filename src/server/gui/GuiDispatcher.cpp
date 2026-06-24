@@ -5,6 +5,8 @@
 ** GuiDispatcher implementation
 */
 
+#include <optional>
+#include <sstream>
 #include <utility>
 
 #include "server/gui/GuiDispatcher.hpp"
@@ -612,25 +614,45 @@ std::vector<std::string> zappy::server::gui::GuiDispatcher::handleAdmFlagList(
  * @return std::unique_ptr<event::Event> the event, or nullptr if unknown
  */
 std::unique_ptr<zappy::server::event::Event>
-zappy::server::gui::GuiDispatcher::createEventByName(
-    std::string_view name) const
+zappy::server::gui::GuiDispatcher::makeEvent(std::string_view name,
+    std::optional<game::Position> center, std::optional<int> radius) const
 {
-    std::unique_ptr<event::Event> result;
+    const game::Position def(_world.width() / 2, _world.height() / 2);
 
     if (name == "storm")
-        result = std::make_unique<event::Storm>(
-            game::Position(_world.width() / 2, _world.height() / 2),
-            STORM_DEFAULT_RADIUS, game::Orientation::EAST,
+        return std::make_unique<event::Storm>(center.value_or(def),
+            radius.value_or(STORM_DEFAULT_RADIUS), game::Orientation::EAST,
             STORM_DEFAULT_PUSH_INTERVAL, STORM_DEFAULT_DURATION);
-    else if (name == "flood")
-        result = std::make_unique<event::Flood>(
-            game::Position(FLOOD_DEFAULT_ORIGIN, FLOOD_DEFAULT_ORIGIN),
-            FLOOD_DEFAULT_WIDTH, FLOOD_DEFAULT_HEIGHT, FLOOD_DEFAULT_DURATION);
-    else if (name == "meteor")
-        result = std::make_unique<event::Meteor>(
-            game::Position(_world.width() / 2, _world.height() / 2),
-            METEOR_DEFAULT_RADIUS, _onPlayerKilledByAdmin);
-    return result;
+    if (name == "meteor")
+        return std::make_unique<event::Meteor>(center.value_or(def),
+            radius.value_or(METEOR_DEFAULT_RADIUS), _onPlayerKilledByAdmin);
+    if (name == "flood")
+        return std::make_unique<event::Flood>(
+            center.value_or(game::Position(FLOOD_DEFAULT_ORIGIN,
+                FLOOD_DEFAULT_ORIGIN)),
+            radius.value_or(FLOOD_DEFAULT_WIDTH),
+            radius.value_or(FLOOD_DEFAULT_HEIGHT), FLOOD_DEFAULT_DURATION);
+    return nullptr;
+}
+
+std::unique_ptr<zappy::server::event::Event>
+zappy::server::gui::GuiDispatcher::createEventByName(
+    std::string_view raw) const
+{
+    std::istringstream iss{std::string(raw)};
+    std::string name;
+    int x = 0;
+    int y = 0;
+    int r = 0;
+    std::optional<game::Position> center;
+    std::optional<int> radius;
+
+    iss >> name;
+    if (static_cast<bool>(iss >> x >> y))
+        center = game::Position(x, y);
+    if (static_cast<bool>(iss >> r))
+        radius = r;
+    return makeEvent(name, center, radius);
 }
 
 /**

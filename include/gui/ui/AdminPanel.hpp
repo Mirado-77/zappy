@@ -24,7 +24,7 @@ public:
     void draw();
     [[nodiscard]] bool visible() const noexcept { return _visible; }
     [[nodiscard]] bool capturing_keyboard() const noexcept
-        { return _visible && _password_edit; }
+        { return _visible && (_password_edit || _radius_edit); }
     [[nodiscard]] bool blocks_point(Vector2 p) const;
 
 private:
@@ -34,6 +34,11 @@ private:
     void draw_login();
     void draw_flags();
     void draw_flag_row(const std::string &name, bool on, float y);
+    void draw_flag_toggle(const std::string &name, bool on, float y);
+    void draw_event_triggers(float y);
+    void arm(const char *name);
+    [[nodiscard]] int radius_value() const;
+    [[nodiscard]] bool events_on() const;
     void draw_status();
     void submit_login();
 
@@ -41,7 +46,9 @@ private:
     board_data::BoardData &_board;
     bool _visible = false;
     bool _password_edit = false;
+    bool _radius_edit = false;
     char _password[64] = {0};
+    char _radius_buf[4] = {0};
     unsigned _last_seq = 0;
     double _status_until = 0.0;
     std::string _status_text;

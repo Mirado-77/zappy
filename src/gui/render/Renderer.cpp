@@ -47,6 +47,36 @@ Renderer::Renderer()
     _camera.set_mode(CAMERA_FREE);
     SetTargetFPS(60);
     _window.Set_window_state(FLAG_WINDOW_RESIZABLE);
+    setup_shader();
+}
+
+Renderer::~Renderer()
+{
+    UnloadShader(_shader);
+}
+
+void Renderer::setup_shader()
+{
+    const float ambient[4] = {0.5f, 0.5f, 0.55f, 1.0f};
+    const Vector3 dir = {-0.6f, -1.0f, -0.4f};
+
+    _shader = LoadShader("src/gui/assets/lighting.vs",
+        "src/gui/assets/lighting.fs");
+    _shader.locs[SHADER_LOC_VECTOR_VIEW] =
+        GetShaderLocation(_shader, "viewPos");
+    SetShaderValue(_shader, GetShaderLocation(_shader, "ambient"),
+        ambient, SHADER_UNIFORM_VEC4);
+    SetShaderValue(_shader, GetShaderLocation(_shader, "lightDir"),
+        &dir, SHADER_UNIFORM_VEC3);
+    _scene.set_shader(_shader);
+}
+
+void Renderer::update_light()
+{
+    const Vector3 cam = _camera.cam.position;
+
+    SetShaderValue(_shader, _shader.locs[SHADER_LOC_VECTOR_VIEW],
+        &cam, SHADER_UNIFORM_VEC3);
 }
 
 bool Renderer::should_close()
@@ -62,17 +92,20 @@ void Renderer::overlay(const board_data::BoardData &board)
     std::string line2 = "players " + std::to_string(board.players().size())
         + "  teams " + std::to_string(board.teams().size());
 
-    ::draw::Draw_text(line1, {10, 10}, 20, DARKGRAY);
-    ::draw::Draw_text(line2, {10, 35}, 20, DARKGRAY);
+    ::draw::Draw_text(line1, {10, 10}, 24, DARKGRAY);
+    ::draw::Draw_text(line2, {10, 40}, 24, DARKGRAY);
     if (board.game_ended())
-        ::draw::Draw_text("WINNER: " + board.winner(), {10, 60}, 20, MAROON);
+        ::draw::Draw_text("WINNER: " + board.winner(), {10, 70}, 24, MAROON);
     if (_scene.active_meteors() > 0)
         ::draw::Draw_text("METEOR x"
-            + std::to_string(_scene.active_meteors()), {10, 110}, 20, RED);
+            + std::to_string(_scene.active_meteors()), {10, 130}, 24, RED);
     const int floods = count_flooded(board);
     if (floods > 0)
         ::draw::Draw_text("FLOOD tiles=" + std::to_string(floods),
-            {10, 135}, 20, BLUE);
+            {10, 160}, 24, BLUE);
+    if (board.event_armed())
+        ::draw::Draw_text("PLACE " + board.armed_event()
+            + " - click a tile (Esc to cancel)", {10, 190}, 24, PURPLE);
 }
 
 void Renderer::storm_overlay(const board_data::BoardData &board)
@@ -84,7 +117,7 @@ void Renderer::storm_overlay(const board_data::BoardData &board)
         + "," + std::to_string(s.center_y) + ")  R=" + std::to_string(s.radius)
         + "  dir=" + dir_char(s.direction);
 
-    ::draw::Draw_text(line, {10, 85}, 20, ORANGE);
+    ::draw::Draw_text(line, {10, 100}, 24, ORANGE);
 }
 
 void Renderer::update_cursor()
@@ -97,14 +130,32 @@ void Renderer::update_cursor()
         EnableCursor();
 }
 
+void Renderer::trigger_event(board_data::BoardData &board, Vector2 mouse)
+{
+    const auto tile = _scene.pick_tile(mouse, _camera.cam);
+
+    if (!tile)
+        return;
+    board.queue_admin_command("adm_event_trigger " + board.armed_event()
+        + " " + std::to_string(tile->first) + " " + std::to_string(tile->second)
+        + " " + std::to_string(board.armed_radius()) + "\n");
+    board.disarm_event();
+}
+
 void Renderer::handle_pick(board_data::BoardData &board, ui::AdminPanel &admin,
     ui::PlayerPanel &player)
 {
     const Vector2 mouse = GetMousePosition();
 
-    if (!board.is_admin() || IsMouseButtonDown(MOUSE_BUTTON_RIGHT)
+    if (IsKeyPressed(KEY_ESCAPE))
+        board.disarm_event();
+    if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)
         || !IsMouseButtonPressed(MOUSE_BUTTON_LEFT)
         || admin.blocks_point(mouse) || player.blocks_point(mouse))
+        return;
+    if (board.event_armed())
+        return trigger_event(board, mouse);
+    if (!board.is_admin())
         return;
     const auto id = _scene.pick_player(mouse, _camera.cam);
     if (id)
@@ -123,16 +174,20 @@ void Renderer::draw_crosshair()
 void Renderer::draw(board_data::BoardData &board, ui::AdminPanel &admin,
     ui::PlayerPanel &player)
 {
+    const bool typing = admin.capturing_keyboard()
+        || player.capturing_keyboard();
+
     _scene.sync(board);
     update_cursor();
-    _camera.update_free_rmb(!admin.capturing_keyboard());
+    _camera.update_free_rmb(!typing);
     handle_pick(board, admin, player);
-    if (IsKeyPressed(KEY_B) && !admin.capturing_keyboard())
+    if (IsKeyPressed(KEY_B) && !typing)
         _scene.set_show_biomes(!_scene.show_biomes());
-    if (IsKeyPressed(KEY_T) && !admin.capturing_keyboard())
+    if (IsKeyPressed(KEY_T) && !typing)
         _scene.set_show_storm(!_scene.show_storm());
-    if (IsKeyPressed(KEY_F) && !admin.capturing_keyboard())
+    if (IsKeyPressed(KEY_F) && !typing)
         _scene.set_show_flood(!_scene.show_flood());
+    update_light();
     ::draw::Start_Draw();
     ClearBackground(RAYWHITE);
     _camera.Begin_mode_3d();

@@ -14,6 +14,7 @@
     #include <memory>
     #include <optional>
     #include <unordered_map>
+    #include <utility>
     #include <vector>
 
     #include "gui/board_data/BoardData.hpp"
@@ -26,9 +27,12 @@ class Scene {
 public:
     void sync(board_data::BoardData &board);
     void draw(const board_data::BoardData &board);
+    void set_shader(Shader shader);
     [[nodiscard]] std::size_t active_meteors() const noexcept
         { return _meteors.size(); }
     [[nodiscard]] std::optional<int> pick_player(Vector2 screen,
+        const Camera &cam) const;
+    [[nodiscard]] std::optional<std::pair<int, int>> pick_tile(Vector2 screen,
         const Camera &cam) const;
     [[nodiscard]] bool show_biomes() const noexcept { return _show_biomes; }
     void set_show_biomes(bool value) noexcept { _show_biomes = value; }
@@ -57,15 +61,17 @@ private:
     void sync_player(int id, const board_data::PlayerData &player);
     void rotate_to(Slot &slot, int target);
     void apply_biome_models(const board_data::BoardData &board);
+    [[nodiscard]] int tile_model_index(const board_data::TileData &tile) const;
     void draw_storm(const board_data::StormZone &storm);
     void draw_storm_arrow(Vector3 center, board_data::Orientation dir);
     void draw_meteor(const MeteorView &view);
     void draw_meteors();
-    void draw_flood_overlays(const board_data::BoardData &board);
 
     std::unique_ptr<::world> _world;
     std::unordered_map<int, Slot> _slots;
     std::vector<MeteorView> _meteors;
+    Shader _shader{};
+    bool _has_shader = false;
     int _width = 0;
     int _height = 0;
     bool _show_biomes = true;

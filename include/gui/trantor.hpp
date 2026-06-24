@@ -37,6 +37,7 @@ class trantor {
         void eject_player();
         void death();
         void set_pos(Vector3 pos);
+        void set_shader(Shader shader);
         void draw();
     protected:
     private:

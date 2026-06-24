@@ -82,6 +82,8 @@ public:
     [[nodiscard]] unsigned admin_status_seq() const noexcept
         { return _admin_status_seq; }
     void mark_admin_pending() noexcept { _admin_pending = true; }
+    void queue_admin_command(std::string cmd)
+        { _outbox.push_back(std::move(cmd)); }
     [[nodiscard]] std::vector<std::string> take_outbox();
     [[nodiscard]] int selected_player_id() const noexcept
         { return _selected_player_id; }
@@ -92,6 +94,14 @@ public:
     [[nodiscard]] const std::optional<StormZone> &storm() const noexcept
         { return _storm; }
     [[nodiscard]] std::vector<MeteorImpact> take_pending_meteors();
+    void arm_event(std::string name, int radius)
+        { _armed_event = std::move(name); _armed_radius = radius;
+          _event_armed = true; }
+    void disarm_event() noexcept { _event_armed = false; }
+    [[nodiscard]] bool event_armed() const noexcept { return _event_armed; }
+    [[nodiscard]] const std::string &armed_event() const noexcept
+        { return _armed_event; }
+    [[nodiscard]] int armed_radius() const noexcept { return _armed_radius; }
 
 private:
     void on_msz(const net::ServerEvent &);
@@ -153,6 +163,9 @@ private:
     bool _profile_disabled = false;
     std::optional<StormZone> _storm;
     std::vector<MeteorImpact> _pending_meteors;
+    bool _event_armed = false;
+    std::string _armed_event;
+    int _armed_radius = 0;
 };
 
 } // namespace zappy::gui::board_data

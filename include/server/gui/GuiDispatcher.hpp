@@ -11,6 +11,7 @@
     #include <array>
     #include <functional>
     #include <memory>
+    #include <optional>
     #include <string>
     #include <string_view>
     #include <vector>
@@ -115,16 +116,28 @@ private:
     static constexpr int METEOR_DEFAULT_RADIUS = 1;
 
     /**
-     * @brief Instantiate the event matching @p name, if any exists yet.
+     * @brief Parse "<name> [X Y [R]]" and instantiate the matching event.
      *
-     * Currently recognises "storm" (default parameters); ZAP-50/51 extend it
-     * to build flood and meteor events. Unknown names yield nullptr.
+     * Position and radius are optional; when absent the per-event defaults
+     * are used. Unknown names yield nullptr.
      *
-     * @param name requested event name
+     * @param raw the raw argument string (name plus optional X Y R)
      * @return std::unique_ptr<event::Event> the event, or nullptr if unknown
      */
     [[nodiscard]] std::unique_ptr<event::Event> createEventByName(
-        std::string_view name) const;
+        std::string_view raw) const;
+
+    /**
+     * @brief Build the named event with optional centre and radius overrides.
+     *
+     * @param name requested event name
+     * @param center optional zone centre (per-event default when empty)
+     * @param radius optional zone radius (per-event default when empty)
+     * @return std::unique_ptr<event::Event> the event, or nullptr if unknown
+     */
+    [[nodiscard]] std::unique_ptr<event::Event> makeEvent(
+        std::string_view name, std::optional<game::Position> center,
+        std::optional<int> radius) const;
 
     /**
      * @brief Whether @p kind is an admin-scoped (adm_*) command.

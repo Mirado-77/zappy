@@ -51,6 +51,12 @@ void world::set_tile_model(int x, int y, int model_index)
     this->_index[y][x] = model_index;
 }
 
+void world::set_shader(Shader shader)
+{
+    for (auto &tile : this->_palette)
+        tile->set_shader(shader);
+}
+
 void world::draw_tile(int x, int y, double time, float scale)
 {
     const float phase = static_cast<float>(x + y) * 0.4f;

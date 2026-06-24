@@ -18,6 +18,7 @@ class world {
         ~world();
         void draw_world();
         void set_tile_model(int x, int y, int model_index);
+        void set_shader(Shader shader);
     protected:
     private:
         void load_palette();

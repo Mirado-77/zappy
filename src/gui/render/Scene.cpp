@@ -25,6 +25,8 @@ constexpr std::array<int, board_data::BIOME_COUNT> BIOME_MODELS = {
     0, 1, 2, 3, 4, 4
 };
 
+constexpr int OCEAN_MODEL = 5;
+
 Vector3 world_pos(int x, int y)
 {
     return {static_cast<float>(x) * TILE_UNIT, 0.0f,
@@ -60,15 +62,31 @@ void Scene::sync(board_data::BoardData &board)
         sync_player(kv.first, kv.second);
 }
 
+int Scene::tile_model_index(const board_data::TileData &tile) const
+{
+    if (_show_flood && tile.flooded)
+        return OCEAN_MODEL;
+    if (_show_biomes)
+        return BIOME_MODELS[static_cast<std::size_t>(tile.biome)];
+    return 0;
+}
+
 void Scene::apply_biome_models(const board_data::BoardData &board)
 {
     if (!_world)
         return;
-    for (const auto &tile : board.tiles()) {
-        const int index = _show_biomes
-            ? BIOME_MODELS[static_cast<std::size_t>(tile.biome)] : 0;
-        _world->set_tile_model(tile.x, tile.y, index);
-    }
+    for (const auto &tile : board.tiles())
+        _world->set_tile_model(tile.x, tile.y, tile_model_index(tile));
+}
+
+void Scene::set_shader(Shader shader)
+{
+    _shader = shader;
+    _has_shader = true;
+    if (_world)
+        _world->set_shader(shader);
+    for (auto &kv : _slots)
+        kv.second.robot->set_shader(shader);
 }
 
 void Scene::ensure_world(const board_data::BoardData &board)
@@ -80,6 +98,8 @@ void Scene::ensure_world(const board_data::BoardData &board)
     if (_world && w == _width && h == _height)
         return;
     _world = std::make_unique<::world>(w, h);
+    if (_has_shader)
+        _world->set_shader(_shader);
     _width = w;
     _height = h;
 }
@@ -91,6 +111,8 @@ void Scene::sync_player(int id, const board_data::PlayerData &player)
     if (inserted) {
         slot.robot = std::make_unique<::trantor>();
         slot.orientation = static_cast<int>(player.orient);
+        if (_has_shader)
+            slot.robot->set_shader(_shader);
     }
     slot.robot->set_pos(world_pos(player.x, player.y));
     slot.x = player.x;
@@ -165,27 +187,10 @@ void Scene::draw_meteors()
     });
 }
 
-void Scene::draw_flood_overlays(const board_data::BoardData &board)
-{
-    const double t = GetTime();
-
-    for (const auto &tile : board.tiles()) {
-        if (!tile.flooded)
-            continue;
-        const Vector3 p = world_pos(tile.x, tile.y);
-        const float wob = sinf(static_cast<float>(t * 2.0)
-            + static_cast<float>(tile.x + tile.y) * 0.5f) * 0.05f;
-        DrawCube({p.x, 0.45f + wob, p.z}, TILE_UNIT, 0.2f, TILE_UNIT,
-            {30, 120, 220, 180});
-    }
-}
-
 void Scene::draw(const board_data::BoardData &board)
 {
     if (_world)
         _world->draw_world();
-    if (_show_flood)
-        draw_flood_overlays(board);
     for (auto &kv : _slots)
         kv.second.robot->draw();
     if (_show_storm && board.storm().has_value())
@@ -212,6 +217,25 @@ std::optional<int> Scene::pick_player(Vector2 screen, const Camera &cam) const
     if (found < 0)
         return std::nullopt;
     return found;
+}
+
+std::optional<std::pair<int, int>> Scene::pick_tile(Vector2 screen,
+    const Camera &cam) const
+{
+    const Ray ray = GetScreenToWorldRay(screen, cam);
+
+    if (ray.direction.y == 0.0f)
+        return std::nullopt;
+    const float t = -ray.position.y / ray.direction.y;
+    if (t < 0.0f)
+        return std::nullopt;
+    const float wx = ray.position.x + ray.direction.x * t;
+    const float wz = ray.position.z + ray.direction.z * t;
+    const int tx = static_cast<int>(std::lround(wx / TILE_UNIT));
+    const int ty = static_cast<int>(std::lround(wz / TILE_UNIT));
+    if (tx < 0 || ty < 0 || tx >= _width || ty >= _height)
+        return std::nullopt;
+    return std::make_pair(tx, ty);
 }
 
 } // namespace zappy::gui::render
