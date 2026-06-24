@@ -41,12 +41,16 @@ void Gui::handleServerEvents()
 {
     while (auto ev = _link->next_message())
         _board.apply(*ev);
+    for (auto &cmd : _board.take_outbox())
+        _link->send(std::move(cmd));
 }
 
 void Gui::run()
 {
     connectServer();
     _renderer.emplace();
+    _admin.emplace(*_link, _board);
+    _player.emplace(_board);
     std::signal(SIGINT, on_sigint);
     while (g_stop == 0 && !_renderer->should_close()) {
         try {
@@ -56,7 +60,7 @@ void Gui::run()
             break;
         }
         handleServerEvents();
-        _renderer->draw(_board);
+        _renderer->draw(_board, *_admin, *_player);
     }
 }
 

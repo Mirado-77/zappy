@@ -62,6 +62,12 @@ void model::change_color(Color cl)
     this->_color = cl;
 }
 
+void model::set_shader(Shader shader)
+{
+    for (int i = 0; i < this->_model.materialCount; ++i)
+        this->_model.materials[i].shader = shader;
+}
+
 void model::load_anim()
 {
     this->_anim.reset(LoadModelAnimations(_name.c_str(), &this->_animeCount));

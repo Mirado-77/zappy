@@ -24,6 +24,7 @@ class model{
         void switch_index_anime();
         void Draw_model(float scale = 1.0f);
         void change_color(Color cl);
+        void set_shader(Shader shader);
         Color get_color();
         void move_model(Vector3 rotationAxis, float rotationAngle, Vector3 scale);
         void set_pos(Vector3 pos);

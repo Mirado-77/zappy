@@ -178,3 +178,15 @@ void zappy::server::gui::GuiNotifier::onEggRemoved(int id)
         }
     }
 }
+
+void zappy::server::gui::GuiNotifier::onTileFloodChanged(
+    game::Position pos, bool flooded)
+{
+    broadcast(_lineBuilder.evtFloodTile(pos.x(), pos.y(), flooded));
+}
+
+void zappy::server::gui::GuiNotifier::onTileBiomeChanged(
+    game::Position pos, game::Biome biome)
+{
+    broadcast(_lineBuilder.evtBiomeSet(pos.x(), pos.y(), biome));
+}

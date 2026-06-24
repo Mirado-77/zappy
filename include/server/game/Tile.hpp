@@ -10,6 +10,7 @@
 
     #include <vector>
 
+    #include "server/game/Biome.hpp"
     #include "server/game/Constants.hpp"
 
 namespace zappy::server::game {
@@ -95,10 +96,40 @@ public:
      */
     void removeEgg(int id) noexcept;
 
+    /**
+     * @brief Mark the tile as flooded or dry (a runtime event effect).
+     *
+     * @param value true to flood, false to dry out
+     */
+    void setFlooded(bool value) noexcept;
+
+    /**
+     * @brief Whether the tile is currently flooded.
+     *
+     * @return bool true if flooded
+     */
+    [[nodiscard]] bool isFlooded() const noexcept;
+
+    /**
+     * @brief Set the tile's terrain biome.
+     *
+     * @param biome the biome to assign
+     */
+    void setBiome(Biome biome) noexcept;
+
+    /**
+     * @brief The tile's terrain biome.
+     *
+     * @return Biome the current biome (PLAIN by default)
+     */
+    [[nodiscard]] Biome biome() const noexcept;
+
 private:
     Inventory _resources{};
     std::vector<int> _playerIds;
     std::vector<int> _eggIds;
+    bool _flooded = false;
+    Biome _biome = Biome::PLAIN;
 };
 
 } // namespace zappy::server::game

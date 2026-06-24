@@ -137,16 +137,28 @@ Test(gui_admin_commands, flag_enable_disable_list_roundtrip)
 {
     AdminCommandsFixture fx;
 
-    fx.disp.dispatch(fx.adminFd, "adm_flag_enable biomes");
+    fx.disp.dispatch(fx.adminFd, "adm_flag_enable events");
     cr_assert(fx.repliesAre({"ok"}));
-    cr_assert(fx.flags.isEnabled(FeatureFlag::BIOMES));
+    cr_assert(fx.flags.isEnabled(FeatureFlag::EVENTS));
     fx.replies.clear();
     fx.disp.dispatch(fx.adminFd, "adm_flag_list");
-    cr_assert(fx.repliesContain("adm_flag_list biomes on"));
+    cr_assert(fx.repliesContain("adm_flag_list events on"));
+    fx.replies.clear();
+    fx.disp.dispatch(fx.adminFd, "adm_flag_disable events");
+    cr_assert(fx.repliesAre({"ok"}));
+    cr_assert(!fx.flags.isEnabled(FeatureFlag::EVENTS));
+}
+
+Test(gui_admin_commands, biomes_flag_is_boot_only_and_rejected)
+{
+    AdminCommandsFixture fx;
+
+    fx.disp.dispatch(fx.adminFd, "adm_flag_enable biomes");
+    cr_assert(fx.repliesAre({"ko"}));
+    cr_assert(!fx.flags.isEnabled(FeatureFlag::BIOMES));
     fx.replies.clear();
     fx.disp.dispatch(fx.adminFd, "adm_flag_disable biomes");
-    cr_assert(fx.repliesAre({"ok"}));
-    cr_assert(!fx.flags.isEnabled(FeatureFlag::BIOMES));
+    cr_assert(fx.repliesAre({"ko"}));
 }
 
 Test(gui_admin_commands, flag_enable_unknown_returns_ko)

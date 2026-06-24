@@ -85,6 +85,28 @@ std::string zappy::server::gui::GuiLineBuilder::pin(int playerId) const
     return line;
 }
 
+/**
+ * @brief Build the "ppf #n N X Y O L q0..q6" aggregated profile line.
+ *
+ * @param playerId player ID
+ * @return std::string the formatted line
+ */
+std::string zappy::server::gui::GuiLineBuilder::ppf(int playerId) const
+{
+    const game::Player &player = _world.player(playerId);
+    std::string line = "ppf #" + std::to_string(playerId) + " "
+        + player.team() + " " + std::to_string(player.position().x()) + " "
+        + std::to_string(player.position().y()) + " "
+        + std::to_string(static_cast<int>(player.orientation())) + " "
+        + std::to_string(player.level());
+
+    for (std::size_t i = 0; i < game::RESOURCE_COUNT; ++i) {
+        line += " " + std::to_string(
+            player.resource(static_cast<game::ResourceType>(i)));
+    }
+    return line;
+}
+
 std::string zappy::server::gui::GuiLineBuilder::pnw(int playerId) const
 {
     const game::Player &player = _world.player(playerId);
@@ -216,4 +238,34 @@ std::string zappy::server::gui::GuiLineBuilder::smg(
     const std::string &message) const
 {
     return "smg " + message;
+}
+
+/**
+ * @brief Build the "evt_flood_tile X Y on|off" custom flood line.
+ *
+ * @param x tile horizontal coordinate
+ * @param y tile vertical coordinate
+ * @param flooded true for "on", false for "off"
+ * @return std::string the formatted line
+ */
+std::string zappy::server::gui::GuiLineBuilder::evtFloodTile(
+    int x, int y, bool flooded) const
+{
+    return "evt_flood_tile " + std::to_string(x) + " " + std::to_string(y)
+        + (flooded ? " on" : " off");
+}
+
+/**
+ * @brief Build the "evt_biome_set X Y <name>" custom biome line.
+ *
+ * @param x tile horizontal coordinate
+ * @param y tile vertical coordinate
+ * @param biome the tile's biome
+ * @return std::string the formatted line
+ */
+std::string zappy::server::gui::GuiLineBuilder::evtBiomeSet(
+    int x, int y, game::Biome biome) const
+{
+    return "evt_biome_set " + std::to_string(x) + " " + std::to_string(y)
+        + " " + std::string(game::biomeInfoFor(biome).name);
 }

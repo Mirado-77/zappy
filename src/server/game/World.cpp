@@ -536,6 +536,31 @@ void zappy::server::game::World::addTileResource(
 }
 
 /**
+ * @brief Set a tile's runtime flood state and notify observers.
+ *
+ * @param pos tile position
+ * @param value true to flood, false to dry out
+ */
+void zappy::server::game::World::setTileFlooded(Position pos, bool value)
+{
+    tileAt(pos).setFlooded(value);
+    notifyTileChanged(pos);
+    notifyTileFloodChanged(pos, value);
+}
+
+/**
+ * @brief Set a tile's terrain biome and notify observers.
+ *
+ * @param pos tile position
+ * @param biome the biome to assign
+ */
+void zappy::server::game::World::setTileBiome(Position pos, Biome biome)
+{
+    tileAt(pos).setBiome(biome);
+    notifyTileBiomeChanged(pos, biome);
+}
+
+/**
  * @brief Register an observer for subsequent mutations.
  *
  * @param observer observer to add
@@ -567,6 +592,32 @@ void zappy::server::game::World::notifyTileChanged(Position pos)
 {
     for (auto &observer : _observers)
         observer.get().onTileChanged(pos);
+}
+
+/**
+ * @brief Notify observers a tile's flood state changed.
+ *
+ * @param pos the affected tile
+ * @param flooded true if now flooded, false if dried out
+ */
+void zappy::server::game::World::notifyTileFloodChanged(
+    Position pos, bool flooded)
+{
+    for (auto &observer : _observers)
+        observer.get().onTileFloodChanged(pos, flooded);
+}
+
+/**
+ * @brief Notify observers a tile's biome changed.
+ *
+ * @param pos the affected tile
+ * @param biome the new biome
+ */
+void zappy::server::game::World::notifyTileBiomeChanged(
+    Position pos, Biome biome)
+{
+    for (auto &observer : _observers)
+        observer.get().onTileBiomeChanged(pos, biome);
 }
 
 /**

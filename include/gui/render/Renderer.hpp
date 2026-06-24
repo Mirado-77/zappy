@@ -11,6 +11,8 @@
     #include "gui/board_data/BoardData.hpp"
     #include "gui/camera.hpp"
     #include "gui/render/Scene.hpp"
+    #include "gui/ui/AdminPanel.hpp"
+    #include "gui/ui/PlayerPanel.hpp"
     #include "gui/window.hpp"
 
 namespace zappy::gui::render {
@@ -18,19 +20,30 @@ namespace zappy::gui::render {
 class Renderer {
 public:
     Renderer();
+    ~Renderer();
 
     Renderer(const Renderer &) = delete;
     Renderer &operator=(const Renderer &) = delete;
 
     [[nodiscard]] bool should_close();
-    void draw(const board_data::BoardData &board);
+    void draw(board_data::BoardData &board, ui::AdminPanel &admin,
+        ui::PlayerPanel &player);
 
 private:
+    void setup_shader();
+    void update_light();
     void overlay(const board_data::BoardData &board);
+    void storm_overlay(const board_data::BoardData &board);
+    void update_cursor();
+    void handle_pick(board_data::BoardData &board, ui::AdminPanel &admin,
+        ui::PlayerPanel &player);
+    void trigger_event(board_data::BoardData &board, Vector2 mouse);
+    void draw_crosshair();
 
     window _window;
     camera _camera;
     Scene _scene;
+    Shader _shader{};
 };
 
 } // namespace zappy::gui::render
