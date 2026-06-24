@@ -80,6 +80,7 @@ public:
     void onEggAdded(int id) override;
     void onEggRemoved(int id) override;
     void onTileFloodChanged(game::Position pos, bool flooded) override;
+    void onTileBiomeChanged(game::Position pos, game::Biome biome) override;
 
 private:
     client::ClientRegistry &_clients;

@@ -232,3 +232,18 @@ std::string zappy::server::gui::GuiLineBuilder::evtFloodTile(
     return "evt_flood_tile " + std::to_string(x) + " " + std::to_string(y)
         + (flooded ? " on" : " off");
 }
+
+/**
+ * @brief Build the "evt_biome_set X Y <name>" custom biome line.
+ *
+ * @param x tile horizontal coordinate
+ * @param y tile vertical coordinate
+ * @param biome the tile's biome
+ * @return std::string the formatted line
+ */
+std::string zappy::server::gui::GuiLineBuilder::evtBiomeSet(
+    int x, int y, game::Biome biome) const
+{
+    return "evt_biome_set " + std::to_string(x) + " " + std::to_string(y)
+        + " " + std::string(game::biomeInfoFor(biome).name);
+}

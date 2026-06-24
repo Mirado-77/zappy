@@ -387,6 +387,14 @@ public:
     void setTileFlooded(Position pos, bool value);
 
     /**
+     * @brief Set a tile's terrain biome and notify observers.
+     *
+     * @param pos tile position
+     * @param biome the biome to assign
+     */
+    void setTileBiome(Position pos, Biome biome);
+
+    /**
      * @brief Register an observer for subsequent mutations.
      *
      * @param observer observer to add
@@ -452,6 +460,7 @@ private:
     void notifyPlayerDroppedResource(int playerId, ResourceType type);
     void notifyPlayerPickedUpResource(int playerId, ResourceType type);
     void notifyTileFloodChanged(Position pos, bool flooded);
+    void notifyTileBiomeChanged(Position pos, Biome biome);
     void notifyPlayerStateChanged(int id);
     void notifyPlayerRemoved(int id);
     void notifyEggAdded(int id);

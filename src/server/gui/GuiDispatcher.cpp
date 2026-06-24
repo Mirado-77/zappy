@@ -357,6 +357,7 @@ void zappy::server::gui::GuiDispatcher::sendInitialSync(
     sendSyncPlayers(fd);
     sendSyncEggs(fd);
     sendSyncTime(fd, frequency);
+    sendSyncBiomes(fd);
 }
 
 /**
@@ -394,6 +395,34 @@ void zappy::server::gui::GuiDispatcher::sendSyncTile(
     int fd, int x, int y)
 {
     _onResponse(fd, _lineBuilder.bct(x, y));
+}
+
+/**
+ * @brief Send one evt_biome_set line per non-PLAIN tile to the client.
+ *
+ * @param fd client file descriptor
+ */
+void zappy::server::gui::GuiDispatcher::sendSyncBiomes(int fd)
+{
+    for (int y = 0; y < _world.height(); ++y)
+        for (int x = 0; x < _world.width(); ++x)
+            sendSyncBiomeTile(fd, x, y);
+}
+
+/**
+ * @brief Send the biome line for a single tile, skipping PLAIN tiles.
+ *
+ * @param fd client file descriptor
+ * @param x tile horizontal coordinate
+ * @param y tile vertical coordinate
+ */
+void zappy::server::gui::GuiDispatcher::sendSyncBiomeTile(
+    int fd, int x, int y)
+{
+    const game::Biome biome = _world.tileAt(game::Position(x, y)).biome();
+
+    if (biome != game::Biome::PLAIN)
+        _onResponse(fd, _lineBuilder.evtBiomeSet(x, y, biome));
 }
 
 /**
@@ -495,8 +524,11 @@ void zappy::server::gui::GuiDispatcher::sendSyncTime(
 /**
  * @brief Handle adm_flag_enable: enable a feature flag by name.
  *
+ * BIOMES is boot-only terrain generation: toggling it at runtime cannot
+ * regenerate the map, so the request is rejected with "ko".
+ *
  * @param cmd parsed command; rawArgument holds the flag name
- * @return std::vector<std::string> "ok" or "ko" if the name is unknown
+ * @return std::vector<std::string> "ok", or "ko" if unknown or boot-only
  */
 std::vector<std::string> zappy::server::gui::GuiDispatcher::handleAdmFlagEnable(
     const protocol::gui::ParsedGuiCommand &cmd)
@@ -504,7 +536,7 @@ std::vector<std::string> zappy::server::gui::GuiDispatcher::handleAdmFlagEnable(
     const auto flag = config::FeatureFlags::fromName(cmd.rawArgument);
     std::vector<std::string> response = {"ko"};
 
-    if (flag) {
+    if (flag && *flag != config::FeatureFlag::BIOMES) {
         _featureFlags.enable(*flag);
         response = {"ok"};
     }
@@ -514,8 +546,11 @@ std::vector<std::string> zappy::server::gui::GuiDispatcher::handleAdmFlagEnable(
 /**
  * @brief Handle adm_flag_disable: disable a feature flag by name.
  *
+ * BIOMES is boot-only terrain generation: toggling it at runtime cannot
+ * undo the generated map, so the request is rejected with "ko".
+ *
  * @param cmd parsed command; rawArgument holds the flag name
- * @return std::vector<std::string> "ok" or "ko" if the name is unknown
+ * @return std::vector<std::string> "ok", or "ko" if unknown or boot-only
  */
 std::vector<std::string>
 zappy::server::gui::GuiDispatcher::handleAdmFlagDisable(
@@ -524,7 +559,7 @@ zappy::server::gui::GuiDispatcher::handleAdmFlagDisable(
     const auto flag = config::FeatureFlags::fromName(cmd.rawArgument);
     std::vector<std::string> response = {"ko"};
 
-    if (flag) {
+    if (flag && *flag != config::FeatureFlag::BIOMES) {
         _featureFlags.disable(*flag);
         if (*flag == config::FeatureFlag::EVENTS)
             _eventBus.cancelAll();

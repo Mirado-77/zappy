@@ -184,3 +184,9 @@ void zappy::server::gui::GuiNotifier::onTileFloodChanged(
 {
     broadcast(_lineBuilder.evtFloodTile(pos.x(), pos.y(), flooded));
 }
+
+void zappy::server::gui::GuiNotifier::onTileBiomeChanged(
+    game::Position pos, game::Biome biome)
+{
+    broadcast(_lineBuilder.evtBiomeSet(pos.x(), pos.y(), biome));
+}

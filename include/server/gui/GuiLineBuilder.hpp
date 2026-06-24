@@ -190,6 +190,17 @@ public:
      */
     [[nodiscard]] std::string evtFloodTile(int x, int y, bool flooded) const;
 
+    /**
+     * @brief Build the "evt_biome_set X Y <name>" custom biome line.
+     *
+     * @param x tile horizontal coordinate
+     * @param y tile vertical coordinate
+     * @param biome the tile's biome
+     * @return std::string the formatted line
+     */
+    [[nodiscard]] std::string evtBiomeSet(int x, int y,
+        game::Biome biome) const;
+
 private:
     const game::World &_world;
 };

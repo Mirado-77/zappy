@@ -459,10 +459,10 @@ std::string zappy::server::ai::AiDispatcher::executeCommand(int playerId,
 }
 
 /**
- * @brief Step one tile forward unless the target tile is flooded.
+ * @brief Step one tile forward unless the target tile blocks movement.
  *
  * @param playerId player to move
- * @return std::string "ok" on success, "ko" if the target tile is flooded
+ * @return std::string "ok" on success, "ko" if the target tile is impassable
  */
 std::string zappy::server::ai::AiDispatcher::executeForward(
     int playerId, const std::string &)
@@ -473,9 +473,11 @@ std::string zappy::server::ai::AiDispatcher::executeForward(
     const game::Position newPos =
         (player.position() + delta).normalized(_world.width(),
             _world.height());
+    const game::Tile &targetTile = _world.tileAt(newPos);
     std::string response = "ok";
 
-    if (_world.tileAt(newPos).isFlooded())
+    if (targetTile.isFlooded()
+        || !game::biomeInfoFor(targetTile.biome()).traversable)
         response = "ko";
     else
         _world.movePlayer(playerId, newPos);

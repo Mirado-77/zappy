@@ -209,6 +209,8 @@ private:
     void sendSyncPlayerInventory(int fd, const game::Player &player);
     void sendSyncEggs(int fd);
     void sendSyncTime(int fd, int frequency);
+    void sendSyncBiomes(int fd);
+    void sendSyncBiomeTile(int fd, int x, int y);
 
     [[nodiscard]] std::vector<std::string> handleMsz(
         const std::vector<int> &args);
