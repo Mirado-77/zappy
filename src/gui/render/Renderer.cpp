@@ -49,7 +49,7 @@ void Renderer::overlay(const board_data::BoardData &board)
         ::draw::Draw_text("WINNER: " + board.winner(), {10, 60}, 20, MAROON);
 }
 
-void Renderer::draw(const board_data::BoardData &board)
+void Renderer::draw(const board_data::BoardData &board, ui::AdminPanel &admin)
 {
     _scene.sync(board);
     _camera.update_camera();
@@ -59,6 +59,7 @@ void Renderer::draw(const board_data::BoardData &board)
     _scene.draw();
     _camera.End_mode_3d();
     overlay(board);
+    admin.draw();
     ::draw::End_Draw();
 }
 

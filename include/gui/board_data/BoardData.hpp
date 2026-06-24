@@ -58,6 +58,15 @@ public:
         const noexcept { return _events; }
     [[nodiscard]] bool game_ended() const noexcept { return _ended; }
     [[nodiscard]] const std::string &winner() const noexcept { return _winner; }
+    [[nodiscard]] bool is_admin() const noexcept { return _is_admin; }
+    [[nodiscard]] const std::unordered_map<std::string, bool> &feature_flags()
+        const noexcept { return _feature_flags; }
+    [[nodiscard]] const std::string &admin_status() const noexcept
+        { return _admin_status; }
+    [[nodiscard]] unsigned admin_status_seq() const noexcept
+        { return _admin_status_seq; }
+    void mark_admin_pending() noexcept { _admin_pending = true; }
+    [[nodiscard]] std::vector<std::string> take_outbox();
 
 private:
     void on_msz(const net::ServerEvent &);
@@ -77,6 +86,10 @@ private:
     void on_pie(const net::ServerEvent &);
     void on_pex(const net::ServerEvent &);
     void on_pfk(const net::ServerEvent &);
+    void on_admin_ok(const net::ServerEvent &);
+    void on_admin_fail(std::string code);
+    void on_adm_flag_list(const net::ServerEvent &);
+    void set_admin_status(std::string code);
 
     void resize_tiles();
     void push_player_event(GraphicalEventKind kind, int player_id,
@@ -95,6 +108,12 @@ private:
     std::vector<GraphicalEvent> _events;
     bool _ended = false;
     std::string _winner;
+    bool _is_admin = false;
+    bool _admin_pending = false;
+    std::unordered_map<std::string, bool> _feature_flags;
+    std::vector<std::string> _outbox;
+    std::string _admin_status;
+    unsigned _admin_status_seq = 0;
 };
 
 } // namespace zappy::gui::board_data

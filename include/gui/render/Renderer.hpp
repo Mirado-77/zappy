@@ -11,6 +11,7 @@
     #include "gui/board_data/BoardData.hpp"
     #include "gui/camera.hpp"
     #include "gui/render/Scene.hpp"
+    #include "gui/ui/AdminPanel.hpp"
     #include "gui/window.hpp"
 
 namespace zappy::gui::render {
@@ -23,7 +24,7 @@ public:
     Renderer &operator=(const Renderer &) = delete;
 
     [[nodiscard]] bool should_close();
-    void draw(const board_data::BoardData &board);
+    void draw(const board_data::BoardData &board, ui::AdminPanel &admin);
 
 private:
     void overlay(const board_data::BoardData &board);

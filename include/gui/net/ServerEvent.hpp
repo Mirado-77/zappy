@@ -17,6 +17,7 @@ namespace zappy::gui::net {
 enum class EventKind {
     MSZ, SGT, SST, TNA, BCT, PNW, PPO, PLV, PIN, PEX, PBC, PIC, PIE, PFK, PDR,
     PGT, PDI, ENW, EBO, EDI, SEG, SMG, SUC, SBP,
+    OK, KO, ADM_FLAG_LIST,
     UNKNOWN
 };
 

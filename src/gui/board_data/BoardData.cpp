@@ -38,8 +38,18 @@ void BoardData::apply(const net::ServerEvent &ev)
         case K::PIE: on_pie(ev); break;
         case K::PEX: on_pex(ev); break;
         case K::PFK: on_pfk(ev); break;
+        case K::OK: on_admin_ok(ev); break;
+        case K::KO: on_admin_fail("ko"); break;
+        case K::SBP: on_admin_fail("sbp"); break;
+        case K::SUC: on_admin_fail("suc"); break;
+        case K::ADM_FLAG_LIST: on_adm_flag_list(ev); break;
         default: break;
     }
+}
+
+std::vector<std::string> BoardData::take_outbox()
+{
+    return std::exchange(_outbox, {});
 }
 
 TileData &BoardData::get_tile_value(std::size_t x, std::size_t y)
@@ -235,6 +245,38 @@ void BoardData::on_pfk(const net::ServerEvent &ev)
     if (ev.ints.empty())
         return;
     push_player_event(GraphicalEventKind::FORK, ev.ints[0], {});
+}
+
+void BoardData::set_admin_status(std::string code)
+{
+    _admin_status = std::move(code);
+    ++_admin_status_seq;
+}
+
+void BoardData::on_admin_ok(const net::ServerEvent &)
+{
+    set_admin_status("ok");
+    if (!_admin_pending)
+        return;
+    _admin_pending = false;
+    _is_admin = true;
+    _outbox.emplace_back("adm_flag_list\n");
+}
+
+void BoardData::on_admin_fail(std::string code)
+{
+    set_admin_status(std::move(code));
+    _admin_pending = false;
+}
+
+void BoardData::on_adm_flag_list(const net::ServerEvent &ev)
+{
+    const std::size_t sep = ev.text.find(' ');
+    if (sep == std::string::npos)
+        return;
+    const std::string name = ev.text.substr(0, sep);
+    const std::string state = ev.text.substr(sep + 1);
+    _feature_flags[name] = (state == "on");
 }
 
 } // namespace zappy::gui::board_data

@@ -1,0 +1,124 @@
+/*
+** EPITECH PROJECT, 2026
+** Zappy
+** File description:
+** raygui admin authentication and feature-flag panel implementation
+*/
+
+#include "gui/ui/AdminPanel.hpp"
+
+#include <raylib.h>
+
+#include "raygui.h"
+
+namespace zappy::gui::ui {
+
+namespace {
+
+constexpr float PANEL_X = 20.0f;
+constexpr float PANEL_Y = 80.0f;
+constexpr float PANEL_W = 280.0f;
+constexpr float PANEL_H = 280.0f;
+constexpr double STATUS_DURATION = 2.0;
+
+} // namespace
+
+AdminPanel::AdminPanel(net::ServerLink &link, board_data::BoardData &board)
+    : _link(link), _board(board)
+{
+}
+
+void AdminPanel::handle_toggle()
+{
+    if (!IsKeyPressed(KEY_F2))
+        return;
+    _visible = !_visible;
+    if (_visible)
+        EnableCursor();
+    else
+        DisableCursor();
+}
+
+void AdminPanel::sync_status()
+{
+    const unsigned seq = _board.admin_status_seq();
+
+    if (seq == _last_seq)
+        return;
+    _last_seq = seq;
+    _status_text = _board.admin_status();
+    _status_until = GetTime() + STATUS_DURATION;
+}
+
+void AdminPanel::draw()
+{
+    handle_toggle();
+    sync_status();
+    if (!_visible)
+        return;
+    draw_window();
+    if (_board.is_admin())
+        draw_flags();
+    else
+        draw_login();
+    draw_status();
+}
+
+void AdminPanel::draw_window()
+{
+    if (GuiWindowBox({PANEL_X, PANEL_Y, PANEL_W, PANEL_H}, "Admin")) {
+        _visible = false;
+        DisableCursor();
+    }
+}
+
+void AdminPanel::submit_login()
+{
+    _board.mark_admin_pending();
+    _link.send(std::string("admin ") + _password + "\n");
+    _password_edit = false;
+}
+
+void AdminPanel::draw_login()
+{
+    const Rectangle box{PANEL_X + 15, PANEL_Y + 50, PANEL_W - 30, 28};
+    const Rectangle btn{PANEL_X + 15, PANEL_Y + 90, PANEL_W - 30, 30};
+
+    GuiLabel({PANEL_X + 15, PANEL_Y + 32, PANEL_W - 30, 16}, "Password:");
+    if (GuiTextBox(box, _password, sizeof(_password), _password_edit))
+        _password_edit = !_password_edit;
+    if (GuiButton(btn, "Login"))
+        submit_login();
+}
+
+void AdminPanel::draw_flag_row(const std::string &name, bool on, float y)
+{
+    GuiLabel({PANEL_X + 20, y, 130, 18}, name.c_str());
+    DrawText(on ? "on" : "off", static_cast<int>(PANEL_X + 160),
+        static_cast<int>(y), 18, on ? GREEN : GRAY);
+}
+
+void AdminPanel::draw_flags()
+{
+    float y = PANEL_Y + 36;
+
+    GuiLabel({PANEL_X + 15, PANEL_Y + 30, PANEL_W - 30, 18}, "Feature flags:");
+    y += 24;
+    for (const auto &[name, on] : _board.feature_flags()) {
+        draw_flag_row(name, on, y);
+        y += 22;
+    }
+    if (GuiButton({PANEL_X + 15, PANEL_Y + PANEL_H - 40, PANEL_W - 30, 28},
+        "Refresh"))
+        _link.send("adm_flag_list\n");
+}
+
+void AdminPanel::draw_status()
+{
+    if (_status_text.empty() || GetTime() > _status_until)
+        return;
+    DrawText(_status_text.c_str(), static_cast<int>(PANEL_X + 15),
+        static_cast<int>(PANEL_Y + PANEL_H - 68), 20, MAROON);
+}
+
+} // namespace zappy::gui::ui
