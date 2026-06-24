@@ -53,6 +53,8 @@ inline constexpr std::array<std::string_view, RESOURCE_COUNT> RESOURCE_NAMES = {
 
 constexpr int FOOD_CONSUMPTION_INTERVAL_TIME_UNITS = 126;
 
+constexpr int FOOD_FLOOD_MULTIPLIER = 3;
+
 constexpr int INITIAL_FOOD = 10;
 
 using Inventory = std::array<int, RESOURCE_COUNT>;

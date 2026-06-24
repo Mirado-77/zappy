@@ -180,6 +180,16 @@ public:
      */
     [[nodiscard]] std::string smg(const std::string &message) const;
 
+    /**
+     * @brief Build the "evt_flood_tile X Y on|off" custom flood line.
+     *
+     * @param x tile horizontal coordinate
+     * @param y tile vertical coordinate
+     * @param flooded true for "on", false for "off"
+     * @return std::string the formatted line
+     */
+    [[nodiscard]] std::string evtFloodTile(int x, int y, bool flooded) const;
+
 private:
     const game::World &_world;
 };

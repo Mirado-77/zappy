@@ -217,3 +217,18 @@ std::string zappy::server::gui::GuiLineBuilder::smg(
 {
     return "smg " + message;
 }
+
+/**
+ * @brief Build the "evt_flood_tile X Y on|off" custom flood line.
+ *
+ * @param x tile horizontal coordinate
+ * @param y tile vertical coordinate
+ * @param flooded true for "on", false for "off"
+ * @return std::string the formatted line
+ */
+std::string zappy::server::gui::GuiLineBuilder::evtFloodTile(
+    int x, int y, bool flooded) const
+{
+    return "evt_flood_tile " + std::to_string(x) + " " + std::to_string(y)
+        + (flooded ? " on" : " off");
+}

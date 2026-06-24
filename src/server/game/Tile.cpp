@@ -125,3 +125,23 @@ void zappy::server::game::Tile::removeEgg(int id) noexcept
 {
     std::erase(_eggIds, id);
 }
+
+/**
+ * @brief Mark the tile as flooded or dry.
+ *
+ * @param value true to flood, false to dry out
+ */
+void zappy::server::game::Tile::setFlooded(bool value) noexcept
+{
+    _flooded = value;
+}
+
+/**
+ * @brief Whether the tile is currently flooded.
+ *
+ * @return bool true if flooded
+ */
+bool zappy::server::game::Tile::isFlooded() const noexcept
+{
+    return _flooded;
+}
