@@ -43,7 +43,7 @@ class trantor {
         model _mod;
         TRANTOR_STATE _state;
         int _angle;
-        Vector3 _rotattion_axe;
+        Vector3 _rotation_axis;
 };
 
 

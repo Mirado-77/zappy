@@ -7,14 +7,15 @@
 
 #include "gui/model.hpp"
 
-model::model(std::string name)
+model::model(std::string name, Vector3 pos)
     : _anim(nullptr) ,_animeCount(0)
     , _current_frame(0), _anim_index(0),
-    _color(WHITE), _name(name), _pos({0.0f, 0.0f, 0.0f}),
-    _base_pos({0.0f, 0.0f, 0.0f})
+    _color(WHITE), _name(name), _pos(pos),
+    _base_pos(pos)
 
 {
-    this->_model = LoadModel(name.c_str());
+    if (name != "")
+        this->_model = LoadModel(name.c_str());
 }
 
 model::~model()

@@ -14,7 +14,7 @@
 
 class model{
     public:
-        model(std::string name);
+        model(std::string name = "", Vector3 pos = {0.0f, 0.0f, 0.0f});
         ~model();
         void Update_anim();
         void load_anim();
