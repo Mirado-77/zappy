@@ -8,11 +8,51 @@
 #include "server/Server.hpp"
 #include <iostream>
 #include <optional>
+#include <string>
 #include <utility>
+#include <cstring>
 #include <fcntl.h>
 #include <unistd.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 
 #include "server/game/EggSpawner.hpp"
+
+namespace {
+
+/**
+ * @brief Resolve the machine's primary outbound IPv4 address.
+ *
+ * Opens a UDP socket and "connects" it to a public address: no packet is
+ * sent, but the kernel picks the source interface, which getsockname() then
+ * reveals. Falls back to the loopback address when offline or on any error.
+ *
+ * @return std::string the local IPv4 in dotted form, or "127.0.0.1"
+ */
+std::string resolveLocalIp()
+{
+    const int sock = ::socket(AF_INET, SOCK_DGRAM, 0);
+    std::string ip = "127.0.0.1";
+    sockaddr_in probe = {};
+    sockaddr_in local = {};
+    socklen_t len = sizeof(local);
+    char buf[INET_ADDRSTRLEN] = {};
+
+    if (sock < 0)
+        return ip;
+    probe.sin_family = AF_INET;
+    probe.sin_port = htons(53);
+    ::inet_pton(AF_INET, "8.8.8.8", &probe.sin_addr);
+    if (::connect(sock, reinterpret_cast<sockaddr *>(&probe), sizeof(probe)) == 0
+        && ::getsockname(sock, reinterpret_cast<sockaddr *>(&local), &len) == 0
+        && ::inet_ntop(AF_INET, &local.sin_addr, buf, sizeof(buf)) != nullptr)
+        ip = buf;
+    ::close(sock);
+    return ip;
+}
+
+} // namespace
 
 /**
  * @brief Initialise all members from the validated configuration.
@@ -26,6 +66,7 @@
  */
 zappy::server::Server::Server(const cli::ServerConfig &config)
     : _config(config),
+      _featureFlags(),
       _listener(_config.port()),
       _poll(),
       _world(_config.width(), _config.height(),
@@ -39,18 +80,29 @@ zappy::server::Server::Server(const cli::ServerConfig &config)
           [this](int playerId) { onPlayerStarved(playerId); }),
       _aiDispatcher(_world, _scheduler, _frequency,
           [this](int id, std::string r) { onAiResponse(id, std::move(r)); }),
+      _guiNotifier(_clients, _world, [this](int fd) { retunePollMask(fd); }),
+      _eventBus(_world, _guiNotifier, _scheduler, _featureFlags),
       _guiDispatcher(_world,
+          gui::GuiAdminDeps{_clients, _featureFlags, _config.adminPassword(),
+              [this](int playerId) { onPlayerKilledByAdmin(playerId); },
+              _eventBus},
           [this](int fd, std::string r) { onGuiResponse(fd, std::move(r)); },
           [this] { return _frequency; },
           [this](int freq) { updateFrequency(freq); }),
-      _guiNotifier(_clients, _world, [this](int fd) { retunePollMask(fd); }),
       _handshake(_config, _world, _foodScheduler)
 {
+    for (const auto flag : _config.initialEnabledFlags())
+        _featureFlags.enable(flag);
+    std::cout << "Feature flags: "
+              << (_config.initialEnabledFlags().empty()
+                  ? "all disabled (strict mode)" : "some enabled via CLI")
+              << "\n";
     _resourceSpawner.spawnInitial(_world);
     game::EggSpawner eggSpawner;
     eggSpawner.spawnInitial(_world);
     _refillScheduler.start();
     _world.addObserver(_guiNotifier);
+    _eventBus.start();
 }
 
 /**
@@ -58,8 +110,8 @@ zappy::server::Server::Server(const cli::ServerConfig &config)
  */
 void zappy::server::Server::run()
 {
-    std::cout << "zappy_server listening on port "
-              << _listener.port() << "\n";
+    std::cout << "zappy_server listening on "
+              << resolveLocalIp() << ":" << _listener.port() << "\n";
     _poll.register_fd(_listener.fd(), POLLIN, [this](short) {
         acceptPendingClients();
     });
@@ -198,6 +250,23 @@ void zappy::server::Server::onPlayerStarved(int playerId)
     client.markForDrop();
     if (_world.hasPlayer(playerId))
         _world.killPlayer(playerId);
+    retunePollMask(*fd);
+}
+
+/**
+ * @brief Disconnect the AI client of a player killed by an admin command.
+ *
+ * @param playerId id of the player killed by the GUI admin
+ */
+void zappy::server::Server::onPlayerKilledByAdmin(int playerId)
+{
+    const std::optional<int> fd = _clients.findFdByPlayerId(playerId);
+    if (!fd)
+        return;
+    _aiDispatcher.stopPlayer(playerId);
+    client::Client &client = _clients.get(*fd);
+    client.buffer().queue_message("dead");
+    client.markForDrop();
     retunePollMask(*fd);
 }
 

@@ -71,6 +71,13 @@ public:
     void promote(ClientState newState);
 
     /**
+     * @brief Promote a GUI client to GUI_ADMIN; idempotent if already admin.
+     *
+     * @throws ClientStateError if current state is not GUI or GUI_ADMIN
+     */
+    void promoteToAdmin();
+
+    /**
      * @brief Access the AiData payload.
      *
      * @throws ClientStateError if state() != AI

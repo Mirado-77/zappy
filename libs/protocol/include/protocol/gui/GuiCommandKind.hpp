@@ -24,10 +24,20 @@ enum class GuiCommandKind {
     PLV,
     PIN,
     SGT,
-    SST
+    SST,
+    ADMIN,
+    ADM_FLAG_ENABLE,
+    ADM_FLAG_DISABLE,
+    ADM_FLAG_LIST,
+    ADM_EVENT_TRIGGER,
+    ADM_TILE_SET,
+    ADM_TILE_ADD,
+    ADM_PLAYER_KILL,
+    ADM_PLAYER_TP,
+    ADM_PLAYER_LEVEL
 };
 
-constexpr std::size_t GUI_COMMAND_KIND_COUNT = 9;
+constexpr std::size_t GUI_COMMAND_KIND_COUNT = 19;
 
 } // namespace zappy::protocol::gui
 

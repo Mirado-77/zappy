@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <string>
 #include <system_error>
 
 #include "protocol/gui/GuiCommandInfo.hpp"
@@ -49,21 +50,23 @@ std::vector<std::string_view> zappy::protocol::gui::GuiCommandParser::tokenize(
 }
 
 /**
- * @brief Parse tokens into integers, checking for non-negativity.
+ * @brief Parse the first @p count tokens into non-negative integers.
  *
  * @param tokens individual tokens
+ * @param count number of leading tokens to convert
  * @param args target vector to populate
- * @return bool true if all tokens parsed successfully as non-negative
+ * @return bool true if every converted token was a non-negative integer
  */
 bool zappy::protocol::gui::GuiCommandParser::convertArgs(
-    const std::vector<std::string_view> &tokens,
+    const std::vector<std::string_view> &tokens, std::size_t count,
     std::vector<int> &args) noexcept
 {
     bool ok = true;
-    for (const auto &token : tokens) {
+    for (std::size_t i = 0; i < count && i < tokens.size(); ++i) {
         int val = 0;
-        const std::string_view num = (!token.empty() && token.front() == '#')
-            ? token.substr(1) : token;
+        const std::string_view tok = tokens[i];
+        const std::string_view num = (!tok.empty() && tok.front() == '#')
+            ? tok.substr(1) : tok;
         const auto [ptr, ec] = std::from_chars(
             num.data(), num.data() + num.size(), val);
         if (ec != std::errc{} || ptr != num.data() + num.size() || val < 0)
@@ -75,25 +78,74 @@ bool zappy::protocol::gui::GuiCommandParser::convertArgs(
 }
 
 /**
- * @brief Construct the ParsedGuiCommand.
+ * @brief Trimmed remainder of @p rest after the first @p count tokens.
  *
+ * @param rest the trimmed argument block
+ * @param tokens the tokens of @p rest
+ * @param count number of leading tokens consumed as integers
+ * @return std::string_view the raw remainder, empty if none
+ */
+std::string_view zappy::protocol::gui::GuiCommandParser::rawAfter(
+    std::string_view rest, const std::vector<std::string_view> &tokens,
+    std::size_t count) noexcept
+{
+    std::string_view result;
+
+    if (count < tokens.size()) {
+        const std::size_t off = static_cast<std::size_t>(
+            tokens[count].data() - rest.data());
+        result = trim(rest.substr(off));
+    }
+    return result;
+}
+
+/**
+ * @brief Build a command from its leading integers and optional raw tail.
+ *
+ * @param info matched command metadata
  * @param kind the command kind
- * @param tokens the argument tokens
+ * @param rest the trimmed argument block
+ * @param tokens the tokens of @p rest
  * @return std::variant<ParsedGuiCommand, GuiParseError>
  */
 std::variant<zappy::protocol::gui::ParsedGuiCommand,
     zappy::protocol::gui::GuiParseError>
-zappy::protocol::gui::GuiCommandParser::buildCommand(
-    GuiCommandKind kind, const std::vector<std::string_view> &tokens)
+zappy::protocol::gui::GuiCommandParser::buildMixed(
+    const GuiCommandInfo &info, GuiCommandKind kind, std::string_view rest,
+    const std::vector<std::string_view> &tokens)
 {
-    std::vector<int> args;
     std::variant<ParsedGuiCommand, GuiParseError> result =
         GuiParseError::BAD_PARAMETER;
+    const std::size_t need = static_cast<std::size_t>(info.intArgCount);
+    const bool countOk = info.acceptsRawArgument
+        ? tokens.size() >= need : tokens.size() == need;
+    std::vector<int> args;
+    std::string_view raw;
 
-    args.reserve(tokens.size());
-    if (convertArgs(tokens, args))
-        result = ParsedGuiCommand{kind, std::move(args)};
+    if (countOk && convertArgs(tokens, need, args)) {
+        raw = rawAfter(rest, tokens, need);
+        if (!info.acceptsRawArgument)
+            result = ParsedGuiCommand{kind, std::move(args), std::string{}};
+        else if (!raw.empty())
+            result = ParsedGuiCommand{kind, std::move(args), std::string(raw)};
+    }
     return result;
+}
+
+/**
+ * @brief Resolve a matched command into a parse result.
+ *
+ * @param info matched command metadata
+ * @param kind the command kind
+ * @param rest the trimmed argument block
+ * @return std::variant<ParsedGuiCommand, GuiParseError>
+ */
+std::variant<zappy::protocol::gui::ParsedGuiCommand,
+    zappy::protocol::gui::GuiParseError>
+zappy::protocol::gui::GuiCommandParser::resolve(
+    const GuiCommandInfo &info, GuiCommandKind kind, std::string_view rest)
+{
+    return buildMixed(info, kind, rest, tokenize(rest));
 }
 
 /**
@@ -118,12 +170,8 @@ zappy::protocol::gui::GuiCommandParser::parse(std::string_view line)
             return info.name == verb;
         });
 
-    if (!trimmed.empty() && it != GUI_COMMAND_INFOS.end()) {
-        const std::vector<std::string_view> tokens = tokenize(rest);
-        const std::size_t idx = it - GUI_COMMAND_INFOS.begin();
-        result = tokens.size() == static_cast<std::size_t>(it->argCount)
-            ? buildCommand(static_cast<GuiCommandKind>(idx), tokens)
-            : GuiParseError::BAD_PARAMETER;
-    }
+    if (!trimmed.empty() && it != GUI_COMMAND_INFOS.end())
+        result = resolve(*it,
+            static_cast<GuiCommandKind>(it - GUI_COMMAND_INFOS.begin()), rest);
     return result;
 }

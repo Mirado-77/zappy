@@ -9,17 +9,21 @@ graphiques, et arbitre la partie.
 ./zappy_server -p port -x width -y height -n name1 name2 ... -c clientsNb -f freq
 ```
 
+Tous les arguments sont **facultatifs** : une valeur par défaut est utilisée
+quand un flag est omis. `./zappy_server` sans aucun argument démarre donc une
+partie jouable.
+
 ## Arguments
 
-| Flag | Obligatoire | Description | Contraintes |
-|------|-------------|-------------|-------------|
-| `-p port`      | oui | Port d'écoute TCP | 1 à 65535 |
-| `-x width`     | oui | Largeur du monde en tuiles | > 0 |
-| `-y height`    | oui | Hauteur du monde en tuiles | > 0 |
-| `-n name1 ...` | oui | Noms des équipes (un ou plusieurs) | uniques, `GRAPHIC` est réservé |
-| `-c clientsNb` | oui | Nombre de clients autorisés par équipe | > 0 |
-| `-f freq`      | non | Inverse de l'unité de temps des actions | > 0, défaut : 100 |
-| `--help`       | non | Affiche l'usage et quitte | |
+| Flag | Obligatoire | Description | Contraintes | Défaut |
+|------|-------------|-------------|-------------|--------|
+| `-p port`      | non | Port d'écoute TCP | 1 à 65535 | `4242` |
+| `-x width`     | non | Largeur du monde en tuiles | > 0 | `10` |
+| `-y height`    | non | Hauteur du monde en tuiles | > 0 | `10` |
+| `-n name1 ...` | non | Noms des équipes (un ou plusieurs) | uniques, `GRAPHIC` est réservé | `team1 team2` |
+| `-c clientsNb` | non | Nombre de clients autorisés par équipe | > 0 | `5` |
+| `-f freq`      | non | Inverse de l'unité de temps des actions | > 0 | `100` |
+| `--help`       | non | Affiche l'usage et quitte | | |
 
 Options bonus (parsées, fonctionnalités en cours) :
 
@@ -30,15 +34,25 @@ Options bonus (parsées, fonctionnalités en cours) :
 | `--enable-admin`        | Active la console d'administration |
 | `--admin-password <pw>` | Mot de passe de la console admin |
 
-Tout argument invalide ou manquant affiche l'erreur suivie de l'usage et
-quitte avec le code **84**.
+Un argument **invalide** (valeur hors borne, entier malformé, flag inconnu,
+nom d'équipe dupliqué ou réservé) affiche l'erreur suivie de l'usage et quitte
+avec le code **84**. Un argument simplement **omis** prend sa valeur par défaut.
 
-TODO : L'objectif est de rendre tous les arguments facultatifs avec des valeurs par défaut.
+## Gestion des erreurs
+
+- **Au démarrage** (parsing CLI, bind du port, écoute) : une erreur est fatale,
+  le serveur affiche le message et quitte avec le code **84**.
+- **Au runtime** (une fois le serveur en écoute) : toute erreur levée pendant le
+  traitement d'un client ou d'un timer est **loguée sur `stderr` sans arrêter le
+  serveur** ; la boucle d'événements continue.
 
 ## Exemples
 
 ```sh
-# Partie minimale : 2 équipes de 5 sur un monde 10x10 (freq par défaut : 100)
+# Sans argument : tout par défaut (port 4242, 10x10, team1 team2, 5 clients, freq 100)
+./zappy_server
+
+# Partie minimale équivalente, explicite
 ./zappy_server -p 4242 -x 10 -y 10 -n team1 team2 -c 5
 
 # Fréquence explicite

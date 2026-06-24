@@ -12,6 +12,8 @@
     #include "server/gui/GuiDispatcher.hpp"
     #include "server/gui/GuiNotifier.hpp"
     #include "server/cli/ServerConfig.hpp"
+    #include "server/config/FeatureFlags.hpp"
+    #include "server/event/EventBus.hpp"
     #include "server/client/ClientRegistry.hpp"
     #include "server/game/FoodScheduler.hpp"
     #include "server/game/RefillScheduler.hpp"
@@ -105,6 +107,16 @@ private:
     void onPlayerStarved(int playerId);
 
     /**
+     * @brief Disconnect the AI client of a player killed by an admin command.
+     *
+     * The world already marked the player DEAD; this notifies and drops its
+     * AI connection ("dead\n" then deferred drop once the buffer flushes).
+     *
+     * @param playerId id of the player killed by the GUI admin
+     */
+    void onPlayerKilledByAdmin(int playerId);
+
+    /**
      * @brief Deliver an AI command response to its client, if still connected.
      *
      * @param playerId player the response is addressed to
@@ -133,6 +145,7 @@ private:
     void handleStdin();
 
     cli::ServerConfig _config;
+    config::FeatureFlags _featureFlags;
     net::Listener _listener;
     net::PollLoop _poll;
     game::World _world;
@@ -144,8 +157,9 @@ private:
     game::RefillScheduler _refillScheduler;
     game::FoodScheduler _foodScheduler;
     ai::AiDispatcher _aiDispatcher;
-    gui::GuiDispatcher _guiDispatcher;
     gui::GuiNotifier _guiNotifier;
+    event::EventBus _eventBus;
+    gui::GuiDispatcher _guiDispatcher;
     handshake::HandshakeHandler _handshake;
 };
 
