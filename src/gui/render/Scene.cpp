@@ -6,7 +6,6 @@
 */
 
 #include "gui/render/Scene.hpp"
-
 #include <array>
 #include <cmath>
 #include <cstddef>
