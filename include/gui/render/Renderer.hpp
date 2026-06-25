@@ -14,6 +14,7 @@
     #include "gui/ui/AdminPanel.hpp"
     #include "gui/ui/PlayerPanel.hpp"
     #include "gui/window.hpp"
+    #include "skybox.h"
 
 namespace zappy::gui::render {
 
@@ -39,11 +40,14 @@ private:
         ui::PlayerPanel &player);
     void trigger_event(board_data::BoardData &board, Vector2 mouse);
     void draw_crosshair();
+    void update_skybox();
+    void draw_skybox();
 
     window _window;
     camera _camera;
     Scene _scene;
     Shader _shader{};
+    Skyboxlib _skybox;
 };
 
 } // namespace zappy::gui::render

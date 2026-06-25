@@ -43,12 +43,12 @@ void model::Update_anim()
 {
     if (this->_anim == nullptr || this->_animeCount == 0)
         return;
-    this->_current_frame = (this->_current_frame + 1) % this->_anim[this->_anim_index].keyframeCount;
-    UpdateModelAnimation(this->_model, this->_anim[this->_anim_index], (float)this->_current_frame);
+    this->_current_frame = (this->_current_frame + 1);
 }
 
 void model::switch_index_anime()
 {
+    this->_current_frame = 0;
     this->_anim_index = (this->_anim_index + 1) % this->_animeCount;
 }
 
