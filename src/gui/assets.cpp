@@ -8,6 +8,7 @@
 #include "gui/trantor.hpp"
 #include "gui/Item.hpp"
 #include "gui/Egg.hpp"
+#include "gui/LevelUp.hpp"
 #include "gui/assets.hpp"
 #include "gui/HealthBarBatch.hpp"
 
@@ -16,6 +17,7 @@ std::unique_ptr<model> Item::_mod_food = std::make_unique<model>(FOOD_PATH, fals
 std::unique_ptr<model> Item::_mod_mineral = std::make_unique<model>(STONE_PATH, false);
 std::unique_ptr<model> Egg::_mod = std::make_unique<model>(EGG_PATH, false);
 std::unique_ptr<HealthBarBatch> trantor::_health_bar_batch = std::make_unique<HealthBarBatch>(false);
+std::unique_ptr<model> LevelUp::_mod = std::make_unique<model>(LEVEL_UP_PATH, false);
 
 void release_shared_models()
 {
@@ -23,4 +25,5 @@ void release_shared_models()
     Item::_mod_food.reset();
     Item::_mod_mineral.reset();
     Egg::_mod.reset();
+    LevelUp::_mod.reset();
 }

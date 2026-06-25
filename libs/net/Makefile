@@ -11,10 +11,12 @@ OBJ_DIR = $(BUILD_DIR)/obj
 SRC_EXTENSION = .cpp
 SRC = $(wildcard src/*$(SRC_EXTENSION))
 OBJ = $(SRC:src/%$(SRC_EXTENSION)=$(OBJ_DIR)/%.o)
+DEPS = $(OBJ:.o=.d)
 CXX = g++
 CXXFLAGS = -std=c++20 -Wall -Wextra -Werror
 CXXFLAGS += -I include/
 CXXFLAGS += -I$(ROOT)/libs/posix/include
+CXXFLAGS += -MMD -MP
 POSIX_LIB_DIR = $(ROOT)/libs/posix
 AR = ar
 ARFLAGS = rcs
@@ -31,6 +33,8 @@ $(NAME):	$(OBJ)
 $(OBJ_DIR)/%.o: src/%$(SRC_EXTENSION)
 	@mkdir -p $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+-include $(DEPS)
 
 tests_run:      $(NAME)
 	@$(MAKE) -C $(POSIX_LIB_DIR)

@@ -14,10 +14,12 @@ SRC_EXTENSION = .cpp
 
 SRC = $(wildcard src/*$(SRC_EXTENSION))
 OBJ = $(SRC:src/%$(SRC_EXTENSION)=$(OBJ_DIR)/%.o)
+DEPS = $(OBJ:.o=.d)
 
 CXX = g++
 CXXFLAGS = -std=c++20 -Wall -Wextra -Werror
 CXXFLAGS += -I include/
+CXXFLAGS += -MMD -MP
 
 AR = ar
 ARFLAGS = rcs
@@ -35,6 +37,8 @@ $(NAME):	$(OBJ)
 $(OBJ_DIR)/%.o:	src/%$(SRC_EXTENSION)
 	@mkdir -p $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+-include $(DEPS)
 
 tests_run:	$(NAME)
 	$(CXX) $(TEST_CXXFLAGS) $(TEST_SRC) -L$(CURDIR) -lzappy_posix $(TEST_LDLIBS) -o $(TEST_BIN)

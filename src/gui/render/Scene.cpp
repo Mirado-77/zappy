@@ -23,6 +23,7 @@ constexpr float ROBOT_HALF = 2.5f;
 constexpr float ROBOT_LOW = -1.0f;
 constexpr float ROBOT_HIGH = 6.0f;
 constexpr double METEOR_DURATION = 1.5;
+constexpr double LEVELUP_DURATION = 1.5;
 
 constexpr std::array<int, board_data::BIOME_COUNT> BIOME_MODELS = {
     0, 1, 2, 3, 4, 4
@@ -66,12 +67,45 @@ void Scene::set_shader(Shader shader)
         _world->set_shader(shader);
     for (auto &kv : _slots)
         kv.second.robot->set_shader(shader);
+    for (auto &kv : _levelups)
+        kv.second.fx->set_shader(shader);
 }
 
 void Scene::drain_meteors(board_data::BoardData &board)
 {
     for (const auto &m : board.take_pending_meteors())
         _meteors.push_back({m.x, m.y, m.radius, GetTime()});
+}
+
+void Scene::drain_levelups(board_data::BoardData &board)
+{
+    for (int id : board.take_pending_levelups()) {
+        const auto pit = board.players().find(id);
+        if (pit == board.players().end())
+            continue;
+        auto [it, inserted] = _levelups.try_emplace(id);
+        LevelUpFx &slot = it->second;
+        if (inserted)
+            slot.fx = std::make_unique<::LevelUp>();
+        if (inserted && _has_shader)
+            slot.fx->set_shader(_shader);
+        slot.start_time = GetTime();
+        slot.x = pit->second.x;
+        slot.y = pit->second.y;
+    }
+}
+
+void Scene::draw_levelups()
+{
+    const double now = GetTime();
+
+    for (auto &kv : _levelups) {
+        kv.second.fx->set_pos(world_pos(kv.second.x, kv.second.y));
+        kv.second.fx->draw();
+    }
+    std::erase_if(_levelups, [now](const auto &kv) {
+        return now - kv.second.start_time >= LEVELUP_DURATION;
+    });
 }
 
 void Scene::sync_items(const board_data::BoardData &board)
@@ -88,6 +122,7 @@ void Scene::sync(board_data::BoardData &board)
     ensure_world(board);
     apply_biome_models(board);
     drain_meteors(board);
+    drain_levelups(board);
     for (const auto &kv : board.players())
         sync_player(kv.first, kv.second);
     for (const auto &egg : board.eggs()) {
@@ -142,9 +177,12 @@ void Scene::sync_player(int id, const board_data::PlayerData &player)
     slot.x = player.x;
     slot.y = player.y;
     rotate_to(slot, static_cast<int>(player.orient));
+    slot.robot->_mod->Update_anim();
     if (!player.alive && !slot.dead) {
         slot.robot->death();
-        slot.dead = true;
+        if (slot.robot->_mod->get_current_frame() >=
+            slot.robot->_mod->get_frame_count())
+                slot.dead = true;
     }
 }
 
@@ -173,8 +211,9 @@ void Scene::sync_egg(int id, const board_data::EggData &egg)
         slot.egg = std::make_unique<::Egg>();
     }
     slot.egg->set_pos(world_pos(egg.x, egg.y));
-    if (!egg.alive && !slot.dead)
+    if (!egg.alive && !slot.dead) {
         slot.dead = true;
+    }
 }
 
 void Scene::rotate_to(Slot &slot, int target)
@@ -252,23 +291,31 @@ void Scene::draw_meteors()
     });
 }
 
-void Scene::draw(const board_data::BoardData &board)
+void Scene::draw_egg_player()
 {
-    if (_world)
-        _world->draw_world();
-    for (auto &kv : _slots)
-        kv.second.robot->draw();
+    for (auto &kv : _slots) {
+        if (!kv.second.dead)
+            kv.second.robot->draw();
+    }
     for (auto &eg : _eggs) {
         if (!eg.second.dead)
             eg.second.egg->draw();
     }
+}
+
+void Scene::draw(const board_data::BoardData &board)
+{
+    if (_world)
+        _world->draw_world();
     for (auto &kv : _items)
         kv.second->draw();
     for (auto &ic : _incantation)
         ic.second.incant->draw();
+    draw_egg_player();
     if (_show_storm && board.storm().has_value())
         draw_storm(*board.storm());
     draw_meteors();
+    draw_levelups();
 }
 
 std::optional<int> Scene::pick_player(Vector2 screen, const Camera &cam) const

@@ -41,6 +41,7 @@ class trantor {
         void sync( const zappy::gui::board_data::PlayerData& player_data, Vector3 player_pos);
         void set_pos(Vector3 pos);
         void set_shader(Shader shader);
+        void Update_anim();
         void draw();
         static std::unique_ptr<model> _mod;
         static std::unique_ptr<HealthBarBatch> _health_bar_batch;
