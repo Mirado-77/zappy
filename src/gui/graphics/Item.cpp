@@ -39,8 +39,8 @@ void ColorBuffer::add_color(Color color, size_t weight)
 Color ColorBuffer::mean()
 {
     if (set_size == 0)
-        return DEFAULT_COLOR;
-    return CLITERAL(Color){
+        return default_color;
+    return {
         static_cast<unsigned char>(r / set_size),
         static_cast<unsigned char>(g / set_size),
         static_cast<unsigned char>(b / set_size),
@@ -122,10 +122,10 @@ void Item::sync(const zappy::gui::board_data::Resources resources)
 void Item::draw()
 {
     if (
-            (_mineral_color.r == DEFAULT_COLOR.r)
-        &&  (_mineral_color.g == DEFAULT_COLOR.g)
-        &&  (_mineral_color.b == DEFAULT_COLOR.b)
-        &&  (_mineral_color.a == DEFAULT_COLOR.a)
+            (_mineral_color.r == default_color.r)
+        &&  (_mineral_color.g == default_color.g)
+        &&  (_mineral_color.b == default_color.b)
+        &&  (_mineral_color.a == default_color.a)
     )
         return;
     std::unique_ptr<model>& model_to_display = get_item_model();

@@ -7,7 +7,7 @@
 
 #include "gui/Egg.hpp"
 
-Egg::Egg()
+Egg::Egg() : _pos( {0, 0, 0} )
 {
     if (!_mod->isloaded())
         _mod->load();
