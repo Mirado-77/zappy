@@ -151,9 +151,12 @@ void Scene::sync_player(int id, const board_data::PlayerData &player)
     slot.x = player.x;
     slot.y = player.y;
     rotate_to(slot, static_cast<int>(player.orient));
+    slot.robot->_mod->Update_anim();
     if (!player.alive && !slot.dead) {
         slot.robot->death();
-        slot.dead = true;
+        if (slot.robot->_mod->get_current_frame() >=
+            slot.robot->_mod->get_frame_count())
+                slot.dead = true;
     }
 }
 
@@ -278,8 +281,6 @@ void Scene::draw(const board_data::BoardData &board)
 {
     if (_world)
         _world->draw_world();
-    for (auto &kv : _slots)
-        kv.second.robot->draw();
     for (auto &kv : _items)
         kv.second->draw();
     for (auto &ic : _incantation)
