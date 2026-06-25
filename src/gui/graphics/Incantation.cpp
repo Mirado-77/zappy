@@ -37,7 +37,7 @@ void Incantation::draw()
     draw::DrawTextureIn3D(this->_circle,
                         (Vector3){0, 1, 0},
                         normal, worldUp,
-                        4.0f, 4.0f, _src, WHITE);
+                        8.0f, 8.0f, _src, WHITE);
 }
 
 void Incantation::set_pos(Vector3 pos)
