@@ -7,7 +7,6 @@
 
 #include "gui/HealthBarBatch.hpp"
 #include <algorithm>
-#include <stdio.h> // dprintf
 
 
 HealthBarBatch::HealthBarBatch(bool start_loaded, float start_scale)
@@ -70,22 +69,10 @@ void HealthBarBatch::draw_health_bar_unit(HealthBarBatch::HealthBarInfo healthba
     Vector2 size_it = { static_cast<float>(HEALTHBAR_WIDTH * healthbar.percentage), HEALTHBAR_HEIGHT };
     size_it = Vector2Scale(size_it, _scale);
     Vector2 origin_it = Vector2Scale(size_it, 0.5f);
-    Vector2 offset_translation_it = Vector2Add(offset_translation_it,
-        Vector2Scale(UP_V2, HEALTHBAR_HEIGHT_MODIFIER * _scale));
+    Vector2 offset_translation_it = Vector2Scale(UP_V2, HEALTHBAR_HEIGHT_MODIFIER * _scale);
     Vector3 healthbar_position_it = Vector3Add(healthbar.position, {offset_translation_it.x,
         offset_translation_it.y, 0});
 
-    std::cerr << "healthbar: {\nsize_it: " // dprintf
-        <<"[" << size_it.x << ", " << size_it.y << "],\n" // dprintf
-        << "offset_translation_it: " // dprintf
-        <<"[" << offset_translation_it.x << ", " << offset_translation_it.y << "],\n" // dprintf
-        << "_scale: " // dprintf
-        << _scale << ",\n"
-        << "healthbar.percentage: " // dprintf
-        << healthbar.percentage << ",\n" // dprintf
-        << "healthbar_position_it: " // dprintf
-        <<"[" << healthbar_position_it.x << ", " << healthbar_position_it.y << ", " << healthbar_position_it.z << "]" // dprintf
-        << "\n}" << std::endl; // dprintf
     DrawBillboardPro(camera, _texture, texture_rect, healthbar_position_it, health_up, size_it, origin_it, rotation, WHITE);
 }
 
@@ -93,9 +80,7 @@ void HealthBarBatch::draw_health_bars(Camera camera)
 {
     auto order = get_order(camera.position);
 
-    size_t print_counter = 0; // dprintf
     for (HealthBarBatch::HealthBarInfo healthbar : order) {
-        std::cerr << "displaying healthbar number : " << print_counter++ << std::endl; // dprintf
         draw_health_bar_unit(healthbar, camera);
     }
 }
