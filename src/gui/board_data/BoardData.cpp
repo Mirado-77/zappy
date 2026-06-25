@@ -199,6 +199,7 @@ void BoardData::on_enw(const net::ServerEvent &ev)
     e.player_id = ev.ints[1];
     e.x = ev.ints[2];
     e.y = ev.ints[3];
+    e.alive = true;
     _eggs[e.id] = e;
 }
 
