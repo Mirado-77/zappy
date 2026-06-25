@@ -20,7 +20,10 @@ model::model(std::string name, bool load, Vector3 pos)
 
 model::~model()
 {
-    UnloadModel(this->_model);
+    if (this->_anim != nullptr)
+        UnloadModelAnimations(this->_anim, this->_animeCount);
+    if (this->loaded)
+        UnloadModel(this->_model);
 }
 
 void model::load()
@@ -38,8 +41,8 @@ bool model::isloaded()
 
 void model::Update_anim()
 {
-    this->_current_frame = (this->_current_frame + 1) % this->_anim.get()[this->_anim_index].keyframeCount;
-    UpdateModelAnimation(this->_model, this->_anim.get()[this->_anim_index], (float)this->_current_frame);
+    this->_current_frame = (this->_current_frame + 1) % this->_anim[this->_anim_index].keyframeCount;
+    UpdateModelAnimation(this->_model, this->_anim[this->_anim_index], (float)this->_current_frame);
 }
 
 void model::switch_index_anime()
@@ -70,7 +73,9 @@ void model::set_shader(Shader shader)
 
 void model::load_anim()
 {
-    this->_anim.reset(LoadModelAnimations(_name.c_str(), &this->_animeCount));
+    if (this->_anim != nullptr)
+        UnloadModelAnimations(this->_anim, this->_animeCount);
+    this->_anim = LoadModelAnimations(_name.c_str(), &this->_animeCount);
 }
 
 void model::move_model(Vector3 rotationAxis, float rotationAngle, Vector3 scale)

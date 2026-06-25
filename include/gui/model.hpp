@@ -16,6 +16,8 @@ class model{
     public:
         model(std::string name = "", bool load = true, Vector3 pos = {0.0f, 0.0f, 0.0f});
         ~model();
+        model(const model &) = delete;
+        model &operator=(const model &) = delete;
         bool isloaded();
         void Update_anim();
         void load_anim();
@@ -37,8 +39,8 @@ class model{
         //void update_model_anim();
     protected:
     private:
-        Model _model;
-        std::unique_ptr<ModelAnimation> _anim;
+        Model _model{};
+        ModelAnimation *_anim;
         int _animeCount;
         int _current_frame;
         int _anim_index;
