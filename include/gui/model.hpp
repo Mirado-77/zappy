@@ -35,6 +35,8 @@ class model{
         Vector3 get_base_pos();
         void set_anim_index(int anime_index);
         void load();
+        int get_frame_count();
+        int get_current_frame();
         //void Load_model(std::string name);
         //void update_model_anim();
     protected:
@@ -50,6 +52,8 @@ class model{
         Vector3 _base_pos;
         Texture2D _texture;
         bool loaded;
+
+        void check_frame();
 };
 
 #endif /* !MODEL_HPP_ */

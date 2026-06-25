@@ -54,6 +54,10 @@ void model::switch_index_anime()
 
 void model::Draw_model(float scale)
 {
+    if (this->_anim != nullptr) {
+        check_frame();
+        UpdateModelAnimation(this->_model, this->_anim[this->_anim_index], (float)this->_current_frame);
+    }
     DrawModel(this->_model, this->_pos, scale, this->_color);
 }
 
@@ -82,6 +86,10 @@ void model::load_anim()
 
 void model::move_model(Vector3 rotationAxis, float rotationAngle, Vector3 scale)
 {
+    if (this->_anim != nullptr) {
+        check_frame();
+        UpdateModelAnimation(this->_model, this->_anim[this->_anim_index], (float)this->_current_frame);
+    }
     DrawModelEx(this->_model, this->_pos, rotationAxis, rotationAngle, scale, this->_color);
 }
 
@@ -123,4 +131,20 @@ void model::load_texture(std::string name)
     this->_texture = LoadTexture(name.c_str());
     this->_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture
         = this->_texture;
+}
+
+int model::get_frame_count()
+{
+    return this->_anim[this->_anim_index].keyframeCount;
+}
+
+int model::get_current_frame()
+{
+    return this->_current_frame;
+}
+
+void model::check_frame()
+{
+    if (_current_frame >= this->_anim[this->_anim_index].keyframeCount)
+        this->_current_frame = 0;
 }

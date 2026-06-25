@@ -54,10 +54,15 @@ void trantor::set_shader(Shader shader)
     this->_mod->set_shader(shader);
 };
 
+void trantor::Update_anim()
+{
+    this->_mod->Update_anim();
+
+};
+
 void trantor::draw()
 {
     this->_mod->set_pos(_pos);
     this->_mod->set_anim_index(_state);
-    this->_mod->Update_anim();
     this->_mod->move_model(UP_DIRECTION, this->_angle, DEFAULT_TRANTORIAN_SCALE);
 };

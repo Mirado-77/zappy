@@ -38,6 +38,7 @@ class trantor {
         void death();
         void set_pos(Vector3 pos);
         void set_shader(Shader shader);
+        void Update_anim();
         void draw();
         static std::unique_ptr<model> _mod;
     protected:
