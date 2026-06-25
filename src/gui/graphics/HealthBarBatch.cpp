@@ -7,6 +7,8 @@
 
 #include "gui/HealthBarBatch.hpp"
 #include <algorithm>
+#include <stdio.h> // dprintf
+
 
 HealthBarBatch::HealthBarBatch(bool start_loaded, float start_scale)
     : _scale(start_scale), _texture(LoadTexture(TMP_HEALTH_BAR_TEXTURE)), _is_loaded(start_loaded)
@@ -74,10 +76,14 @@ void HealthBarBatch::draw_health_bar_unit(HealthBarBatch::HealthBarInfo healthba
         offset_translation_it.y, 0});
 
     std::cerr << "healthbar: {\nsize_it: " // dprintf
-        <<"[" << size_it.x << ", " << size_it.y << "]" // dprintf
+        <<"[" << size_it.x << ", " << size_it.y << "],\n" // dprintf
+        << "offset_translation_it: " // dprintf
+        <<"[" << offset_translation_it.x << ", " << offset_translation_it.y << "],\n" // dprintf
+        << "_scale: " // dprintf
+        << _scale << ",\n"
         << "healthbar.percentage: " // dprintf
-        << healthbar.percentage // dprintf
-        << ",\nhealthbar_position_it: " // dprintf
+        << healthbar.percentage << ",\n" // dprintf
+        << "healthbar_position_it: " // dprintf
         <<"[" << healthbar_position_it.x << ", " << healthbar_position_it.y << ", " << healthbar_position_it.z << "]" // dprintf
         << "\n}" << std::endl; // dprintf
     DrawBillboardPro(camera, _texture, texture_rect, healthbar_position_it, health_up, size_it, origin_it, rotation, WHITE);
@@ -87,7 +93,6 @@ void HealthBarBatch::draw_health_bars(Camera camera)
 {
     auto order = get_order(camera.position);
 
-    #include <stdio.h> // dprintf
     size_t print_counter = 0; // dprintf
     for (HealthBarBatch::HealthBarInfo healthbar : order) {
         std::cerr << "displaying healthbar number : " << print_counter++ << std::endl; // dprintf

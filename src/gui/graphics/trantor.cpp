@@ -27,6 +27,8 @@
 
 inline double health_function(int food_count)
 {
+    #include <iostream> // dprintf
+    std::cerr << "health_function got food_count : " << food_count << std::endl; // dprintf
     return 4 + 100.0f * food_count / (food_count + SATISFYING_FOOD_COUNT / 9.0f);
 }
 
@@ -73,6 +75,8 @@ void trantor::sync(const zappy::gui::board_data::PlayerData& trantorian_data, Ve
 {
     _id = trantorian_data.id;
     _pos = player_pos;
+    #include <iostream> // dprintf
+    std::cerr << "syncing trantorian data direction : " << static_cast<int>(trantorian_data.orient) << std::endl; // dprintf
     _state = YES;
     _angle = (static_cast<int>(trantorian_data.orient) - 1) * 90;
     _health = health_function(trantorian_data.inventory[R_FOOD]);
