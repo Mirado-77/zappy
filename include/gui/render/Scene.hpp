@@ -86,7 +86,6 @@ private:
     void ensure_world(const board_data::BoardData &board);
     void sync_player(int id, const board_data::PlayerData &player);
     void sync_egg(int id, const board_data::EggData &egg);
-    void sync_eggs(const board_data::BoardData &board);
     void sync_item(const board_data::TileData &tile,
         std::pair<std::size_t, std::size_t> coords);
     void sync_items(const board_data::BoardData &board);

@@ -83,15 +83,6 @@ void Scene::sync_items(const board_data::BoardData &board)
                     static_cast<std::size_t>(y)));
 }
 
-void Scene::sync_eggs(const board_data::BoardData &board)
-{
-    for (int x = 0; x < _width; ++x)
-        for (int y = 0; y < _height; ++y)
-            sync_item(board.get_tile_value(x, y),
-                std::make_pair(static_cast<std::size_t>(x),
-                    static_cast<std::size_t>(y)));
-}
-
 void Scene::sync(board_data::BoardData &board)
 {
     ensure_world(board);
