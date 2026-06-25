@@ -160,8 +160,11 @@ void BoardData::on_plv(const net::ServerEvent &ev)
     if (ev.ints.size() < 2)
         return;
     auto it = _players.find(ev.ints[0]);
-    if (it != _players.end())
-        it->second.level = ev.ints[1];
+    if (it == _players.end())
+        return;
+    if (ev.ints[1] > it->second.level)
+        _pending_levelups.push_back(ev.ints[0]);
+    it->second.level = ev.ints[1];
 }
 
 void BoardData::on_pin(const net::ServerEvent &ev)
@@ -393,6 +396,11 @@ void BoardData::on_meteor_impact(const net::ServerEvent &ev)
 std::vector<MeteorImpact> BoardData::take_pending_meteors()
 {
     return std::exchange(_pending_meteors, {});
+}
+
+std::vector<int> BoardData::take_pending_levelups()
+{
+    return std::exchange(_pending_levelups, {});
 }
 
 void BoardData::on_evt_flood_tile(const net::ServerEvent &ev)
