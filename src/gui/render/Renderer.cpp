@@ -192,7 +192,6 @@ void Renderer::draw(board_data::BoardData &board, ui::AdminPanel &admin,
 {
     const bool typing = admin.capturing_keyboard()
         || player.capturing_keyboard();
-
     _scene.sync(board);
     update_cursor();
     update_skybox();
