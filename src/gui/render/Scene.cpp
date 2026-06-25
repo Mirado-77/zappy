@@ -158,8 +158,7 @@ void Scene::sync_item(const board_data::TileData &tile,
         item_ptr = std::make_unique<::Item>(tile.res,
             world_pos(static_cast<int>(coords.first),
                 static_cast<int>(coords.second)));
-    }
-    else {
+    } else {
         item_ptr->sync(tile.res);
     }
     item_ptr->set_pos(world_pos(coords.first, coords.second));

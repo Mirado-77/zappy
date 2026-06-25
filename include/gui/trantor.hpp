@@ -10,7 +10,7 @@
     #include "model.hpp"
     #define TRANTOR_PATH "src/gui/assets/robot.glb"
 
-enum TRANTOR_STATE {
+using TrantorState = enum TRANTOR_STATE {
     DANCE,
     DIE,
     LOOK_ARROUND,
@@ -42,9 +42,9 @@ class trantor {
         static std::unique_ptr<model> _mod;
     protected:
     private:
-        TRANTOR_STATE _state;
+        Vector3 _pos;
+        TrantorState _state;
         int _angle;
-        Vector3 _rotation_axis;
 };
 
 #endif /* !TRANTOR_HPP_ */
