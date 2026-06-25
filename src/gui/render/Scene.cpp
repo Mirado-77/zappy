@@ -176,12 +176,11 @@ void Scene::sync_player(int id, const board_data::PlayerData &player)
     slot.x = player.x;
     slot.y = player.y;
     rotate_to(slot, static_cast<int>(player.orient));
-    slot.robot->_mod->Update_anim();
     if (!player.alive && !slot.dead) {
         slot.robot->death();
         if (slot.robot->_mod->get_current_frame() >=
             slot.robot->_mod->get_frame_count())
-                slot.dead = true;
+            slot.dead = true;
     }
 }
 
@@ -210,9 +209,8 @@ void Scene::sync_egg(int id, const board_data::EggData &egg)
         slot.egg = std::make_unique<::Egg>();
     }
     slot.egg->set_pos(world_pos(egg.x, egg.y));
-    if (!egg.alive && !slot.dead) {
+    if (!egg.alive && !slot.dead)
         slot.dead = true;
-    }
 }
 
 void Scene::rotate_to(Slot &slot, int target)
@@ -290,8 +288,18 @@ void Scene::draw_meteors()
     });
 }
 
-void Scene::draw_egg_player()
+/*
+void draw_egg_player()
 {
+    ;
+}
+*/
+
+void Scene::draw(const board_data::BoardData &board)
+{
+    if (_world)
+        _world->draw_world();
+    trantor::_mod->Update_anim();
     for (auto &kv : _slots) {
         if (!kv.second.dead)
             kv.second.robot->draw();
@@ -300,17 +308,11 @@ void Scene::draw_egg_player()
         if (!eg.second.dead)
             eg.second.egg->draw();
     }
-}
-
-void Scene::draw(const board_data::BoardData &board)
-{
-    if (_world)
-        _world->draw_world();
     for (auto &kv : _items)
         kv.second->draw();
     for (auto &ic : _incantation)
         ic.second.incant->draw();
-    draw_egg_player();
+    // draw_egg_player();
     if (_show_storm && board.storm().has_value())
         draw_storm(*board.storm());
     draw_meteors();

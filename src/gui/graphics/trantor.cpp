@@ -92,7 +92,6 @@ void trantor::set_shader(Shader shader)
 void trantor::Update_anim()
 {
     this->_mod->Update_anim();
-
 };
 
 void trantor::draw()

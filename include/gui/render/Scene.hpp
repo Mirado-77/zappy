@@ -108,7 +108,6 @@ private:
     void draw_storm_arrow(Vector3 center, board_data::Orientation dir);
     void draw_meteor(const MeteorView &view);
     void draw_meteors();
-    void draw_egg_player();
 
     std::unique_ptr<::world> _world;
     std::unordered_map<int, Slot> _slots;
