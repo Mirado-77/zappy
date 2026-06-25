@@ -288,17 +288,8 @@ void Scene::draw_meteors()
     });
 }
 
-/*
-void draw_egg_player()
+void Scene::draw_egg_player()
 {
-    ;
-}
-*/
-
-void Scene::draw(const board_data::BoardData &board)
-{
-    if (_world)
-        _world->draw_world();
     trantor::_mod->Update_anim();
     for (auto &kv : _slots) {
         if (!kv.second.dead)
@@ -308,11 +299,17 @@ void Scene::draw(const board_data::BoardData &board)
         if (!eg.second.dead)
             eg.second.egg->draw();
     }
+}
+
+void Scene::draw(const board_data::BoardData &board)
+{
+    if (_world)
+        _world->draw_world();
+    draw_egg_player();
     for (auto &kv : _items)
         kv.second->draw();
     for (auto &ic : _incantation)
         ic.second.incant->draw();
-    // draw_egg_player();
     if (_show_storm && board.storm().has_value())
         draw_storm(*board.storm());
     draw_meteors();
