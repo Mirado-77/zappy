@@ -65,6 +65,30 @@ public:
     void stopPlayer(int playerId) noexcept;
 
     /**
+     * @brief Force-start an incantation on @p playerId at the GUI admin's
+     * request.
+     *
+     * Validates the standard prerequisites (level, headcount, stones) then
+     * launches the normal ritual, which finishes on its own after the regular
+     * incantation delay.
+     *
+     * @param playerId the player to elevate
+     * @return bool true if the ritual was started, false if prerequisites fail
+     */
+    bool adminStartIncantation(int playerId);
+
+    /**
+     * @brief Force-abort the incantation @p playerId is currently performing.
+     *
+     * Cancels the scheduled completion and ends the ritual as a failure for
+     * every frozen participant, restoring their command queues.
+     *
+     * @param playerId the incanting initiator
+     * @return bool true if an incantation was stopped, false otherwise
+     */
+    bool adminStopIncantation(int playerId);
+
+    /**
      * @brief Update the time frequency.
      *
      * @param frequency new time frequency
@@ -130,6 +154,18 @@ private:
      * @return std::vector<int> the participant ids (includes the initiator)
      */
     [[nodiscard]] std::vector<int> collectParticipants(int playerId) const;
+
+    /**
+     * @brief Ids of every player frozen (INCANTING) on @p playerId's tile.
+     *
+     * Used to recover the participants of an in-flight ritual when the GUI
+     * admin forces it to stop.
+     *
+     * @param playerId the incanting initiator
+     * @return std::vector<int> the frozen participant ids
+     */
+    [[nodiscard]] std::vector<int> frozenParticipantsOnTile(
+        int playerId) const;
 
     /**
      * @brief Whether @p playerId may elevate with @p participants right now.

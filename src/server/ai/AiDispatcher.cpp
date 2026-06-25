@@ -164,6 +164,66 @@ void zappy::server::ai::AiDispatcher::startIncantation(int playerId)
 }
 
 /**
+ * @brief Force-start an incantation on @p playerId at the GUI admin's request.
+ *
+ * @param playerId the player to elevate
+ * @return bool true if the ritual was started, false if prerequisites fail
+ */
+bool zappy::server::ai::AiDispatcher::adminStartIncantation(int playerId)
+{
+    const std::vector<int> participants = collectParticipants(playerId);
+
+    if (!isPlayerAlive(playerId)
+        || _world.player(playerId).state() == game::PlayerState::INCANTING
+        || !checkPrerequisites(playerId, participants))
+        return false;
+    beginIncantationRitual(playerId, participants);
+    return true;
+}
+
+/**
+ * @brief Force-abort the incantation @p playerId is currently performing.
+ *
+ * @param playerId the incanting initiator
+ * @return bool true if an incantation was stopped, false otherwise
+ */
+bool zappy::server::ai::AiDispatcher::adminStopIncantation(int playerId)
+{
+    const auto it = _states.find(playerId);
+
+    if (!_world.hasPlayer(playerId)
+        || _world.player(playerId).state() != game::PlayerState::INCANTING
+        || it == _states.end())
+        return false;
+    if (it->second.currentEventId != 0)
+        _scheduler.cancel(it->second.currentEventId);
+    const std::vector<int> participants = frozenParticipantsOnTile(playerId);
+    applyFailure(playerId, participants);
+    resumeParticipantQueues(participants);
+    return true;
+}
+
+/**
+ * @brief Ids of every player frozen (INCANTING) on @p playerId's tile.
+ *
+ * @param playerId the incanting initiator
+ * @return std::vector<int> the frozen participant ids
+ */
+std::vector<int> zappy::server::ai::AiDispatcher::frozenParticipantsOnTile(
+    int playerId) const
+{
+    std::vector<int> result;
+
+    if (!_world.hasPlayer(playerId))
+        return result;
+    for (int id : _world.tileAt(_world.player(playerId).position()).playerIds())
+        if (_world.hasPlayer(id)
+            && _world.player(id).state() == game::PlayerState::INCANTING)
+            result.push_back(id);
+    return result;
+}
+
+/**
  * @brief Ids of every ALIVE player standing on the initiator's tile.
  *
  * @param playerId the initiating player

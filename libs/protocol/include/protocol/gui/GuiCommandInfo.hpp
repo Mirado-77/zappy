@@ -55,7 +55,9 @@ inline constexpr std::array<GuiCommandInfo,
     {"adm_tile_add", 3, true},
     {"adm_player_kill", 1, false},
     {"adm_player_tp", 3, false},
-    {"adm_player_level", 2, false}
+    {"adm_player_level", 2, false},
+    {"adm_player_incant", 1, false},
+    {"adm_player_stop_incant", 1, false}
 }};
 
 constexpr const GuiCommandInfo &GuiCommandInfo::guiCommandInfoFor(
