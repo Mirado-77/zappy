@@ -27,7 +27,7 @@
 
 inline double health_function(int food_count)
 {
-    return 4 + 100.0f * food_count / (food_count + SATISFYING_FOOD_COUNT / 9.0f);
+    return 100.0f * food_count / (food_count + SATISFYING_FOOD_COUNT / 9.0f);
 }
 
 trantor::trantor(const zappy::gui::board_data::PlayerData& trantorian_data, Vector3 player_pos)

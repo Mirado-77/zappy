@@ -8,7 +8,6 @@
 #include "gui/HealthBarBatch.hpp"
 #include <algorithm>
 
-
 HealthBarBatch::HealthBarBatch(bool start_loaded, float start_scale)
     : _scale(start_scale), _texture(LoadTexture(TMP_HEALTH_BAR_TEXTURE)), _is_loaded(start_loaded)
 {
@@ -73,7 +72,7 @@ void HealthBarBatch::draw_health_bar_unit(HealthBarBatch::HealthBarInfo healthba
     Vector3 healthbar_position_it = Vector3Add(healthbar.position, {offset_translation_it.x,
         offset_translation_it.y, 0});
 
-    DrawBillboardPro(camera, _texture, texture_rect, healthbar_position_it, health_up, size_it, origin_it, rotation, WHITE);
+    DrawBillboardPro(camera, _texture, texture_rect, healthbar_position_it, health_up, size_it, origin_it, rotation, RED);
 }
 
 void HealthBarBatch::draw_health_bars(Camera camera)

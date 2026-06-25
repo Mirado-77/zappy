@@ -16,8 +16,8 @@
     #include <map>
     #include <vector>
     #define TMP_HEALTH_BAR_TEXTURE "src/gui/assets/red.png"
-    #define HEALTHBAR_WIDTH 0.7f
-    #define HEALTHBAR_THICKNESS 0.13f
+    #define HEALTHBAR_WIDTH 0.028f
+    #define HEALTHBAR_THICKNESS 3.25f
     #define HEALTHBAR_HEIGHT (HEALTHBAR_WIDTH * HEALTHBAR_THICKNESS)
     #define HEALTHBAR_HEIGHT_MODIFIER 3.0f
     #define UP_V2 {0, 1}
