@@ -19,7 +19,7 @@ namespace zappy::gui::ui {
 namespace {
 
 constexpr float PANEL_W = 300.0f;
-constexpr float PANEL_H = 520.0f;
+constexpr float PANEL_H = 560.0f;
 
 constexpr std::array<const char *, board_data::RESOURCE_COUNT> RES_NAMES = {
     "food", "linemate", "deraumere", "sibur", "mendiane", "phiras", "thystame"
@@ -149,6 +149,18 @@ void PlayerPanel::draw_level_row(const Rectangle &box, float y, int id)
         submit_level(id);
 }
 
+void PlayerPanel::draw_incant_row(const Rectangle &box, float y, int id)
+{
+    const float x = box.x + 12;
+
+    if (GuiButton({x, y, 110, 24}, "Incant"))
+        _board.queue_admin_command(std::string("adm_player_incant #")
+            + std::to_string(id) + "\n");
+    if (GuiButton({x + 122, y, 110, 24}, "Stop incant"))
+        _board.queue_admin_command(std::string("adm_player_stop_incant #")
+            + std::to_string(id) + "\n");
+}
+
 void PlayerPanel::draw_admin_actions(const Rectangle &box, int id)
 {
     const float x = box.x + 12;
@@ -160,6 +172,7 @@ void PlayerPanel::draw_admin_actions(const Rectangle &box, int id)
             + std::to_string(id) + "\n");
     draw_tp_row(box, y + 50, id);
     draw_level_row(box, y + 82, id);
+    draw_incant_row(box, y + 114, id);
 }
 
 void PlayerPanel::draw_profile(const Rectangle &box, int id)
