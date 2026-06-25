@@ -159,11 +159,13 @@ void Renderer::handle_pick(board_data::BoardData &board, ui::AdminPanel &admin,
         return;
     if (board.event_armed())
         return trigger_event(board, mouse);
-    if (!board.is_admin())
-        return;
     const auto id = _scene.pick_player(mouse, _camera.cam);
-    if (id)
+    if (!id)
+        return;
+    if (board.is_admin())
         board.set_selected_player(*id);
+    else
+        board.select_player_local(*id);
 }
 
 void Renderer::update_skybox()
