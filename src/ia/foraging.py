@@ -34,6 +34,18 @@ def tick_foraging(state: PlayerState, sender: CommandSender) -> None:
         return
 
     if state.last_look:
+        from stones import needed_stones, STONE_NAMES
+        wanted = needed_stones(state.level, state.inventory)
+        for stone in STONE_NAMES:
+            if stone in state.last_look[0] and stone in wanted:
+                state.last_look[0].remove(stone)
+                def _take_stone(r: str, s: str = stone) -> None:
+                    if r == "ok":
+                        state.inventory[s] = state.inventory.get(s, 0) + 1
+                sender.send(f"Take {stone}", callback=_take_stone)
+                return
+
+    if state.last_look:
         food_idx = find_food_tile(state)
         if food_idx is not None and food_idx > 0:
             tx, ty = tile_world_target(state, food_idx)

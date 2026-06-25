@@ -14,6 +14,7 @@ from elevation import (
     ElevationState,
     make_current_level_handler,
     make_elevation_underway_handler,
+    make_ko_elevation_handler,
 )
 from line_buffer import LineBuffer
 from sender import CommandSender
@@ -68,6 +69,7 @@ def _build_dispatcher(sender: CommandSender,
     d.register("dead", _handle_dead)
     d.register("Elevation underway", make_elevation_underway_handler(elev, sender))
     d.register("Current level: ", make_current_level_handler(elev))
+    d.register("ko", make_ko_elevation_handler(elev, sender))
     if on_broadcast is not None:
         def _bcast_handler(line: str) -> None:
             msg = parse_broadcast(line)

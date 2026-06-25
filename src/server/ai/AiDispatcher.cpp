@@ -234,9 +234,10 @@ std::vector<int> zappy::server::ai::AiDispatcher::collectParticipants(
 {
     std::vector<int> result;
     const game::Position pos = _world.player(playerId).position();
+    const int level = _world.player(playerId).level();
 
     for (int id : _world.tileAt(pos).playerIds())
-        if (isPlayerAlive(id))
+        if (isPlayerAlive(id) && _world.player(id).level() <= level)
             result.push_back(id);
     return result;
 }

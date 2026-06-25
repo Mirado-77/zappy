@@ -13,7 +13,7 @@ from player_state import FsmState, PlayerState
 from sender import CommandSender
 from stones import ELEVATION_REQUIREMENTS, STONE_NAMES, needed_stones
 
-RALLY_TIMEOUT_TICKS = 150
+RALLY_TIMEOUT_TICKS = 600
 
 RALLY_REPEAT_INTERVAL = 3
 
@@ -81,6 +81,8 @@ def required_ready_count(level: int) -> int:
 
     Leader counts as 1, so followers needed = players_required - 1.
     """
+    if level == 1:
+        return 0
     req = ELEVATION_REQUIREMENTS.get(level, {})
     return max(0, req.get("players", 1) - 1)
 
@@ -155,11 +157,11 @@ def tick_leading_elevation(
 
     Level 1 (solo): deposit stones and incantate immediately.
     Level 2+ (multi-player):
-        Phase 1 – startup listen (0 … startup_delay-1 ticks): send Look
+        Phase 1 startup listen (0 … startup_delay-1 ticks): send Look
             keepalives.  If a RALLY is received from another AI during this
             phase, the coordination handler will clear leader_info (yield).
-        Phase 2 – broadcast (tick == startup_delay): send RALLY broadcast.
-        Phase 3 – wait (startup_delay+1 … +RALLY_TIMEOUT_TICKS): keepalive.
+        Phase 2 broadcast (tick == startup_delay): send RALLY broadcast.
+        Phase 3 wait (startup_delay+1 … +RALLY_TIMEOUT_TICKS): keepalive.
         Timeout: broadcast CANCEL and abort.
     """
     info = leader_info[0]
