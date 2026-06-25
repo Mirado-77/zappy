@@ -83,6 +83,15 @@ void Scene::sync_items(const board_data::BoardData &board)
                     static_cast<std::size_t>(y)));
 }
 
+void Scene::sync_eggs(const board_data::BoardData &board)
+{
+    for (int x = 0; x < _width; ++x)
+        for (int y = 0; y < _height; ++y)
+            sync_item(board.get_tile_value(x, y),
+                std::make_pair(static_cast<std::size_t>(x),
+                    static_cast<std::size_t>(y)));
+}
+
 void Scene::sync(board_data::BoardData &board)
 {
     ensure_world(board);
@@ -169,8 +178,9 @@ void Scene::sync_egg(int id, const board_data::EggData &egg)
     auto [it, inserted] = _eggs.try_emplace(id);
     EggSlot &slot = it->second;
 
-    if (inserted)
+    if (inserted) {
         slot.egg = std::make_unique<::Egg>();
+    }
     slot.egg->set_pos(world_pos(egg.x, egg.y));
     if (!egg.alive && !slot.dead)
         slot.dead = true;
@@ -257,8 +267,10 @@ void Scene::draw(const board_data::BoardData &board)
         _world->draw_world();
     for (auto &kv : _slots)
         kv.second.robot->draw();
-    for (auto &eg : _eggs)
-        eg.second.egg->draw();
+    for (auto &eg : _eggs) {
+        if (!eg.second.dead)
+            eg.second.egg->draw();
+    }
     for (auto &kv : _items)
         kv.second->draw();
     for (auto &ic : _incantation)

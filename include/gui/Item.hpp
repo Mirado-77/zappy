@@ -30,8 +30,7 @@ using ItemInfo = struct ItemInfo_s {
     const float scale;
 };
 
-#define DEFAULT_COLOR CLITERAL(Color){ 0, 255, 0, 255 }
-#define DEFAULT_PATH "src/gui/assets/cartoon_hot-dog.glb"
+static const Color default_color = { 0, 255, 0, 255 };
 #define DEFAULT_MEAN 0.3
 #define FOOD_SCALE 0.05
 static const std::map<const ItemType, const ItemInfo> mineral_info = {

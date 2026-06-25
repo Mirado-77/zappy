@@ -9,7 +9,7 @@
 #include "gui/utils.hpp"
 
 trantor::trantor()
-    : _pos(CLITERAL(Vector3){0, 0, 0}),
+    : _pos({0, 0, 0}),
     _state(YES),
     _angle(NO_ANGLE)
 {
