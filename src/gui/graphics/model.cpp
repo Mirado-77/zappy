@@ -104,6 +104,11 @@ Vector3 model::get_pos()
 }
 
 
+BoundingBox model::get_bbox()
+{
+    return GetModelBoundingBox(this->_model);
+}
+
 void model::set_base_pos(Vector3 pos)
 {
     this->_base_pos = pos;

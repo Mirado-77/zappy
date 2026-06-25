@@ -7,53 +7,38 @@
 
 #ifndef ITEM_HPP_
     #define ITEM_HPP_
-    #include <iostream>
-    #include <map>
+    #include <array>
+    #include <cstddef>
+    #include <memory>
     #include "model.hpp"
-    #define STONE_PATH "src/gui/assets/crystals.glb"
-    #define FOOD_PATH "src/gui/assets/octopus_sandwich.glb"
     #include "gui/board_data/TileData.hpp"
 
-using ItemType = enum item_type {
-    LINMATE = 0,
-    DERAUMERE = 1,
-    SIBUR = 2,
-    MENDIANE = 3,
-    PIRAS = 4,
-    THYSTAME = 5,
-    FOOD = 6,
+    #define FOOD_PATH "src/gui/assets/octopus_sandwich.glb"
+
+// Resource indices, matching the BoardData/BCT order
+// (food first, then the six minerals).
+enum ResourceIndex {
+    R_FOOD = 0,
+    R_LINEMATE = 1,
+    R_DERAUMERE = 2,
+    R_SIBUR = 3,
+    R_MENDIANE = 4,
+    R_PHIRAS = 5,
+    R_THYSTAME = 6,
 };
+
+constexpr std::size_t MINERAL_COUNT = 6;
+
 #define SATISFYING_FOOD_COUNT 5
 
-using ItemInfo = struct ItemInfo_s {
-    const Color color;
-    const std::string texture_path;
-    const float scale;
-};
-
-static const Color default_color = { 0, 255, 0, 255 };
-#define DEFAULT_MEAN 0.3
-#define FOOD_SCALE 0.05
-static const std::map<const ItemType, const ItemInfo> mineral_info = {
-    {LINMATE, (const ItemInfo){GRAY, STONE_PATH, 0.3}},
-    {DERAUMERE, (const ItemInfo){RED, STONE_PATH, 0.3}},
-    {SIBUR, (const ItemInfo){PURPLE, STONE_PATH, 0.3}},
-    {MENDIANE, (const ItemInfo){ORANGE, STONE_PATH, 0.3}},
-    {PIRAS, (const ItemInfo){YELLOW, STONE_PATH, 0.3}},
-    {THYSTAME, (const ItemInfo){GREEN, STONE_PATH, 0.3}},
-    {FOOD, (const ItemInfo){WHITE, FOOD_PATH, FOOD_SCALE}},
-};
-
-class ColorBuffer {
-public:
-    ColorBuffer();
-    void add_color(Color color, size_t weight);
-    Color mean();
-    size_t set_size;
-    size_t r;
-    size_t g;
-    size_t b;
-    size_t a;
+// One distinct crystal model per mineral type (index 0 == linemate).
+static const std::array<const char *, MINERAL_COUNT> CRYSTAL_PATHS = {
+    "src/gui/assets/cristaux/crystal1.glb",
+    "src/gui/assets/cristaux/crystal2.glb",
+    "src/gui/assets/cristaux/crystal3.glb",
+    "src/gui/assets/cristaux/crystal4.glb",
+    "src/gui/assets/cristaux/crystal5.glb",
+    "src/gui/assets/cristaux/crysta6.glb",
 };
 
 class Item {
@@ -64,11 +49,9 @@ public:
     void draw();
     void sync(const zappy::gui::board_data::Resources resources);
     static std::unique_ptr<model> _mod_food;
-    static std::unique_ptr<model> _mod_mineral;
+    static std::array<std::unique_ptr<model>, MINERAL_COUNT> _mod_crystals;
 private:
-    std::unique_ptr<model>& get_item_model();
     zappy::gui::board_data::Resources _resources;
-    Color _mineral_color;
     Vector3 _pos;
 };
 
