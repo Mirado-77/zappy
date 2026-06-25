@@ -24,6 +24,7 @@
     #include "gui/Item.hpp"
     #include "gui/board_data/GraphicalEvent.hpp"
     #include "gui/Incantation.hpp"
+    #include "gui/LevelUp.hpp"
 
 namespace zappy::gui::render {
 
@@ -74,6 +75,13 @@ private:
         bool dead = false;
     };
 
+    struct LevelUpFx {
+        std::unique_ptr<::LevelUp> fx;
+        double start_time = 0.0;
+        int x = 0;
+        int y = 0;
+    };
+
     struct MeteorView {
         int x = 0;
         int y = 0;
@@ -91,6 +99,8 @@ private:
         std::pair<std::size_t, std::size_t> coords);
     void sync_items(const board_data::BoardData &board);
     void drain_meteors(board_data::BoardData &board);
+    void drain_levelups(board_data::BoardData &board);
+    void draw_levelups();
     void rotate_to(Slot &slot, int target);
     void sync_incant(int id, const board_data::GraphicalEvent &event);
     void apply_biome_models(const board_data::BoardData &board);
@@ -105,6 +115,7 @@ private:
     std::unordered_map<int, Slot> _slots;
     std::unordered_map<int, EggSlot> _eggs;
     std::unordered_map<int, Incant> _incantation;
+    std::unordered_map<int, LevelUpFx> _levelups;
     std::unordered_map<std::pair<std::size_t, std::size_t>,
         std::unique_ptr<::Item>, PairHash> _items;
     std::vector<MeteorView> _meteors;

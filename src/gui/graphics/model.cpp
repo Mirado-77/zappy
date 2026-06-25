@@ -41,6 +41,8 @@ bool model::isloaded()
 
 void model::Update_anim()
 {
+    if (this->_anim == nullptr || this->_animeCount == 0)
+        return;
     this->_current_frame = (this->_current_frame + 1) % this->_anim[this->_anim_index].keyframeCount;
     UpdateModelAnimation(this->_model, this->_anim[this->_anim_index], (float)this->_current_frame);
 }

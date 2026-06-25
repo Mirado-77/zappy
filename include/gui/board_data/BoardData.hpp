@@ -95,6 +95,7 @@ public:
     [[nodiscard]] const std::optional<StormZone> &storm() const noexcept
         { return _storm; }
     [[nodiscard]] std::vector<MeteorImpact> take_pending_meteors();
+    [[nodiscard]] std::vector<int> take_pending_levelups();
     void arm_event(std::string name, int radius)
         { _armed_event = std::move(name); _armed_radius = radius;
           _event_armed = true; }
@@ -164,6 +165,7 @@ private:
     bool _profile_disabled = false;
     std::optional<StormZone> _storm;
     std::vector<MeteorImpact> _pending_meteors;
+    std::vector<int> _pending_levelups;
     bool _event_armed = false;
     std::string _armed_event;
     int _armed_radius = 0;
