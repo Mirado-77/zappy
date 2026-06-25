@@ -637,4 +637,3 @@ Test(gui_notifier, test_broadcast_message_sends_smg)
     cr_assert_gt(read(guiPeer, buf, sizeof(buf) - 1), 0);
     cr_assert_str_eq(buf, "smg Hello GUI!\n");
 }
-

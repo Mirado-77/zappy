@@ -116,15 +116,6 @@ void Scene::sync_items(const board_data::BoardData &board)
                     static_cast<std::size_t>(y)));
 }
 
-void Scene::sync_eggs(const board_data::BoardData &board)
-{
-    for (int x = 0; x < _width; ++x)
-        for (int y = 0; y < _height; ++y)
-            sync_item(board.get_tile_value(x, y),
-                std::make_pair(static_cast<std::size_t>(x),
-                    static_cast<std::size_t>(y)));
-}
-
 void Scene::sync(board_data::BoardData &board)
 {
     ensure_world(board);
@@ -174,14 +165,14 @@ void Scene::ensure_world(const board_data::BoardData &board)
 void Scene::sync_player(int id, const board_data::PlayerData &player)
 {
     auto [it, inserted] = _slots.try_emplace(id);
+    Vector3 player_pos = world_pos(player.x, player.y);
+
     Slot &slot = it->second;
     if (inserted) {
-        slot.robot = std::make_unique<::trantor>();
-        slot.orientation = static_cast<int>(player.orient);
-        if (_has_shader)
-            slot.robot->set_shader(_shader);
+        slot.robot = std::make_unique<::trantor>(player, player_pos);
+    } else {
+        slot.robot->sync(player, player_pos);
     }
-    slot.robot->set_pos(world_pos(player.x, player.y));
     slot.x = player.x;
     slot.y = player.y;
     rotate_to(slot, static_cast<int>(player.orient));

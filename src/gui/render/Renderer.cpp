@@ -10,6 +10,7 @@
 #include <string>
 
 #include "gui/draw.hpp"
+#include "gui/trantor.hpp"
 
 namespace zappy::gui::render {
 
@@ -206,6 +207,7 @@ void Renderer::draw(board_data::BoardData &board, ui::AdminPanel &admin,
     ClearBackground(RAYWHITE);
     _camera.Begin_mode_3d();
     draw_skybox();
+    trantor::_health_bar_batch->draw_health_bars(_camera.cam);
     _scene.draw(board);
     _camera.End_mode_3d();
     overlay(board);

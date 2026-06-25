@@ -23,6 +23,7 @@ using ItemType = enum item_type {
     THYSTAME = 5,
     FOOD = 6,
 };
+#define SATISFYING_FOOD_COUNT 5
 
 using ItemInfo = struct ItemInfo_s {
     const Color color;
