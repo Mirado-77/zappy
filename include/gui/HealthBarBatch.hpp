@@ -20,7 +20,7 @@
     #define HEALTHBAR_THICKNESS 0.1f
     #define HEALTHBAR_HEIGHT (HEALTHBAR_WIDTH * HEALTHBAR_THICKNESS)
     #define HEALTHBAR_HEIGHT_MODIFIER 3.0f
-    #define UP_V2 {1, 0}
+    #define UP_V2 {0, 1}
 
 class HealthBarBatch {
     public:
