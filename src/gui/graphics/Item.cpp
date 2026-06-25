@@ -7,20 +7,23 @@
 
 #include "gui/Item.hpp"
 #include "gui/board_data/TileData.hpp"
-#include <algorithm>
 #include <array>
 #include <cstddef>
 
 namespace {
 
-// Target world size (max dimension) every crystal/food is normalized to,
-// regardless of its native model size, so nothing spills over the tile.
-constexpr float CRYSTAL_TARGET = 0.9f;
-constexpr float FOOD_TARGET = 0.8f;
+constexpr float FOOD_SCALE = 0.03f;
 constexpr float ITEM_LIFT = 0.0f;
 
-// Hexagon ring radius for the minerals (well inside the tile half-width 3.0).
-constexpr float R = 1.0f;
+const std::array<Color, MINERAL_COUNT> MINERAL_COLOR = {{
+    GRAY, RED, PURPLE, ORANGE, YELLOW, GREEN,
+}};
+
+const std::array<float, MINERAL_COUNT> MINERAL_SCALE = {{
+    0.23f, 0.26f, 0.29f, 0.20f, 0.30f, 0.36f,
+}};
+
+constexpr float R = 0.9f;
 constexpr float A = R * 0.5f;
 constexpr float B = R * 0.8660254f;
 
@@ -36,52 +39,17 @@ const std::array<Vector3, MINERAL_COUNT> CRYSTAL_OFFSET = {{
 // Food in the center of the mineral ring.
 constexpr Vector3 FOOD_OFFSET = {0.0f, 0.0f, 0.0f};
 
-// Per-model normalized scales, computed once from the loaded bounding boxes.
-std::array<float, MINERAL_COUNT> g_crystal_scale{};
-float g_food_scale = 0.0f;
-bool g_scales_ready = false;
-
-float fit_scale(model &m, float target)
-{
-    const BoundingBox b = m.get_bbox();
-    const float max_dim = std::max({b.max.x - b.min.x,
-        b.max.y - b.min.y, b.max.z - b.min.z});
-
-    if (max_dim <= 0.0f)
-        return target;
-    return target / max_dim;
-}
-
 } // namespace
-
-static void get_item_scales()
-{
-    for (std::size_t i = 0; i < MINERAL_COUNT; ++i)
-        if (Item::_mod_crystals[i])
-            g_crystal_scale[i] = fit_scale(*(Item::_mod_crystals[i]),
-                CRYSTAL_TARGET);
-    if (Item::_mod_food)
-        g_food_scale = fit_scale(*(Item::_mod_food), FOOD_TARGET);
-    g_scales_ready = true;
-}
 
 Item::Item(const zappy::gui::board_data::Resources resources, Vector3 pos)
     : _resources(resources), _pos(pos)
 {
     if (_mod_food && !_mod_food->isloaded()) {
+        _mod_food->set_scale(FOOD_SCALE);
         _mod_food->load();
     }
-    for (std::size_t i = 0; i < _mod_crystals.size(); ++i) {
-        if (_mod_crystals[i] && !_mod_crystals[i]->isloaded()) {
-            _mod_crystals[i]->load();
-        }
-    }
-    if (!g_scales_ready) {
-        get_item_scales();
-        for (std::size_t i = 0; i < _mod_crystals.size(); ++i)
-            _mod_crystals[i]->set_scale(g_crystal_scale[i]);
-        _mod_food->set_scale(g_food_scale);
-    }
+    if (_mod_mineral && !_mod_mineral->isloaded())
+        _mod_mineral->load();
 }
 
 void Item::sync(const zappy::gui::board_data::Resources resources)
@@ -96,12 +64,16 @@ void Item::draw()
             _pos.y + ITEM_LIFT, _pos.z + FOOD_OFFSET.z});
         _mod_food->Draw_model();
     }
+    if (!_mod_mineral)
+        return;
     for (std::size_t i = 0; i < MINERAL_COUNT; ++i) {
-        if (_resources[R_LINEMATE + i] <= 0 || !_mod_crystals[i])
+        if (_resources[R_LINEMATE + i] <= 0)
             continue;
-        _mod_crystals[i]->set_pos({_pos.x + CRYSTAL_OFFSET[i].x,
+        _mod_mineral->set_scale(MINERAL_SCALE[i]);
+        _mod_mineral->change_color(MINERAL_COLOR[i]);
+        _mod_mineral->set_pos({_pos.x + CRYSTAL_OFFSET[i].x,
             _pos.y + ITEM_LIFT, _pos.z + CRYSTAL_OFFSET[i].z});
-        _mod_crystals[i]->Draw_model();
+        _mod_mineral->Draw_model();
     }
 }
 
