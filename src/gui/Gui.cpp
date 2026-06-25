@@ -63,7 +63,6 @@ void Gui::run()
         handleServerEvents();
         _renderer->draw(_board, *_admin, *_player);
     }
-    // Free shared static models while the GL context is still alive.
     release_shared_models();
 }
 
