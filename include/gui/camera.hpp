@@ -17,6 +17,7 @@ class camera {
         ~camera() = default;
         void set_mode(CameraMode mode);
         void update_camera();
+        void update_free_rmb(bool allow_move);
         void set_pos(Vector3 pos);
         void set_target(Vector3 pos);
         void set_up(Vector3 pos);

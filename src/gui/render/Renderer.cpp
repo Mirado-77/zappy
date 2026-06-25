@@ -6,6 +6,7 @@
 */
 
 #include "gui/render/Renderer.hpp"
+#include "gui/utils.hpp"
 
 #include <string>
 
@@ -18,6 +19,26 @@ namespace {
 constexpr int WIN_WIDTH = 1280;
 constexpr int WIN_HEIGHT = 720;
 
+const char *dir_char(board_data::Orientation dir)
+{
+    switch (dir) {
+        case board_data::Orientation::NORTH: return "N";
+        case board_data::Orientation::EAST: return "E";
+        case board_data::Orientation::SOUTH: return "S";
+        default: return "W";
+    }
+}
+
+int count_flooded(const board_data::BoardData &board)
+{
+    int count = 0;
+
+    for (const auto &tile : board.tiles())
+        if (tile.flooded)
+            ++count;
+    return count;
+}
+
 } // namespace
 
 Renderer::Renderer()
@@ -27,7 +48,36 @@ Renderer::Renderer()
     _camera.set_mode(CAMERA_FREE);
     SetTargetFPS(60);
     _window.Set_window_state(FLAG_WINDOW_RESIZABLE);
-    DisableCursor();
+    setup_shader();
+}
+
+Renderer::~Renderer()
+{
+    UnloadShader(_shader);
+}
+
+void Renderer::setup_shader()
+{
+    const float ambient[4] = {0.5f, 0.5f, 0.55f, 1.0f};
+    const Vector3 dir = {-0.6f, -1.0f, -0.4f};
+
+    _shader = LoadShader("src/gui/assets/lighting.vs",
+        "src/gui/assets/lighting.fs");
+    _shader.locs[SHADER_LOC_VECTOR_VIEW] =
+        GetShaderLocation(_shader, "viewPos");
+    SetShaderValue(_shader, GetShaderLocation(_shader, "ambient"),
+        ambient, SHADER_UNIFORM_VEC4);
+    SetShaderValue(_shader, GetShaderLocation(_shader, "lightDir"),
+        &dir, SHADER_UNIFORM_VEC3);
+    _scene.set_shader(_shader);
+}
+
+void Renderer::update_light()
+{
+    const Vector3 cam = _camera.cam.position;
+
+    SetShaderValue(_shader, _shader.locs[SHADER_LOC_VECTOR_VIEW],
+        &cam, SHADER_UNIFORM_VEC3);
 }
 
 bool Renderer::should_close()
@@ -37,28 +87,119 @@ bool Renderer::should_close()
 
 void Renderer::overlay(const board_data::BoardData &board)
 {
-    std::string line1 = "map " + std::to_string(board.width()) + "x"
+    std::string hud_map_info = "map " + std::to_string(board.width()) + "x"
         + std::to_string(board.height()) + "  tu "
         + std::to_string(board.time_unit());
-    std::string line2 = "players " + std::to_string(board.players().size())
+    std::string hud_players_info = "players " + std::to_string(board.players().size())
         + "  teams " + std::to_string(board.teams().size());
 
-    ::draw::Draw_text(line1, {10, 10}, 20, DARKGRAY);
-    ::draw::Draw_text(line2, {10, 35}, 20, DARKGRAY);
+    ::draw::Draw_text(hud_map_info, {10, 10}, 24, DARKGRAY);
+    ::draw::Draw_text(hud_players_info, {10, 40}, 24, DARKGRAY);
     if (board.game_ended())
-        ::draw::Draw_text("WINNER: " + board.winner(), {10, 60}, 20, MAROON);
+        ::draw::Draw_text("WINNER: " + board.winner(), {10, 70}, 24, MAROON);
+    if (_scene.active_meteors() > 0)
+        ::draw::Draw_text("METEOR x"
+            + std::to_string(_scene.active_meteors()), {10, 130}, 24, RED);
+    const int floods = count_flooded(board);
+    if (floods > 0)
+        ::draw::Draw_text("FLOOD tiles=" + std::to_string(floods),
+            {10, 160}, 24, BLUE);
+    if (board.event_armed())
+        ::draw::Draw_text("PLACE " + board.armed_event()
+            + " - click a tile (Esc to cancel)", {10, 190}, 24, PURPLE);
 }
 
-void Renderer::draw(const board_data::BoardData &board)
+void Renderer::storm_overlay(const board_data::BoardData &board)
 {
+    if (!board.storm().has_value())
+        return;
+    const auto &s = *board.storm();
+    const std::string line = "STORM center=(" + std::to_string(s.center_x)
+        + "," + std::to_string(s.center_y) + ")  R=" + std::to_string(s.radius)
+        + "  dir=" + dir_char(s.direction);
+
+    ::draw::Draw_text(line, {10, 100}, 24, ORANGE);
+}
+
+void Renderer::update_cursor()
+{
+    const bool look = IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
+
+    if (look && !IsCursorHidden())
+        DisableCursor();
+    if (!look && IsCursorHidden())
+        EnableCursor();
+}
+
+void Renderer::trigger_event(board_data::BoardData &board, Vector2 mouse)
+{
+    const auto tile = _scene.pick_tile(mouse, _camera.cam);
+
+    if (!tile)
+        return;
+    board.queue_admin_command("adm_event_trigger " + board.armed_event()
+        + " " + std::to_string(tile->first) + " " + std::to_string(tile->second)
+        + " " + std::to_string(board.armed_radius()) + "\n");
+    board.disarm_event();
+}
+
+void Renderer::handle_pick(board_data::BoardData &board, ui::AdminPanel &admin,
+    ui::PlayerPanel &player)
+{
+    const Vector2 mouse = GetMousePosition();
+
+    if (IsKeyPressed(KEY_ESCAPE))
+        board.disarm_event();
+    if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)
+        || !IsMouseButtonPressed(MOUSE_BUTTON_LEFT)
+        || admin.blocks_point(mouse) || player.blocks_point(mouse))
+        return;
+    if (board.event_armed())
+        return trigger_event(board, mouse);
+    if (!board.is_admin())
+        return;
+    const auto id = _scene.pick_player(mouse, _camera.cam);
+    if (id)
+        board.set_selected_player(*id);
+}
+
+void Renderer::draw_crosshair()
+{
+    const int cx = GetScreenWidth() / 2;
+    const int cy = GetScreenHeight() / 2;
+
+    DrawLine(cx - 8, cy, cx + 8, cy, DARKGRAY);
+    DrawLine(cx, cy - 8, cx, cy + 8, DARKGRAY);
+}
+
+void Renderer::draw(board_data::BoardData &board, ui::AdminPanel &admin,
+    ui::PlayerPanel &player)
+{
+    const bool typing = admin.capturing_keyboard()
+        || player.capturing_keyboard();
+
     _scene.sync(board);
-    _camera.update_camera();
+    update_cursor();
+    _camera.update_free_rmb(!typing);
+    handle_pick(board, admin, player);
+    if (IsKeyPressed(KEY_B) && !typing)
+        _scene.set_show_biomes(!_scene.show_biomes());
+    if (IsKeyPressed(KEY_T) && !typing)
+        _scene.set_show_storm(!_scene.show_storm());
+    if (IsKeyPressed(KEY_F) && !typing)
+        _scene.set_show_flood(!_scene.show_flood());
+    update_light();
     ::draw::Start_Draw();
     ClearBackground(RAYWHITE);
     _camera.Begin_mode_3d();
-    _scene.draw();
+    _scene.draw(board);
     _camera.End_mode_3d();
     overlay(board);
+    storm_overlay(board);
+    if (IsCursorHidden())
+        draw_crosshair();
+    admin.draw();
+    player.draw();
     ::draw::End_Draw();
 }
 

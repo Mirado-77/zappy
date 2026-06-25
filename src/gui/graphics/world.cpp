@@ -7,53 +7,91 @@
 
 #include "gui/world.hpp"
 
-world::world(int x, int y)
+#include <array>
+#include <cmath>
+
+namespace {
+
+constexpr float TILE_UNIT = 6.0f;
+
+constexpr std::array<const char *, 6> PALETTE_PATHS = {
+    "src/gui/assets/farm_grass-tile.glb",
+    "src/gui/assets/autumn_tile.glb",
+    "src/gui/assets/farm_desert-tile.glb",
+    "src/gui/assets/farm_tundra-tile.glb",
+    "src/gui/assets/farm_snow-tile.glb",
+    "src/gui/assets/ocean_tile.glb"
+};
+
+float wave_at(int x, int y, double time, float scale)
 {
-    for (float i = 0; i < y; i++) {
-        this->_map.push_back(init_model(i, x));
-    }
+    const float phase = static_cast<float>(x + y) * 0.4f;
+
+    return sinf(static_cast<float>(time * 3.0) + phase) * scale;
+}
+
+float wave_scale(double time)
+{
+    return (2.0f + static_cast<float>(sin(time))) * 0.2f;
+}
+
+} // namespace
+
+world::world(int x, int y)
+    : _width(x), _height(y)
+{
+    load_palette();
+    _index.assign(y, std::vector<int>(x, 0));
 }
 
 world::~world()
 {
+}
 
+void world::load_palette()
+{
+    for (const char *path : PALETTE_PATHS)
+        this->_palette.push_back(std::make_unique<model>(path));
+}
+
+void world::set_tile_model(int x, int y, int model_index)
+{
+    if (y < 0 || y >= this->_height || x < 0 || x >= this->_width)
+        return;
+    if (model_index < 0 || model_index >= static_cast<int>(_palette.size()))
+        return;
+    this->_index[y][x] = model_index;
+}
+
+void world::set_shader(Shader shader)
+{
+    for (auto &tile : this->_palette)
+        tile->set_shader(shader);
+}
+
+float world::get_wave_pos(int x, int y)
+{
+    const double time = GetTime();
+
+    return wave_at(x, y, time, wave_scale(time));
+}
+
+void world::draw_tile(int x, int y, double time, float scale)
+{
+    const float wave = wave_at(x, y, time, scale);
+    model *tile = this->_palette[this->_index[y][x]].get();
+
+    tile->set_pos({static_cast<float>(x) * TILE_UNIT, wave,
+        static_cast<float>(y) * TILE_UNIT});
+    tile->Draw_model();
 }
 
 void world::draw_world()
 {
-    auto time = GetTime();
-    for (std::size_t i = 0; i < this->_map.size(); i++) {
-        for (std::size_t j = 0; j < this->_map[i].size(); j++) {
-            this->_map[i][j]->Draw_model();
-        }
-    }
-    float scale = (2.0f + (float)sin(time))*0.2f;
-    this->model_animation(time, scale);
-}
+    const double time = GetTime();
+    const float scale = wave_scale(time);
 
-std::vector<std::unique_ptr<model>> world::init_model(float y, float x)
-{
-    std::vector<std::unique_ptr<model>> line;
-    for (float i = 0; i < x; i++) {
-        Vector3 pos = {i * 6, 0, y * 6};
-        auto tile = std::make_unique<model>(TILE_PATH);
-        tile->set_pos(pos);
-        tile->set_base_pos(pos);
-        line.emplace_back(std::move(tile));
-    }
-    return line;
-}
-
-void world::model_animation(std::double_t time, float scale)
-{
-    for (std::size_t i = 0; i < this->_map.size(); i++) {
-        for (std::size_t j = 0; j < this->_map[i].size(); j++) {
-            Vector3 base = this->_map[i][j]->get_base_pos();
-            float phase  = (float)(i + j) * 0.4f;
-            float wave   = sinf((float)(time * 3.0f) + phase) * scale;
-            Vector3 pos  = base;
-            pos.y        = base.y + wave;
-            this->_map[i][j]->set_pos(pos);
-        }
-    }
+    for (int y = 0; y < this->_height; ++y)
+        for (int x = 0; x < this->_width; ++x)
+            draw_tile(x, y, time, scale);
 }

@@ -7,25 +7,42 @@
 
 #include "gui/model.hpp"
 
-model::model(std::string name)
+model::model(std::string name, bool load, Vector3 pos)
     : _anim(nullptr) ,_animeCount(0)
     , _current_frame(0), _anim_index(0),
-    _color(WHITE), _name(name), _pos({0.0f, 0.0f, 0.0f}),
-    _base_pos({0.0f, 0.0f, 0.0f})
+    _color(WHITE), _name(name), _pos(pos),
+    _base_pos(pos), loaded(load)
 
 {
-    this->_model = LoadModel(name.c_str());
+    if (load)
+        this->_model = LoadModel(_name.c_str());
 }
 
 model::~model()
 {
-    UnloadModel(this->_model);
+    if (this->_anim != nullptr)
+        UnloadModelAnimations(this->_anim, this->_animeCount);
+    if (this->loaded)
+        UnloadModel(this->_model);
+}
+
+void model::load()
+{
+    if (this->loaded)
+        return;
+    this->_model = LoadModel(_name.c_str());
+    this->loaded = true;
+}
+
+bool model::isloaded()
+{
+    return this->loaded;
 }
 
 void model::Update_anim()
 {
-    this->_current_frame = (this->_current_frame + 1) % this->_anim.get()[this->_anim_index].keyframeCount;
-    UpdateModelAnimation(this->_model, this->_anim.get()[this->_anim_index], (float)this->_current_frame);
+    this->_current_frame = (this->_current_frame + 1) % this->_anim[this->_anim_index].keyframeCount;
+    UpdateModelAnimation(this->_model, this->_anim[this->_anim_index], (float)this->_current_frame);
 }
 
 void model::switch_index_anime()
@@ -38,14 +55,27 @@ void model::Draw_model(float scale)
     DrawModel(this->_model, this->_pos, scale, this->_color);
 }
 
+Color model::get_color()
+{
+    return this->_color;
+}
+
 void model::change_color(Color cl)
 {
     this->_color = cl;
 }
 
+void model::set_shader(Shader shader)
+{
+    for (int i = 0; i < this->_model.materialCount; ++i)
+        this->_model.materials[i].shader = shader;
+}
+
 void model::load_anim()
 {
-    this->_anim.reset(LoadModelAnimations(_name.c_str(), &this->_animeCount));
+    if (this->_anim != nullptr)
+        UnloadModelAnimations(this->_anim, this->_animeCount);
+    this->_anim = LoadModelAnimations(_name.c_str(), &this->_animeCount);
 }
 
 void model::move_model(Vector3 rotationAxis, float rotationAngle, Vector3 scale)

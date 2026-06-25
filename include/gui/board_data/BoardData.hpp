@@ -8,6 +8,7 @@
 #ifndef BOARDDATA_HPP_
     #define BOARDDATA_HPP_
     #include <cstddef>
+    #include <optional>
     #include <string>
     #include <unordered_map>
     #include <vector>
@@ -38,6 +39,19 @@ struct EggData {
     bool alive = true;
 };
 
+struct StormZone {
+    int center_x = 0;
+    int center_y = 0;
+    int radius = 0;
+    Orientation direction = Orientation::NORTH;
+};
+
+struct MeteorImpact {
+    int x = 0;
+    int y = 0;
+    int radius = 0;
+};
+
 class BoardData {
 public:
     explicit BoardData(const ipc::ServerInfo &server_info);
@@ -47,7 +61,10 @@ public:
     [[nodiscard]] int width() const noexcept { return _width; }
     [[nodiscard]] int height() const noexcept { return _height; }
     [[nodiscard]] int time_unit() const noexcept { return _time_unit; }
-    [[nodiscard]] TileData &get_tile_value(std::size_t x, std::size_t y);
+    [[nodiscard]] const TileData &get_tile_value(std::size_t x,
+        std::size_t y) const;
+    [[nodiscard]] const std::vector<TileData> &tiles() const noexcept
+        { return _tiles; }
     [[nodiscard]] const std::unordered_map<int, PlayerData> &players()
         const noexcept { return _players; }
     [[nodiscard]] const std::unordered_map<int, EggData> &eggs()
@@ -58,6 +75,34 @@ public:
         const noexcept { return _events; }
     [[nodiscard]] bool game_ended() const noexcept { return _ended; }
     [[nodiscard]] const std::string &winner() const noexcept { return _winner; }
+    [[nodiscard]] bool is_admin() const noexcept { return _is_admin; }
+    [[nodiscard]] const std::unordered_map<std::string, bool> &feature_flags()
+        const noexcept { return _feature_flags; }
+    [[nodiscard]] const std::string &admin_status() const noexcept
+        { return _admin_status; }
+    [[nodiscard]] unsigned admin_status_seq() const noexcept
+        { return _admin_status_seq; }
+    void mark_admin_pending() noexcept { _admin_pending = true; }
+    void queue_admin_command(std::string cmd)
+        { _outbox.push_back(std::move(cmd)); }
+    [[nodiscard]] std::vector<std::string> take_outbox();
+    [[nodiscard]] int selected_player_id() const noexcept
+        { return _selected_player_id; }
+    [[nodiscard]] bool profile_disabled() const noexcept
+        { return _profile_disabled; }
+    void set_selected_player(int id);
+    void clear_selection() noexcept;
+    [[nodiscard]] const std::optional<StormZone> &storm() const noexcept
+        { return _storm; }
+    [[nodiscard]] std::vector<MeteorImpact> take_pending_meteors();
+    void arm_event(std::string name, int radius)
+        { _armed_event = std::move(name); _armed_radius = radius;
+          _event_armed = true; }
+    void disarm_event() noexcept { _event_armed = false; }
+    [[nodiscard]] bool event_armed() const noexcept { return _event_armed; }
+    [[nodiscard]] const std::string &armed_event() const noexcept
+        { return _armed_event; }
+    [[nodiscard]] int armed_radius() const noexcept { return _armed_radius; }
 
 private:
     void on_msz(const net::ServerEvent &);
@@ -77,6 +122,19 @@ private:
     void on_pie(const net::ServerEvent &);
     void on_pex(const net::ServerEvent &);
     void on_pfk(const net::ServerEvent &);
+    void on_admin_ok(const net::ServerEvent &);
+    void on_admin_fail(std::string code);
+    void on_adm_flag_list(const net::ServerEvent &);
+    void on_suc();
+    void on_sbp();
+    void on_ppf(const net::ServerEvent &);
+    void on_evt_biome_set(const net::ServerEvent &);
+    void on_storm_set(const net::ServerEvent &);
+    void on_storm_end();
+    void on_meteor_impact(const net::ServerEvent &);
+    void on_evt_flood_tile(const net::ServerEvent &);
+    bool fill_from_ppf(PlayerData &p, const std::string &text);
+    void set_admin_status(std::string code);
 
     void resize_tiles();
     void push_player_event(GraphicalEventKind kind, int player_id,
@@ -95,6 +153,20 @@ private:
     std::vector<GraphicalEvent> _events;
     bool _ended = false;
     std::string _winner;
+    bool _is_admin = false;
+    bool _admin_pending = false;
+    std::unordered_map<std::string, bool> _feature_flags;
+    std::vector<std::string> _outbox;
+    std::string _admin_status;
+    unsigned _admin_status_seq = 0;
+    int _selected_player_id = -1;
+    bool _ppf_pending = false;
+    bool _profile_disabled = false;
+    std::optional<StormZone> _storm;
+    std::vector<MeteorImpact> _pending_meteors;
+    bool _event_armed = false;
+    std::string _armed_event;
+    int _armed_radius = 0;
 };
 
 } // namespace zappy::gui::board_data
