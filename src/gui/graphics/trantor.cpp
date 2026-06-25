@@ -7,11 +7,35 @@
 
 #include "gui/trantor.hpp"
 #include "gui/utils.hpp"
+#include "gui/Constants.hpp"
+#include "gui/Item.hpp"
 
-trantor::trantor()
-    : _pos({0, 0, 0}),
+/*
+    // int id = 0;
+    // int x = 0;
+    // int y = 0;
+    // Orientation orient = Orientation::NORTH;
+    int level = 1;
+    std::string team;
+    Resources inventory{};
+    bool alive = true;
+    _id(player_data.id),
+    _pos(player_pos),
     _state(YES),
-    _angle(NO_ANGLE)
+    _angle((player_data.orient - 1) * 90)
+*/
+
+inline double health_function(int food_count)
+{
+    return 100.0f * food_count / (food_count + SATISFYING_FOOD_COUNT / 9.0f);
+}
+
+trantor::trantor(const zappy::gui::board_data::PlayerData& trantorian_data, Vector3 player_pos)
+    : _id(trantorian_data.id),
+    _pos(player_pos),
+    _state(YES),
+    _angle((static_cast<int>(trantorian_data.orient) - 1) * 90),
+    _health(health_function(trantorian_data.inventory[FOOD]))
 {
     if (!_mod->isloaded()) {
         _mod->load();
@@ -41,12 +65,22 @@ void trantor::eject_player()
 
 void trantor::death()
 {
+    _health_bar_batch->kill(_id);
     this->_state = DIE;
 };
+
+void trantor::sync(const zappy::gui::board_data::PlayerData& trantorian_data, Vector3 player_pos)
+{
+    _id = trantorian_data.id;
+    _pos = player_pos;
+    _state = YES;
+    _angle = (static_cast<int>(trantorian_data.orient) - 1) * 90;
+}
 
 void trantor::set_pos(Vector3 pos)
 {
     _pos = pos;
+    _health_bar_batch->sync_health_bar_pos(_id, _pos, _health);
 };
 
 void trantor::set_shader(Shader shader)
