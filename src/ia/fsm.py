@@ -33,10 +33,10 @@ def evaluate_fsm_state(state: PlayerState, fork_cooldown: int = 0,
         return FsmState.CRITICAL_SURVIVAL
     if state.fsm_state == FsmState.ELEVATING:
         return FsmState.ELEVATING
-    if lead_cooldown == 0 and can_lead_elevation(state):
-        return FsmState.LEADING_ELEVATION
     if food < SAFE_FOOD:
         return FsmState.FORAGING
+    if lead_cooldown == 0 and can_lead_elevation(state):
+        return FsmState.LEADING_ELEVATION
     if needed_stones(state.level, state.inventory):
         return FsmState.COLLECTING
     if can_fork(state, fork_cooldown):
@@ -95,6 +95,7 @@ class Fsm:
             self._leader[0] = None
             self._rally[0] = None
             elev.status = ElevationStatus.IDLE
+            self._lead_cooldown[0] = 60
 
         if elev.status == ElevationStatus.FAILED:
             if sender.can_send:
@@ -135,8 +136,10 @@ class Fsm:
         if self._leader[0] is not None and new_state not in (
                 FsmState.CRITICAL_SURVIVAL, FsmState.ELEVATING,
                 FsmState.COORDINATING):
-            from fsm_helpers import LEAD_FOOD as _lf
-            if self._state.inventory.get("food", 0) >= _lf:
+            from fsm_helpers import LEAD_ABORT_FOOD as _laf
+            food_ok = self._state.inventory.get("food", 0) >= _laf
+            stones_ok = not needed_stones(self._state.level, self._state.inventory)
+            if food_ok and stones_ok:
                 new_state = FsmState.LEADING_ELEVATION
             else:
                 from broadcast_protocol import MSG_CANCEL, format_msg as _fmt
@@ -167,7 +170,7 @@ class Fsm:
                 self._leader[0] = LeaderInfo()
             tick_leading_elevation(self._state, sender, self._leader, elev)
             if had_leader and self._leader[0] is None:
-                self._lead_cooldown[0] = 50
+                self._lead_cooldown[0] = 150
         elif new_state == FsmState.SCOUTING:
             tick_scouting(self._state, sender, self._scout_counter)
         elif new_state == FsmState.FORKING:

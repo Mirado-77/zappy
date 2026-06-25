@@ -109,12 +109,17 @@ def on_rally_received(
         level = int(fields[0])
     except (ValueError, IndexError):
         return
-    if level != state.level:
+    if level < state.level:
         return
 
     if leader_holder[0] is not None:
-        if leader_holder[0].has_rallied:
+        if level == state.level and leader_holder[0].has_rallied:
+            # Committed to a same-level rally; don't yield to prevent deadlock.
             return
+        # Higher-level leader takes priority: yield even if already committed.
+        if leader_holder[0].has_rallied and sender.can_send:
+            sender.send(f"Broadcast {format_msg(MSG_CANCEL)}",
+                        callback=lambda r: None)
         leader_holder[0] = None
 
     existing = rally_holder[0]
@@ -134,6 +139,13 @@ def on_rally_received(
             existing.step_taken = False
         elif not existing.forward_pending:
             existing.step_taken = False
+        return
+
+    # Don't switch if already committed to any rally (READY sent)
+    if existing is not None and existing.ready_sent:
+        return
+    # Don't downgrade from a higher-level rally to a lower one
+    if existing is not None and level < existing.level:
         return
 
     rally_holder[0] = RallyInfo(level=level, direction=direction)
@@ -223,9 +235,26 @@ def tick_coordinating(
         return
 
     if not rally.step_taken and not rally.forward_pending:
+        from fsm_helpers import SAFE_FOOD
+        if state.last_look and "food" in state.last_look[0] \
+                and state.inventory.get("food", 0) < SAFE_FOOD and sender.can_send:
+            state.last_look[0].remove("food")
+            def _eat_nav(r: str) -> None:
+                if r == "ok":
+                    state.inventory["food"] = state.inventory.get("food", 0) + 1
+            sender.send("Take food", callback=_eat_nav)
+            return
         _navigate_toward_k(state, sender, rally.direction, rally)
         rally.step_taken = True
     else:
-        from fsm_helpers import request_look
+        from fsm_helpers import request_look, SAFE_FOOD
+        if state.last_look and "food" in state.last_look[0] \
+                and state.inventory.get("food", 0) < SAFE_FOOD and sender.can_send:
+            state.last_look[0].remove("food")
+            def _eat_wait(r: str) -> None:
+                if r == "ok":
+                    state.inventory["food"] = state.inventory.get("food", 0) + 1
+            sender.send("Take food", callback=_eat_wait)
+            return
         if not state.pending_look:
             request_look(state, sender)

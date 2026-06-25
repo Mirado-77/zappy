@@ -128,3 +128,36 @@ def make_current_level_handler(state: ElevationState):
             state.status = ElevationStatus.SUCCESS
 
     return handler
+
+
+def make_ko_elevation_handler(state: ElevationState, sender=None):
+    """Create a dispatcher handler for 'ko' during an in-progress elevation.
+
+    When the incantation fails, the server sends 'ko' to all participants
+    (leader and followers). The leader's 'ko' is consumed by sender.on_response
+    as a reply to the Incantation command. But followers never sent Incantation,
+    so their 'ko' arrives without a pending callback and would be ignored.
+
+    This handler intercepts 'ko' when ElevationStatus is IN_PROGRESS and marks
+    the elevation as FAILED so the FSM can exit the ELEVATING state.
+
+    If the sender has a pending command in flight (leader case), we consume
+    the response slot so the sender's in-flight count stays accurate.
+
+    Args:
+        state: Shared ElevationState object to update.
+        sender: Optional CommandSender; if provided and has a pending response,
+            the 'ko' is consumed as that response.
+
+    Returns:
+        A handler callable suitable for Dispatcher.register.
+    """
+    def handler(line: str) -> None:
+        if state.status == ElevationStatus.IN_PROGRESS:
+            state.status = ElevationStatus.FAILED
+            if sender is not None and sender.in_flight > 0:
+                sender.consume_response(line)
+        elif sender is not None:
+            sender.on_response(line)
+
+    return handler
