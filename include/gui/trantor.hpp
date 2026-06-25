@@ -52,6 +52,8 @@ class trantor {
         TrantorState _state;
         int _angle;
         double _health;
+        bool _is_alive;
+        int _death_frame;
 };
 
 #endif /* !TRANTOR_HPP_ */
