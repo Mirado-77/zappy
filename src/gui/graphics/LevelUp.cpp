@@ -15,6 +15,7 @@ LevelUp::LevelUp()
     : _pos({0, 0, 0})
 {
     if (!_mod->isloaded()) {
+        this->_mod->set_scale(LEVEL_UP_SCALE);
         _mod->load();
         this->_mod->load_anim();
     }
@@ -34,6 +35,6 @@ void LevelUp::draw()
 {
     this->_angle += LEVEL_UP_SPIN;
     this->_mod->set_pos(this->_pos);
-    this->_mod->move_model(UP_DIRECTION, this->_angle,
-        {LEVEL_UP_SCALE, LEVEL_UP_SCALE, LEVEL_UP_SCALE});
+    this->_mod->set_angle(this->_angle);
+    this->_mod->Draw_model();
 }

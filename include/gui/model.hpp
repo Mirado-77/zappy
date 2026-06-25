@@ -10,7 +10,7 @@
     #include <iostream>
     #include <memory>
     #include <raylib.h>
-
+    #include <raymath.h>
 
 class model{
     public:
@@ -24,7 +24,10 @@ class model{
         void load_texture();
         void load_texture(std::string name);
         void switch_index_anime();
-        void Draw_model(float scale = 1.0f);
+        void Draw_model(int current_frame = -1);
+        void set_angle(int angle) { _rotationAngle = angle; }
+        void set_scale(double scale) { _scale = Vector3Scale({ 1.0f, 1.0f, 1.0f }, scale); }
+        void set_scale(Vector3 scale) { _scale = scale; }
         void change_color(Color cl);
         void set_shader(Shader shader);
         Color get_color();
@@ -53,6 +56,9 @@ class model{
         Vector3 _base_pos;
         Texture2D _texture;
         bool loaded;
+        Vector3 _rotationAxis;
+        float _rotationAngle;
+        Vector3 _scale;
 
         void check_frame();
 };

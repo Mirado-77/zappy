@@ -9,14 +9,16 @@
 
 Egg::Egg() : _pos( {0, 0, 0} )
 {
-    if (!_mod->isloaded())
+    if (!_mod->isloaded()) {
+        _mod->set_scale(0.5);
         _mod->load();
+    }
 }
 
 void Egg::draw()
 {
     this->_mod->set_pos(_pos);
-    this->_mod->Draw_model(0.5);
+    this->_mod->Draw_model();
 }
 
 void Egg::set_pos(Vector3 pos)

@@ -54,27 +54,38 @@ float fit_scale(model &m, float target)
 
 } // namespace
 
+static void get_item_scales()
+{
+    for (std::size_t i = 0; i < MINERAL_COUNT; ++i)
+        if (Item::_mod_crystals[i])
+            g_crystal_scale[i] = fit_scale(*(Item::_mod_crystals[i]),
+                CRYSTAL_TARGET);
+    if (Item::_mod_food)
+        g_food_scale = fit_scale(*(Item::_mod_food), FOOD_TARGET);
+    g_scales_ready = true;
+}
+
 Item::Item(const zappy::gui::board_data::Resources resources, Vector3 pos)
     : _resources(resources), _pos(pos)
 {
+    if (_mod_food && !_mod_food->isloaded()) {
+        _mod_food->load();
+    }
+    for (std::size_t i = 0; i < _mod_crystals.size(); ++i) {
+        if (_mod_crystals[i] && !_mod_crystals[i]->isloaded()) {
+            _mod_crystals[i]->load();
+        }
+    }
+    if (!g_scales_ready) {
+        get_item_scales();
+        for (std::size_t i = 0; i < _mod_crystals.size(); ++i)
+            _mod_crystals[i]->set_scale(g_crystal_scale[i]);
+        _mod_food->set_scale(g_food_scale);
+    }
 }
 
 void Item::sync(const zappy::gui::board_data::Resources resources)
 {
-    if (_mod_food && !_mod_food->isloaded())
-        _mod_food->load();
-    for (auto &crystal : _mod_crystals)
-        if (crystal && !crystal->isloaded())
-            crystal->load();
-    if (!g_scales_ready) {
-        for (std::size_t i = 0; i < MINERAL_COUNT; ++i)
-            if (_mod_crystals[i])
-                g_crystal_scale[i] = fit_scale(*_mod_crystals[i],
-                    CRYSTAL_TARGET);
-        if (_mod_food)
-            g_food_scale = fit_scale(*_mod_food, FOOD_TARGET);
-        g_scales_ready = true;
-    }
     _resources = resources;
 }
 
@@ -83,14 +94,14 @@ void Item::draw()
     if (_resources[R_FOOD] > 0 && _mod_food) {
         _mod_food->set_pos({_pos.x + FOOD_OFFSET.x,
             _pos.y + ITEM_LIFT, _pos.z + FOOD_OFFSET.z});
-        _mod_food->Draw_model(g_food_scale);
+        _mod_food->Draw_model();
     }
     for (std::size_t i = 0; i < MINERAL_COUNT; ++i) {
         if (_resources[R_LINEMATE + i] <= 0 || !_mod_crystals[i])
             continue;
         _mod_crystals[i]->set_pos({_pos.x + CRYSTAL_OFFSET[i].x,
             _pos.y + ITEM_LIFT, _pos.z + CRYSTAL_OFFSET[i].z});
-        _mod_crystals[i]->Draw_model(g_crystal_scale[i]);
+        _mod_crystals[i]->Draw_model();
     }
 }
 

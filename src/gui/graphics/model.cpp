@@ -6,12 +6,15 @@
 */
 
 #include "gui/model.hpp"
+#include "gui/utils.hpp"
+#include "gui/trantor.hpp"
 
 model::model(std::string name, bool load, Vector3 pos)
-    : _anim(nullptr) ,_animeCount(0)
-    , _current_frame(0), _anim_index(0),
+    : _anim(nullptr) ,_animeCount(0),
+    _current_frame(0), _anim_index(0),
     _color(WHITE), _name(name), _pos(pos),
-    _base_pos(pos), loaded(load)
+    _base_pos(pos), loaded(load),
+    _rotationAxis(UP_DIRECTION), _rotationAngle(0), _scale(1.0f, 1.0f, 1.0f)
 
 {
     if (load)
@@ -52,13 +55,19 @@ void model::switch_index_anime()
     this->_anim_index = (this->_anim_index + 1) % this->_animeCount;
 }
 
-void model::Draw_model(float scale)
+void model::Draw_model(int current_frame)
 {
     if (this->_anim != nullptr) {
-        check_frame();
-        UpdateModelAnimation(this->_model, this->_anim[this->_anim_index], (float)this->_current_frame);
+        if (current_frame < 0) {
+            current_frame = this->_current_frame;
+            check_frame();
+        } else {
+            if (current_frame >= this->_anim[this->_anim_index].keyframeCount)
+                current_frame = 0;
+        }
+        UpdateModelAnimation(this->_model, this->_anim[this->_anim_index], static_cast<float>(current_frame));
     }
-    DrawModel(this->_model, this->_pos, scale, this->_color);
+    DrawModelEx(this->_model, this->_pos, _rotationAxis, _rotationAngle, _scale, this->_color);
 }
 
 Color model::get_color()
@@ -86,11 +95,9 @@ void model::load_anim()
 
 void model::move_model(Vector3 rotationAxis, float rotationAngle, Vector3 scale)
 {
-    if (this->_anim != nullptr) {
-        check_frame();
-        UpdateModelAnimation(this->_model, this->_anim[this->_anim_index], (float)this->_current_frame);
-    }
-    DrawModelEx(this->_model, this->_pos, rotationAxis, rotationAngle, scale, this->_color);
+    _rotationAxis = rotationAxis;
+    _rotationAngle = rotationAngle;
+    _scale = scale;
 }
 
 void model::set_pos(Vector3 pos)
@@ -151,5 +158,5 @@ int model::get_current_frame()
 void model::check_frame()
 {
     if (_current_frame >= this->_anim[this->_anim_index].keyframeCount)
-        this->_current_frame = 0;
+        _current_frame = 0;
 }
