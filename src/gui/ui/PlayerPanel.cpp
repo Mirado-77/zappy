@@ -7,10 +7,13 @@
 
 #include "gui/ui/PlayerPanel.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cctype>
 #include <cstddef>
+#include <iterator>
 #include <string>
+#include <vector>
 
 #include "raygui.h"
 
@@ -19,7 +22,7 @@ namespace zappy::gui::ui {
 namespace {
 
 constexpr float PANEL_W = 300.0f;
-constexpr float PANEL_H = 560.0f;
+constexpr float PANEL_H = 600.0f;
 
 constexpr std::array<const char *, board_data::RESOURCE_COUNT> RES_NAMES = {
     "food", "linemate", "deraumere", "sibur", "mendiane", "phiras", "thystame"
@@ -60,21 +63,96 @@ Rectangle PlayerPanel::panel_rect() const
 
 bool PlayerPanel::blocks_point(Vector2 p) const
 {
-    return _board.selected_player_id() >= 0
-        && CheckCollisionPointRec(p, panel_rect());
+    return _visible && CheckCollisionPointRec(p, panel_rect());
+}
+
+void PlayerPanel::handle_toggle()
+{
+    if (IsKeyPressed(KEY_F3))
+        _visible = !_visible;
+}
+
+std::vector<int> PlayerPanel::sorted_ids() const
+{
+    std::vector<int> ids;
+
+    ids.reserve(_board.players().size());
+    for (const auto &[id, player] : _board.players()) {
+        (void)player;
+        ids.push_back(id);
+    }
+    std::sort(ids.begin(), ids.end());
+    return ids;
+}
+
+void PlayerPanel::ensure_selection()
+{
+    const std::vector<int> ids = sorted_ids();
+    const int id = _board.selected_player_id();
+
+    if (ids.empty()) {
+        if (id >= 0)
+            _board.clear_selection();
+        return;
+    }
+    if (id < 0 || _board.players().find(id) == _board.players().end())
+        _board.select_player_local(ids.front());
+}
+
+void PlayerPanel::select_at(const std::vector<int> &ids, int index)
+{
+    const int n = static_cast<int>(ids.size());
+
+    if (n == 0)
+        return;
+    const int i = ((index % n) + n) % n;
+    if (ids[static_cast<std::size_t>(i)] != _board.selected_player_id())
+        _board.select_player_local(ids[static_cast<std::size_t>(i)]);
+}
+
+void PlayerPanel::draw_nav(const Rectangle &box)
+{
+    const std::vector<int> ids = sorted_ids();
+
+    if (ids.empty())
+        return;
+    const int id = _board.selected_player_id();
+    const auto it = std::find(ids.begin(), ids.end(), id);
+    const int idx = it == ids.end() ? 0
+        : static_cast<int>(std::distance(ids.begin(), it));
+    const float y = box.y + 30;
+
+    if (GuiButton({box.x + 12, y, 40, 26}, "<"))
+        select_at(ids, idx - 1);
+    if (GuiButton({box.x + box.width - 52, y, 40, 26}, ">"))
+        select_at(ids, idx + 1);
+    GuiLabel({box.x + 60, y, box.width - 120, 26},
+        TextFormat("#%d  (%d/%d)", id, idx + 1, static_cast<int>(ids.size())));
+}
+
+void PlayerPanel::draw_empty(const Rectangle &box)
+{
+    DrawText("No players", static_cast<int>(box.x) + 12,
+        static_cast<int>(box.y) + 40, 22, GRAY);
 }
 
 void PlayerPanel::draw()
 {
-    const int id = _board.selected_player_id();
-
-    if (id < 0)
+    handle_toggle();
+    if (!_visible)
         return;
+    ensure_selection();
     const Rectangle box = panel_rect();
     if (GuiWindowBox(box, "Player")) {
-        _board.clear_selection();
+        _visible = false;
         return;
     }
+    const int id = _board.selected_player_id();
+    if (id < 0) {
+        draw_empty(box);
+        return;
+    }
+    draw_nav(box);
     if (_board.profile_disabled())
         draw_disabled(box);
     else
@@ -108,7 +186,7 @@ void PlayerPanel::draw_buttons(const Rectangle &box, int id)
     if (GuiButton({box.x + 12, by, 110, 24}, "Refresh"))
         _board.set_selected_player(id);
     if (GuiButton({box.x + box.width - 122, by, 110, 24}, "Close"))
-        _board.clear_selection();
+        _visible = false;
 }
 
 void PlayerPanel::submit_tp(int id)
@@ -164,7 +242,7 @@ void PlayerPanel::draw_incant_row(const Rectangle &box, float y, int id)
 void PlayerPanel::draw_admin_actions(const Rectangle &box, int id)
 {
     const float x = box.x + 12;
-    const float y = box.y + 345;
+    const float y = box.y + 379;
 
     GuiLabel({x, y, 200, 20}, "Admin actions:");
     if (GuiButton({x, y + 20, 110, 24}, "Kill"))
@@ -182,7 +260,7 @@ void PlayerPanel::draw_profile(const Rectangle &box, int id)
     if (it == _board.players().end())
         return;
     const int x = static_cast<int>(box.x) + 12;
-    const int y = static_cast<int>(box.y) + 30;
+    const int y = static_cast<int>(box.y) + 64;
     draw_header(x, y, id, it->second);
     draw_inventory(x, y + 130, it->second);
     if (_board.is_admin())
@@ -199,12 +277,12 @@ bool PlayerPanel::capturing_keyboard() const noexcept
 void PlayerPanel::draw_disabled(const Rectangle &box)
 {
     const int x = static_cast<int>(box.x) + 12;
-    const int y = static_cast<int>(box.y) + 40;
+    const int y = static_cast<int>(box.y) + 64;
 
     DrawText("profile flag", x, y, 22, MAROON);
     DrawText("disabled on server", x, y + 26, 22, MAROON);
     if (GuiButton({box.x + 12, box.y + box.height - 32, 110, 24}, "Close"))
-        _board.clear_selection();
+        _visible = false;
 }
 
 } // namespace zappy::gui::ui
