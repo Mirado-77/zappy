@@ -10,6 +10,8 @@
 
     #include <raylib.h>
 
+    #include <vector>
+
     #include "gui/board_data/BoardData.hpp"
 
 namespace zappy::gui::ui {
@@ -24,6 +26,12 @@ public:
 
 private:
     [[nodiscard]] Rectangle panel_rect() const;
+    void handle_toggle();
+    void ensure_selection();
+    void draw_nav(const Rectangle &box);
+    void draw_empty(const Rectangle &box);
+    void select_at(const std::vector<int> &ids, int index);
+    [[nodiscard]] std::vector<int> sorted_ids() const;
     void draw_profile(const Rectangle &box, int id);
     void draw_disabled(const Rectangle &box);
     void draw_header(int x, int y, int id, const board_data::PlayerData &p);
@@ -43,6 +51,7 @@ private:
     bool _tp_x_edit = false;
     bool _tp_y_edit = false;
     bool _lvl_edit = false;
+    bool _visible = true;
 };
 
 } // namespace zappy::gui::ui

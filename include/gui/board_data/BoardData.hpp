@@ -91,6 +91,7 @@ public:
     [[nodiscard]] bool profile_disabled() const noexcept
         { return _profile_disabled; }
     void set_selected_player(int id);
+    void select_player_local(int id) noexcept;
     void clear_selection() noexcept;
     [[nodiscard]] const std::optional<StormZone> &storm() const noexcept
         { return _storm; }

@@ -16,11 +16,11 @@
     #include <map>
     #include <vector>
     #define TMP_HEALTH_BAR_TEXTURE "src/gui/assets/octopus_sandwich.glb"
-    #define HEALTHBAR_WIDTH 10000.0f
+    #define HEALTHBAR_WIDTH 1.5f
     #define HEALTHBAR_THICKNESS 0.1f
     #define HEALTHBAR_HEIGHT (HEALTHBAR_WIDTH * HEALTHBAR_THICKNESS)
-    #define HEALTHBAR_HEIGHT_MODIFIER 1.0f
-    #define UP_V2 {0, 1}
+    #define HEALTHBAR_HEIGHT_MODIFIER 3.0f
+    #define UP_V2 {1, 0}
 
 class HealthBarBatch {
     public:
@@ -29,7 +29,7 @@ class HealthBarBatch {
         bool isloaded();
         void draw_health_bars(Camera camera);
         void scale_health_bars(double _scale);
-        void sync_health_bar_pos(int id, Vector3 pos, double percentage);
+        void sync_health_bar(int id, Vector3 pos, double percentage);
         void kill(int id);
         void load();
         HealthBarBatch(const HealthBarBatch &) = delete;

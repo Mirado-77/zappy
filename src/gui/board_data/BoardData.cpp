@@ -330,6 +330,13 @@ void BoardData::set_selected_player(int id)
     _outbox.emplace_back("ppf #" + std::to_string(id) + "\n");
 }
 
+void BoardData::select_player_local(int id) noexcept
+{
+    _selected_player_id = id;
+    _ppf_pending = false;
+    _profile_disabled = false;
+}
+
 void BoardData::clear_selection() noexcept
 {
     _selected_player_id = -1;
