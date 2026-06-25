@@ -20,10 +20,12 @@ SRC = $(wildcard src/ai/*$(SRC_EXTENSION)) \
 		$(wildcard src/common/*$(SRC_EXTENSION))
 
 OBJ = $(SRC:src/%$(SRC_EXTENSION)=$(OBJ_DIR)/%.o)
+DEPS = $(OBJ:.o=.d)
 
 CXX = g++
 CXXFLAGS = -std=c++20 -Wall -Wextra -Werror
 CXXFLAGS += -I include/
+CXXFLAGS += -MMD -MP
 
 AR = ar
 ARFLAGS = rcs
@@ -36,6 +38,8 @@ $(NAME):	$(OBJ)
 $(OBJ_DIR)/%.o: src/%$(SRC_EXTENSION)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+-include $(DEPS)
 
 clean:
 	rm -rf $(BUILD_DIR)

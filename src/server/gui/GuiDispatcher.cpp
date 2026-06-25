@@ -40,7 +40,9 @@ zappy::server::gui::GuiDispatcher::GuiDispatcher(
       _featureFlags(adminDeps.featureFlags),
       _adminPassword(std::move(adminDeps.adminPassword)),
       _onPlayerKilledByAdmin(std::move(adminDeps.onPlayerKilledByAdmin)),
-      _eventBus(adminDeps.eventBus)
+      _eventBus(adminDeps.eventBus),
+      _onStartIncantation(std::move(adminDeps.onStartIncantation)),
+      _onStopIncantation(std::move(adminDeps.onStopIncantation))
 {
 }
 
@@ -129,7 +131,9 @@ zappy::server::gui::GuiDispatcher::handleAdminScopedCommand(
         &GuiDispatcher::handleAdmTileAdd,
         &GuiDispatcher::handleAdmPlayerKill,
         &GuiDispatcher::handleAdmPlayerTp,
-        &GuiDispatcher::handleAdmPlayerLevel};
+        &GuiDispatcher::handleAdmPlayerLevel,
+        &GuiDispatcher::handleAdmPlayerIncant,
+        &GuiDispatcher::handleAdmPlayerStopIncant};
     const std::size_t idx = static_cast<std::size_t>(cmd.kind)
         - static_cast<std::size_t>(
             protocol::gui::GuiCommandKind::ADM_FLAG_ENABLE);
@@ -784,4 +788,40 @@ zappy::server::gui::GuiDispatcher::handleAdmPlayerLevel(
         response = {"ok"};
     }
     return response;
+}
+
+/**
+ * @brief Handle adm_player_incant: force-start an incantation on a player.
+ *
+ * @param cmd parsed command; arguments[0] is the player id
+ * @return std::vector<std::string> "ok" or "ko" if it cannot start
+ */
+std::vector<std::string>
+zappy::server::gui::GuiDispatcher::handleAdmPlayerIncant(
+    const protocol::gui::ParsedGuiCommand &cmd)
+{
+    const int id = cmd.arguments[0];
+
+    if (_world.hasPlayer(id) && _onStartIncantation
+        && _onStartIncantation(id))
+        return {"ok"};
+    return {"ko"};
+}
+
+/**
+ * @brief Handle adm_player_stop_incant: force-stop a player's incantation.
+ *
+ * @param cmd parsed command; arguments[0] is the player id
+ * @return std::vector<std::string> "ok" or "ko" if none is running
+ */
+std::vector<std::string>
+zappy::server::gui::GuiDispatcher::handleAdmPlayerStopIncant(
+    const protocol::gui::ParsedGuiCommand &cmd)
+{
+    const int id = cmd.arguments[0];
+
+    if (_world.hasPlayer(id) && _onStopIncantation
+        && _onStopIncantation(id))
+        return {"ok"};
+    return {"ko"};
 }

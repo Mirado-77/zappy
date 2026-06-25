@@ -42,6 +42,8 @@ struct GuiAdminDeps {
     std::string adminPassword;
     std::function<void(int)> onPlayerKilledByAdmin;
     event::EventBus &eventBus;
+    std::function<bool(int)> onStartIncantation = nullptr;
+    std::function<bool(int)> onStopIncantation = nullptr;
 };
 
 /**
@@ -101,6 +103,8 @@ private:
     std::string _adminPassword;
     std::function<void(int)> _onPlayerKilledByAdmin;
     event::EventBus &_eventBus;
+    std::function<bool(int)> _onStartIncantation;
+    std::function<bool(int)> _onStopIncantation;
 
     void sendError(int fd, protocol::gui::GuiParseError err);
 
@@ -149,7 +153,7 @@ private:
         protocol::gui::GuiCommandKind kind) noexcept
     {
         return kind >= protocol::gui::GuiCommandKind::ADM_FLAG_ENABLE
-            && kind <= protocol::gui::GuiCommandKind::ADM_PLAYER_LEVEL;
+            && kind <= protocol::gui::GuiCommandKind::ADM_PLAYER_STOP_INCANT;
     }
 
     /**
@@ -335,6 +339,24 @@ private:
      * @return std::vector<std::string> "ok" or "ko" if unknown/invalid level
      */
     [[nodiscard]] std::vector<std::string> handleAdmPlayerLevel(
+        const protocol::gui::ParsedGuiCommand &cmd);
+
+    /**
+     * @brief adm_player_incant: force-start an incantation on a player.
+     *
+     * @param cmd parsed command; arguments[0] is the player id
+     * @return std::vector<std::string> "ok" or "ko" if it cannot start
+     */
+    [[nodiscard]] std::vector<std::string> handleAdmPlayerIncant(
+        const protocol::gui::ParsedGuiCommand &cmd);
+
+    /**
+     * @brief adm_player_stop_incant: force-stop a player's incantation.
+     *
+     * @param cmd parsed command; arguments[0] is the player id
+     * @return std::vector<std::string> "ok" or "ko" if none is running
+     */
+    [[nodiscard]] std::vector<std::string> handleAdmPlayerStopIncant(
         const protocol::gui::ParsedGuiCommand &cmd);
 };
 
