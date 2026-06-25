@@ -27,7 +27,7 @@
 
 inline double health_function(int food_count)
 {
-    return 100.0f * food_count / (food_count + SATISFYING_FOOD_COUNT / 9.0f);
+    return 4 + 100.0f * food_count / (food_count + SATISFYING_FOOD_COUNT / 9.0f);
 }
 
 trantor::trantor(const zappy::gui::board_data::PlayerData& trantorian_data, Vector3 player_pos)
@@ -75,12 +75,12 @@ void trantor::sync(const zappy::gui::board_data::PlayerData& trantorian_data, Ve
     _pos = player_pos;
     _state = YES;
     _angle = (static_cast<int>(trantorian_data.orient) - 1) * 90;
+    _health_bar_batch->sync_health_bar(_id, _pos, _health);
 }
 
 void trantor::set_pos(Vector3 pos)
 {
     _pos = pos;
-    _health_bar_batch->sync_health_bar_pos(_id, _pos, _health);
 };
 
 void trantor::set_shader(Shader shader)
