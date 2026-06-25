@@ -470,6 +470,8 @@ void zappy::server::gui::GuiDispatcher::sendSyncPlayers(int fd)
 {
     _world.forEachPlayer([this, fd](int id, const game::Player &player) {
         (void)id;
+        if (player.state() == game::PlayerState::DEAD)
+            return;
         sendSyncPlayer(fd, player);
     });
 }
