@@ -7,10 +7,10 @@
 
 #include "gui/render/Renderer.hpp"
 #include "gui/utils.hpp"
-
 #include <string>
 
 #include "gui/draw.hpp"
+#include "gui/trantor.hpp"
 
 namespace zappy::gui::render {
 
@@ -49,6 +49,9 @@ Renderer::Renderer()
     SetTargetFPS(60);
     _window.Set_window_state(FLAG_WINDOW_RESIZABLE);
     setup_shader();
+    _skybox = SkyboxLoad( "src/gui/assets/skybox/skyboxsea1.png", NULL,
+        "src/gui/assets/skybox/gls330/skybox.vs", "src/gui/assets/skybox/gls330/skybox.fs",
+        "src/gui/assets/skybox/gls330/cubemap.vs", "src/gui/assets/skybox/gls330/cubemap.fs");
 }
 
 Renderer::~Renderer()
@@ -163,6 +166,16 @@ void Renderer::handle_pick(board_data::BoardData &board, ui::AdminPanel &admin,
         board.set_selected_player(*id);
 }
 
+void Renderer::update_skybox()
+{
+    SkyboxUpdate(&_skybox);
+}
+
+void Renderer::draw_skybox()
+{
+    DrawSkyboxModel(&_skybox);
+}
+
 void Renderer::draw_crosshair()
 {
     const int cx = GetScreenWidth() / 2;
@@ -180,6 +193,7 @@ void Renderer::draw(board_data::BoardData &board, ui::AdminPanel &admin,
 
     _scene.sync(board);
     update_cursor();
+    update_skybox();
     _camera.update_free_rmb(!typing);
     handle_pick(board, admin, player);
     if (IsKeyPressed(KEY_B) && !typing)
@@ -192,6 +206,8 @@ void Renderer::draw(board_data::BoardData &board, ui::AdminPanel &admin,
     ::draw::Start_Draw();
     ClearBackground(RAYWHITE);
     _camera.Begin_mode_3d();
+    draw_skybox();
+    trantor::_health_bar_batch->draw_health_bars(_camera.cam);
     _scene.draw(board);
     _camera.End_mode_3d();
     overlay(board);

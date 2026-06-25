@@ -123,6 +123,7 @@ private:
     void on_pie(const net::ServerEvent &);
     void on_pex(const net::ServerEvent &);
     void on_pfk(const net::ServerEvent &);
+    void on_ebo(const net::ServerEvent &);
     void on_admin_ok(const net::ServerEvent &);
     void on_admin_fail(std::string code);
     void on_adm_flag_list(const net::ServerEvent &);
