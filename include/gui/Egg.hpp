@@ -17,8 +17,9 @@ class Egg {
         void draw();
         void set_pos(Vector3);
         static std::unique_ptr<model> _mod;
-    protected:
     private:
+        Vector3 _pos;
+        bool is_alive;
 };
 
 #endif /* !EGG_HPP_ */

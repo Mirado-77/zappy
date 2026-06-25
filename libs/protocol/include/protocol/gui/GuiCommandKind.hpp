@@ -35,10 +35,12 @@ enum class GuiCommandKind {
     ADM_TILE_ADD,
     ADM_PLAYER_KILL,
     ADM_PLAYER_TP,
-    ADM_PLAYER_LEVEL
+    ADM_PLAYER_LEVEL,
+    ADM_PLAYER_INCANT,
+    ADM_PLAYER_STOP_INCANT
 };
 
-constexpr std::size_t GUI_COMMAND_KIND_COUNT = 20;
+constexpr std::size_t GUI_COMMAND_KIND_COUNT = 22;
 
 } // namespace zappy::protocol::gui
 

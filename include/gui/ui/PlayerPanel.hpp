@@ -32,6 +32,7 @@ private:
     void draw_admin_actions(const Rectangle &box, int id);
     void draw_tp_row(const Rectangle &box, float y, int id);
     void draw_level_row(const Rectangle &box, float y, int id);
+    void draw_incant_row(const Rectangle &box, float y, int id);
     void submit_tp(int id);
     void submit_level(int id);
 
