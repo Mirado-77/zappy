@@ -30,6 +30,7 @@ class model{
         Color get_color();
         void move_model(Vector3 rotationAxis, float rotationAngle, Vector3 scale);
         void set_pos(Vector3 pos);
+        [[nodiscard]] BoundingBox get_bbox();
         void set_base_pos(Vector3 pos);
         Vector3 get_pos();
         Vector3 get_base_pos();
