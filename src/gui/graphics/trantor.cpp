@@ -35,7 +35,7 @@ trantor::trantor(const zappy::gui::board_data::PlayerData& trantorian_data, Vect
     _pos(player_pos),
     _state(YES),
     _angle((static_cast<int>(trantorian_data.orient) - 1) * 90),
-    _health(health_function(trantorian_data.inventory[FOOD]))
+    _health(health_function(trantorian_data.inventory[R_FOOD]))
 {
     if (!_mod->isloaded()) {
         _mod->load();
@@ -75,7 +75,7 @@ void trantor::sync(const zappy::gui::board_data::PlayerData& trantorian_data, Ve
     _pos = player_pos;
     _state = YES;
     _angle = (static_cast<int>(trantorian_data.orient) - 1) * 90;
-    _health = health_function(trantorian_data.inventory[FOOD]);
+    _health = health_function(trantorian_data.inventory[R_FOOD]);
     _health_bar_batch->sync_health_bar(_id, _pos, _health);
 }
 
