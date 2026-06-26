@@ -15,16 +15,19 @@
 namespace zappy::gui::net {
 
 enum class EventKind {
-    MSZ, SGT, SST, TNA, BCT, PNW, PPO, PLV, PIN, PEX, PBC, PIC, PIE, PFK, PDR,
-    PGT, PDI, ENW, EBO, EDI, SEG, SMG, SUC, SBP,
+    EBO, MSZ, SGT, SST, TNA, BCT, PNW, PPO, PLV, PIN, PEX, PBC, PIC, PIE, PFK, PDR,
+    PGT, PDI, ENW, EDI, SEG, SMG, SUC, SBP,
     OK, KO, ADM_FLAG_LIST, PPF, EVT_BIOME_SET,
     EVT_STORM_START, EVT_STORM_TICK, EVT_STORM_END,
     EVT_METEOR_IMPACT, EVT_METEOR_END, EVT_FLOOD_TILE,
     UNKNOWN
 };
 
-struct ServerEvent {
-    EventKind kind = EventKind::UNKNOWN;
+class ServerEvent
+{
+public:
+    ServerEvent() : kind(EventKind::UNKNOWN), ints({}), text("") {}
+    EventKind kind;
     std::vector<int> ints;
     std::string text;
 };

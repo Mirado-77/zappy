@@ -112,6 +112,7 @@ private:
         std::pair<std::size_t, std::size_t> coords);
     void sync_items(const board_data::BoardData &board);
     void drain_meteors(board_data::BoardData &board);
+    void draw_egg_player();
     void drain_levelups(board_data::BoardData &board);
     void draw_levelups();
     void rotate_to(Slot &slot, int target);

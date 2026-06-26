@@ -24,7 +24,7 @@ constexpr double LIFETIME = 9.0;     // seconds before a line disappears
 constexpr float LINE_HEIGHT = 24.0f;
 constexpr int FONT_SIZE = 20;
 constexpr float MARGIN_X = 12.0f;
-constexpr float BOTTOM_OFFSET = 72.0f; // leave room for the render-dist HUD
+constexpr float BOTTOM_OFFSET = 85.0f; // leave room for the render-dist HUD
 
 unsigned char line_alpha(double age)
 {

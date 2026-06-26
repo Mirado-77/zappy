@@ -25,7 +25,7 @@ namespace zappy::gui::net {
 namespace {
 
 constexpr std::string_view WELCOME_LINE = "WELCOME";
-constexpr std::string_view GRAPHIC_CMD  = "GRAPHIC\n";
+// constexpr std::string_view GRAPHIC_CMD  = "GRAPHIC\n";
 constexpr int CONNECT_TIMEOUT_MS = 2000;
 
 [[noreturn]] void fail(const std::string &reason)

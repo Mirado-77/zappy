@@ -7,6 +7,7 @@
 
 #ifndef GUI_UI_PLAYERPANEL_HPP_
     #define GUI_UI_PLAYERPANEL_HPP_
+    #define LINE_BREAK_PADDING 24
 
     #include <raylib.h>
 
@@ -15,6 +16,9 @@
     #include "gui/board_data/BoardData.hpp"
 
 namespace zappy::gui::ui {
+
+#define PANEL_RECT {static_cast<float>(GetScreenWidth()) - PANEL_W - 20.0f,\
+    80.0f, PANEL_W, PANEL_H}
 
 class PlayerPanel {
 public:

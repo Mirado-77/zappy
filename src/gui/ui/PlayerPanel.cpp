@@ -1,6 +1,6 @@
 /*
 ** EPITECH PROJECT, 2026
-** Zappy
+** PlayerPanel.cpp
 ** File description:
 ** raygui player profile panel implementation
 */
@@ -57,15 +57,9 @@ PlayerPanel::PlayerPanel(board_data::BoardData &board)
 {
 }
 
-Rectangle PlayerPanel::panel_rect() const
-{
-    return {static_cast<float>(GetScreenWidth()) - PANEL_W - 20.0f,
-        80.0f, PANEL_W, PANEL_H};
-}
-
 bool PlayerPanel::blocks_point(Vector2 p) const
 {
-    return _visible && CheckCollisionPointRec(p, panel_rect());
+    return _visible && CheckCollisionPointRec(p, PANEL_RECT);
 }
 
 void PlayerPanel::handle_toggle()
@@ -144,7 +138,7 @@ void PlayerPanel::draw()
     if (!_visible)
         return;
     ensure_selection();
-    const Rectangle box = panel_rect();
+    const Rectangle box = PANEL_RECT;
     if (GuiWindowBox(box, "Player")) {
         _visible = false;
         return;
@@ -170,6 +164,7 @@ void PlayerPanel::draw_header(int x, int y, int id,
     DrawText(TextFormat("orient: %s", orient_str(p.orient)),
         x, y + 72, 22, PANEL_TEXT);
     DrawText(TextFormat("level: %d", p.level), x, y + 96, 22, PANEL_TEXT);
+    DrawText(TextFormat("is_alive: %s", (p.alive) ? "True" : "False"), x, y + 120, 22, PANEL_TEXT);
 }
 
 void PlayerPanel::draw_inventory(int x, int y,
@@ -264,7 +259,7 @@ void PlayerPanel::draw_profile(const Rectangle &box, int id)
     const int x = static_cast<int>(box.x) + 12;
     const int y = static_cast<int>(box.y) + 64;
     draw_header(x, y, id, it->second);
-    draw_inventory(x, y + 130, it->second);
+    draw_inventory(x, y + LINE_BREAK_PADDING * 7, it->second);
     if (_board.is_admin())
         draw_admin_actions(box, id);
     draw_buttons(box, id);

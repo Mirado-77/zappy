@@ -71,7 +71,6 @@ void HealthBarBatch::draw_health_bar_unit(HealthBarBatch::HealthBarInfo healthba
     Vector2 offset_translation_it = Vector2Scale(UP_V2, HEALTHBAR_HEIGHT_MODIFIER * _scale);
     Vector3 healthbar_position_it = Vector3Add(healthbar.position, {offset_translation_it.x,
         offset_translation_it.y, 0});
-
     DrawBillboardPro(camera, _texture, texture_rect, healthbar_position_it, health_up, size_it, origin_it, rotation, RED);
 }
 
@@ -84,9 +83,9 @@ void HealthBarBatch::draw_health_bars(Camera camera)
     }
 }
 
-void HealthBarBatch::scale_health_bars(double _scale)
+void HealthBarBatch::scale_health_bars(double scale)
 {
-    _scale = _scale;
+    _scale = scale;
 }
 
 void HealthBarBatch::kill(int id)

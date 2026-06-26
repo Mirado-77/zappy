@@ -44,8 +44,12 @@ LDFLAGS += -L$(POSIX_LIB_DIR) -lzappy_posix
 LDFLAGS += -L$(PROTOCOL_LIB_DIR) -lzappy_protocol
 LDFLAGS += -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 
-DEBUG_CFLAGS = -g3 -fsanitize=address -DDEBUG
-DEBUG_LDFLAGS = -fsanitize=address
+DEBUG_CFLAGS = -g3 -DDEBUG -pedantic
+DEBUG_LDFLAGS = 
+DEBUG_CFLAGS_ASAN = -fsanitize=address
+DEBUG_LDFLAGS_ASAN = -fsanitize=address
+DEBUG_CFLAGS_TSAN = -fsanitize=thread 
+DEBUG_LDFLAGS_TSAN = -fsanitize=thread
 
 all:	$(BIN_DIR)/$(NAME)
 
@@ -62,11 +66,18 @@ $(BIN_DIR)/$(NAME):	$(OBJ) $(POSIX_LIB) $(NET_LIB) $(PROTOCOL_LIB)
 	@mkdir -p $(BIN_DIR)
 	$(CXX) -o $@ $(OBJ) $(LDFLAGS)
 
-debug: CXXFLAGS += $(DEBUG_CFLAGS)
-debug: $(BIN_DIR)/$(NAME)-debug
+debug_base: CXXFLAGS += $(DEBUG_CFLAGS)
+debug_base: LDFLAGS += $(DEBUG_LDFLAGS)
+debug_base: $(BIN_DIR)/$(NAME)-debug
+
+debug_asan: DEBUG_CFLAGS += $(DEBUG_CFLAGS_ASAN)
+debug_asan: DEBUG_LDFLAGS += $(DEBUG_LDFLAGS_ASAN)
+debug_asan : debug_base
+
+debug: debug_asan
 
 $(BIN_DIR)/$(NAME)-debug:	$(DEBUG_OBJ) $(POSIX_LIB) $(NET_LIB) $(PROTOCOL_LIB)
-	$(CXX) -o $(BIN_DIR)/$(NAME) $(DEBUG_OBJ) $(LDFLAGS) $(DEBUG_LDFLAGS)
+	$(CXX) -o $(BIN_DIR)/$(NAME) $(DEBUG_OBJ) $(LDFLAGS)
 
 $(OBJ_DIR)/%.o:	%$(SRC_EXTENSION)
 	@mkdir -p $(dir $@)
@@ -86,4 +97,6 @@ re: fclean all
 
 debugre: fclean debug
 
-.PHONY: all debug clean fclean re debugre
+debug_base_re: fclean debug_base
+
+.PHONY: all debug clean fclean re debugre debug_asan debug_base debug_base_re

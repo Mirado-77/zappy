@@ -230,7 +230,6 @@ void Scene::sync_player(int id, const board_data::PlayerData &player)
     slot.x = player.x;
     slot.y = player.y;
     rotate_to(slot, static_cast<int>(player.orient));
-    slot.robot->_mod->Update_anim();
     if (!player.alive && !slot.dead) {
         slot.robot->death();
         if (slot.robot->_mod->get_current_frame() >=
@@ -348,12 +347,11 @@ void Scene::draw_meteors()
     });
 }
 
-/*
-void draw_egg_player()
+void Scene::draw_egg_player()
 {
     ;
 }
-*/
+
 
 void Scene::draw_robot(Slot &slot)
 {
@@ -388,8 +386,9 @@ void Scene::draw(const board_data::BoardData &board, const Camera &cam)
     }
     if (_world)
         _world->draw_world(_focus_x, _focus_y, _range_tiles);
+    trantor::_mod->Update_anim();
     for (auto &kv : _slots) {
-        if (!kv.second.dead && in_range(kv.second.x, kv.second.y))
+        if (in_range(kv.second.x, kv.second.y))
             draw_robot(kv.second);
     }
     for (auto &eg : _eggs) {
