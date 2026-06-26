@@ -71,7 +71,7 @@ public:
         const noexcept { return _eggs; }
     [[nodiscard]] const std::vector<std::string> &teams()
         const noexcept { return _teams; }
-    [[nodiscard]] const std::vector<GraphicalEvent> &events()
+    [[nodiscard]] const std::unordered_map<int, GraphicalEvent> &events()
         const noexcept { return _events; }
     // Drain accumulated graphical events (broadcasts, ejects, ...).
     [[nodiscard]] std::vector<GraphicalEvent> take_events();
@@ -155,7 +155,7 @@ private:
     std::unordered_map<int, PlayerData> _players;
     std::unordered_map<int, EggData> _eggs;
     std::vector<std::string> _teams;
-    std::vector<GraphicalEvent> _events;
+    std::unordered_map<int, GraphicalEvent> _events;
     bool _ended = false;
     std::string _winner;
     bool _is_admin = false;

@@ -89,7 +89,7 @@ void BoardData::push_player_event(GraphicalEventKind kind, int player_id,
         ev.x = it->second.x;
         ev.y = it->second.y;
     }
-    _events.push_back(std::move(ev));
+    _events[player_id] = std::move(ev);
 }
 
 void BoardData::on_msz(const net::ServerEvent &ev)
@@ -234,7 +234,9 @@ void BoardData::on_pic(const net::ServerEvent &ev)
     gev.x = ev.ints[0];
     gev.y = ev.ints[1];
     gev.level = ev.ints[2];
-    _events.push_back(std::move(gev));
+    gev.success = false;
+    gev.alive = true;
+    _events[gev.player_id] = std::move(gev);
 }
 
 void BoardData::on_pie(const net::ServerEvent &ev)
@@ -246,7 +248,8 @@ void BoardData::on_pie(const net::ServerEvent &ev)
     gev.x = ev.ints[0];
     gev.y = ev.ints[1];
     gev.success = ev.ints[2] != 0;
-    _events.push_back(std::move(gev));
+    gev.alive = false;
+    _events[gev.player_id] = std::move(gev);
 }
 
 void BoardData::on_pex(const net::ServerEvent &ev)

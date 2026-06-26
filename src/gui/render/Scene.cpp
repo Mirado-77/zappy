@@ -169,6 +169,9 @@ void Scene::sync(board_data::BoardData &board)
     for (const auto &egg : board.eggs()) {
         sync_egg(egg.first, egg.second);
     }
+    for (const auto &event : board.events()) {
+        sync_incant(event.first, event.second);
+    }
     sync_items(board);
 }
 
@@ -227,6 +230,7 @@ void Scene::sync_player(int id, const board_data::PlayerData &player)
     slot.x = player.x;
     slot.y = player.y;
     rotate_to(slot, static_cast<int>(player.orient));
+    slot.robot->_mod->Update_anim();
     if (!player.alive && !slot.dead) {
         slot.robot->death();
         if (slot.robot->_mod->get_current_frame() >=
@@ -293,7 +297,8 @@ void Scene::draw_storm_arrow(Vector3 center, board_data::Orientation dir)
 
 void render::Scene::sync_incant(int id, const board_data::GraphicalEvent &event)
 {
-    if (event.kind != board_data::GraphicalEventKind::INCANTATION_START)
+    if (event.kind != board_data::GraphicalEventKind::INCANTATION_START &&
+        event.kind != board_data::GraphicalEventKind::INCANTATION_END)
         return;
     auto [it, inserted] = this->_incantation.try_emplace(id);
     Incant &slot = it->second;
@@ -301,6 +306,8 @@ void render::Scene::sync_incant(int id, const board_data::GraphicalEvent &event)
         slot.incant = std::make_unique<::Incantation>();
     }
     slot.incant->set_pos(world_pos(event.x, event.y));
+    if (!event.alive && !slot.dead)
+        slot.dead = true;
 }
 
 void Scene::draw_storm(const board_data::StormZone &storm)
@@ -381,7 +388,6 @@ void Scene::draw(const board_data::BoardData &board, const Camera &cam)
     }
     if (_world)
         _world->draw_world(_focus_x, _focus_y, _range_tiles);
-    trantor::_mod->Update_anim();
     for (auto &kv : _slots) {
         if (!kv.second.dead && in_range(kv.second.x, kv.second.y))
             draw_robot(kv.second);
@@ -390,14 +396,16 @@ void Scene::draw(const board_data::BoardData &board, const Camera &cam)
         if (!eg.second.dead && in_range(eg.second.x, eg.second.y))
             eg.second.egg->draw();
     }
+    for (auto &ic : _incantation) {
+        if (!ic.second.dead) {
+            ic.second.incant->draw();
+        }
+    }
     for (auto &kv : _items) {
         if (in_range(static_cast<int>(kv.first.first),
             static_cast<int>(kv.first.second)))
             kv.second->draw();
     }
-    for (auto &ic : _incantation)
-        ic.second.incant->draw();
-    // draw_egg_player();
     if (_show_storm && board.storm().has_value())
         draw_storm(*board.storm());
     draw_meteors();
