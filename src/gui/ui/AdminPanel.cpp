@@ -28,7 +28,6 @@ constexpr double STATUS_DURATION = 2.0;
 AdminPanel::AdminPanel(net::ServerLink &link, board_data::BoardData &board)
     : _link(link), _board(board)
 {
-    GuiSetStyle(DEFAULT, TEXT_SIZE, 22);
 }
 
 void AdminPanel::handle_toggle()

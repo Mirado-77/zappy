@@ -24,6 +24,8 @@ namespace {
 constexpr float PANEL_W = 300.0f;
 constexpr float PANEL_H = 600.0f;
 
+constexpr Color PANEL_TEXT = {235, 235, 240, 255};
+
 constexpr std::array<const char *, board_data::RESOURCE_COUNT> RES_NAMES = {
     "food", "linemate", "deraumere", "sibur", "mendiane", "phiras", "thystame"
 };
@@ -133,7 +135,7 @@ void PlayerPanel::draw_nav(const Rectangle &box)
 void PlayerPanel::draw_empty(const Rectangle &box)
 {
     DrawText("No players", static_cast<int>(box.x) + 12,
-        static_cast<int>(box.y) + 40, 22, GRAY);
+        static_cast<int>(box.y) + 40, 22, PANEL_TEXT);
 }
 
 void PlayerPanel::draw()
@@ -162,21 +164,21 @@ void PlayerPanel::draw()
 void PlayerPanel::draw_header(int x, int y, int id,
     const board_data::PlayerData &p)
 {
-    DrawText(TextFormat("id: #%d", id), x, y, 22, DARKGRAY);
-    DrawText(TextFormat("team: %s", p.team.c_str()), x, y + 24, 22, DARKGRAY);
-    DrawText(TextFormat("pos: %d,%d", p.x, p.y), x, y + 48, 22, DARKGRAY);
+    DrawText(TextFormat("id: #%d", id), x, y, 22, PANEL_TEXT);
+    DrawText(TextFormat("team: %s", p.team.c_str()), x, y + 24, 22, PANEL_TEXT);
+    DrawText(TextFormat("pos: %d,%d", p.x, p.y), x, y + 48, 22, PANEL_TEXT);
     DrawText(TextFormat("orient: %s", orient_str(p.orient)),
-        x, y + 72, 22, DARKGRAY);
-    DrawText(TextFormat("level: %d", p.level), x, y + 96, 22, DARKGRAY);
+        x, y + 72, 22, PANEL_TEXT);
+    DrawText(TextFormat("level: %d", p.level), x, y + 96, 22, PANEL_TEXT);
 }
 
 void PlayerPanel::draw_inventory(int x, int y,
     const board_data::PlayerData &p)
 {
-    DrawText("inventory:", x, y, 22, DARKGRAY);
+    DrawText("inventory:", x, y, 22, PANEL_TEXT);
     for (std::size_t i = 0; i < board_data::RESOURCE_COUNT; ++i)
         DrawText(TextFormat("%s: %d", RES_NAMES[i], p.inventory[i]),
-            x, y + 26 + static_cast<int>(i) * 20, 22, DARKGRAY);
+            x, y + 26 + static_cast<int>(i) * 20, 22, PANEL_TEXT);
 }
 
 void PlayerPanel::draw_buttons(const Rectangle &box, int id)
