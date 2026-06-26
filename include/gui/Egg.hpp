@@ -21,5 +21,6 @@ class Egg {
         Vector3 _pos;
         bool is_alive;
 };
+#define EGG_SCALE 0.5
 
 #endif /* !EGG_HPP_ */

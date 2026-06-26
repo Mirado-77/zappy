@@ -9,12 +9,12 @@
 #include "gui/utils.hpp"
 #include "gui/trantor.hpp"
 
-model::model(std::string name, bool load, Vector3 pos)
+model::model(std::string name, bool load, double scale, Vector3 pos)
     : _anim(nullptr) ,_animeCount(0),
     _current_frame(0), _anim_index(0),
     _color(WHITE), _name(name), _pos(pos),
     _base_pos(pos), loaded(load),
-    _rotationAxis(UP_DIRECTION), _rotationAngle(0), _scale(1.0f, 1.0f, 1.0f)
+    _rotationAxis(UP_DIRECTION), _rotationAngle(0), _scale(scale, scale, scale)
 
 {
     if (load)

@@ -9,10 +9,8 @@
 
 Egg::Egg() : _pos( {0, 0, 0} )
 {
-    if (!_mod->isloaded()) {
-        _mod->set_scale(0.5);
+    if (!_mod->isloaded())
         _mod->load();
-    }
 }
 
 void Egg::draw()

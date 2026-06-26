@@ -44,10 +44,8 @@ constexpr Vector3 FOOD_OFFSET = {0.0f, 0.0f, 0.0f};
 Item::Item(const zappy::gui::board_data::Resources resources, Vector3 pos)
     : _resources(resources), _pos(pos)
 {
-    if (_mod_food && !_mod_food->isloaded()) {
-        _mod_food->set_scale(FOOD_SCALE);
+    if (_mod_food && !_mod_food->isloaded())
         _mod_food->load();
-    }
     if (_mod_mineral && !_mod_mineral->isloaded())
         _mod_mineral->load();
 }

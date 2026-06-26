@@ -15,7 +15,6 @@ LevelUp::LevelUp()
     : _pos({0, 0, 0})
 {
     if (!_mod->isloaded()) {
-        this->_mod->set_scale(LEVEL_UP_SCALE);
         _mod->load();
         this->_mod->load_anim();
     }

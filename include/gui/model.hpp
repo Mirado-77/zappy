@@ -14,7 +14,7 @@
 
 class model{
     public:
-        model(std::string name = "", bool load = true, Vector3 pos = {0.0f, 0.0f, 0.0f});
+        model(std::string name = "", bool load = true, double scale = 1.0f, Vector3 pos = {0.0f, 0.0f, 0.0f});
         ~model();
         model(const model &) = delete;
         model &operator=(const model &) = delete;

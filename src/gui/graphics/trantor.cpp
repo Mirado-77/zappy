@@ -45,7 +45,6 @@ trantor::trantor(const zappy::gui::board_data::PlayerData& trantorian_data, Vect
     }
     if (!_mod->isloaded()) {
         _mod->load();
-        _mod->set_scale(DEFAULT_TRANTORIAN_SCALE);
         this->_mod->load_anim();
     }
 };
@@ -72,7 +71,7 @@ void trantor::eject_player()
 
 void trantor::death()
 {
-    // _health_bar_batch->kill(_id);
+    _health_bar_batch->kill(_id);
     this->_state = DIE;
 };
 
@@ -84,7 +83,8 @@ void trantor::sync(const zappy::gui::board_data::PlayerData& trantorian_data, Ve
     _angle = (static_cast<int>(trantorian_data.orient) - 1) * 90;
     _health = health_function(trantorian_data.inventory[R_FOOD]);
     _is_alive = trantorian_data.alive;
-    _health_bar_batch->sync_health_bar(_id, _pos, _health);
+    if (_is_alive)
+        _health_bar_batch->sync_health_bar(_id, _pos, _health);
 }
 
 void trantor::set_pos(Vector3 pos)
