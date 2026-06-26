@@ -159,6 +159,9 @@ void Scene::sync(board_data::BoardData &board)
     for (const auto &egg : board.eggs()) {
         sync_egg(egg.first, egg.second);
     }
+    for (const auto &event : board.events()) {
+        sync_incant(event.first, event.second);
+    }
     sync_items(board);
 }
 
@@ -284,7 +287,6 @@ void render::Scene::sync_incant(int id, const board_data::GraphicalEvent &event)
         slot.incant = std::make_unique<::Incantation>();
     }
     slot.incant->set_pos(world_pos(event.x, event.y));
-    printf("sync_incant\n");
     if (!event.alive && !slot.dead)
         slot.dead = true;
 }
@@ -357,7 +359,6 @@ void Scene::draw(const board_data::BoardData &board, const Camera &cam)
     }
     for (auto &ic : _incantation) {
         if (!ic.second.dead) {
-            printf("draw_incant\n");
             ic.second.incant->draw();
         }
     }
