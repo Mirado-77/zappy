@@ -42,6 +42,6 @@ void Incantation::draw()
 
 void Incantation::set_pos(Vector3 pos)
 {
-    pos.z = 1;
+    pos.y = 1;
     this->_pos = pos;
 }
