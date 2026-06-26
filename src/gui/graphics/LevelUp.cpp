@@ -8,9 +8,6 @@
 #include "gui/LevelUp.hpp"
 #include "gui/utils.hpp"
 
-#define LEVEL_UP_SCALE 1.5f
-#define LEVEL_UP_SPIN 2.0f
-
 LevelUp::LevelUp()
     : _pos({0, 0, 0})
 {

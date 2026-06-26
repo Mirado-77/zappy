@@ -9,6 +9,8 @@
     #define LEVELUP_HPP_
     #include "model.hpp"
     #define LEVEL_UP_PATH "src/gui/assets/level_up_effect.glb"
+    #define LEVEL_UP_SCALE 1.5f
+    #define LEVEL_UP_SPIN 2.0f
 
 class LevelUp {
     public:

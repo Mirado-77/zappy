@@ -14,7 +14,6 @@
     #define UP_DIRECTION {0, 1, 0}
     #define DOWN_DIRECTION {0, 1, 0}
     #define NO_ANGLE 0
-    #define DEFAULT_TRANTORIAN_SCALE {0.5, 0.5, 0.5}
     #define TRANTORIAN_DEATH_FRAME 57
     #define HUD_PADDING 10
     #define HUD_LINE_SPACING 25

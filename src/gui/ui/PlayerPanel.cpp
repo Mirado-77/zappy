@@ -163,11 +163,12 @@ void PlayerPanel::draw_header(int x, int y, int id,
     const board_data::PlayerData &p)
 {
     DrawText(TextFormat("id: #%d", id), x, y, 22, DARKGRAY);
-    DrawText(TextFormat("team: %s", p.team.c_str()), x, y + 24, 22, DARKGRAY);
-    DrawText(TextFormat("pos: %d,%d", p.x, p.y), x, y + 48, 22, DARKGRAY);
+    DrawText(TextFormat("team: %s", p.team.c_str()), x, y + LINE_BREAK_PADDING, 22, DARKGRAY);
+    DrawText(TextFormat("pos: %d,%d", p.x, p.y), x, y + LINE_BREAK_PADDING * 2, 22, DARKGRAY);
     DrawText(TextFormat("orient: %s", orient_str(p.orient)),
-        x, y + 72, 22, DARKGRAY);
-    DrawText(TextFormat("level: %d", p.level), x, y + 96, 22, DARKGRAY);
+        x, y + LINE_BREAK_PADDING * 3, 22, DARKGRAY);
+    DrawText(TextFormat("level: %d", p.level), x, y + LINE_BREAK_PADDING * 4, 22, DARKGRAY);
+    DrawText(TextFormat("is_alive: %s", (p.alive) ? "True" : "False"), x, y + LINE_BREAK_PADDING * 5, 22, DARKGRAY);
 }
 
 void PlayerPanel::draw_inventory(int x, int y,
@@ -262,7 +263,7 @@ void PlayerPanel::draw_profile(const Rectangle &box, int id)
     const int x = static_cast<int>(box.x) + 12;
     const int y = static_cast<int>(box.y) + 64;
     draw_header(x, y, id, it->second);
-    draw_inventory(x, y + 130, it->second);
+    draw_inventory(x, y + LINE_BREAK_PADDING * 7, it->second);
     if (_board.is_admin())
         draw_admin_actions(box, id);
     draw_buttons(box, id);

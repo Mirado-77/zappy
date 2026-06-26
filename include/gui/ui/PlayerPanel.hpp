@@ -7,6 +7,7 @@
 
 #ifndef GUI_UI_PLAYERPANEL_HPP_
     #define GUI_UI_PLAYERPANEL_HPP_
+    #define LINE_BREAK_PADDING 24
 
     #include <raylib.h>
 

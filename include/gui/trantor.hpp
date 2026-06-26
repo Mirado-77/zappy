@@ -29,6 +29,7 @@ using TrantorState = enum TRANTOR_STATE {
     YES,
 };
 
+#define DEFAULT_TRANTORIAN_SCALE CLITERAL(Vector3){0.5, 0.5, 0.5}
 class trantor {
     public:
         trantor(const zappy::gui::board_data::PlayerData& player_data, Vector3 player_pos);
