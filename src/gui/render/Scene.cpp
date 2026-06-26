@@ -27,6 +27,7 @@ constexpr double METEOR_DURATION = 1.5;
 constexpr double LEVELUP_DURATION = 1.5;
 constexpr double EJECT_DURATION = 0.6;
 constexpr double WALK_DURATION = 0.3;
+constexpr double DEATH_DURATION = 0.3;
 
 constexpr std::array<int, board_data::BIOME_COUNT> BIOME_MODELS = {
     0, 1, 2, 3, 4, 4
@@ -232,10 +233,12 @@ void Scene::sync_player(int id, const board_data::PlayerData &player)
     rotate_to(slot, static_cast<int>(player.orient));
     slot.robot->_mod->Update_anim();
     if (!player.alive && !slot.dead) {
+        if (slot.death_bool == false) {
+            slot.death_bool = true;
+            slot.death_start = GetTime();
+        }
+        slot.death_until = slot.death_start + DEATH_DURATION;
         slot.robot->death();
-        if (slot.robot->_mod->get_current_frame() >=
-            slot.robot->_mod->get_frame_count())
-            slot.dead = true;
     }
 }
 
@@ -365,6 +368,8 @@ void Scene::draw_robot(Slot &slot)
         slot.robot->set_pos({a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t,
             a.z + (b.z - a.z) * t});
         slot.robot->walk();
+    } else if (now > slot.death_until && slot.death_bool == true) {
+        slot.dead = true;
     }
     slot.robot->draw();
 }

@@ -72,6 +72,9 @@ private:
         Vector3 move_to{};
         double move_start = 0.0;
         double move_until = 0.0;
+        double death_start = 0.0;
+        double death_until = 0.0;
+        bool death_bool = false;
     };
 
     struct EggSlot {
