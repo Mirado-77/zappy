@@ -351,7 +351,6 @@ void Scene::draw_meteors()
     });
 }
 
-
 void Scene::draw_robot(Slot &slot)
 {
     const double now = GetTime();
@@ -387,8 +386,9 @@ void Scene::draw(const board_data::BoardData &board, const Camera &cam)
     }
     if (_world)
         _world->draw_world(_focus_x, _focus_y, _range_tiles);
+    trantor::_mod->Update_anim();
     for (auto &kv : _slots) {
-        if (!kv.second.dead && in_range(kv.second.x, kv.second.y))
+        if (in_range(kv.second.x, kv.second.y))
             draw_robot(kv.second);
     }
     for (auto &eg : _eggs) {

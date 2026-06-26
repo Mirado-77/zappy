@@ -24,14 +24,15 @@ struct VerbInfo {
 };
 
 constexpr std::array<VerbInfo, 35> VERBS = {{
+    {"ebo", EventKind::EBO, 1, false},
     {"msz", EventKind::MSZ, 2, false}, {"sgt", EventKind::SGT, 1, false},
     {"sst", EventKind::SST, 1, false}, {"tna", EventKind::TNA, 0, true},
     {"bct", EventKind::BCT, 9, false}, {"pnw", EventKind::PNW, 5, true},
     {"ppo", EventKind::PPO, 4, false}, {"plv", EventKind::PLV, 2, false},
-    {"pin", EventKind::PIN, 9, false}, {"pex", EventKind::PEX, 1, false},
+    {"pin", EventKind::PIN, 10, false}, {"pex", EventKind::PEX, 1, false},
     {"pbc", EventKind::PBC, 1, true}, {"pic", EventKind::PIC, 0, true},
     {"pie", EventKind::PIE, 3, false}, {"pfk", EventKind::PFK, 1, false},
-    {"ebo", EventKind::EBO, 1, false}, {"pdr", EventKind::PDR, 2, false},
+    {"pdr", EventKind::PDR, 2, false},
     {"pgt", EventKind::PGT, 2, false}, {"pdi", EventKind::PDI, 1, false},
     {"enw", EventKind::ENW, 4, false}, {"edi", EventKind::EDI, 1, false},
     {"seg", EventKind::SEG, 0, true}, {"smg", EventKind::SMG, 0, true},
@@ -70,12 +71,29 @@ std::vector<std::string_view> tokenize(std::string_view s)
     return out;
 }
 
+/*
 bool to_int(std::string_view tok, int &out) noexcept
 {
     if (!tok.empty() && tok.front() == '#')
         tok.remove_prefix(1);
     const auto *e = tok.data() + tok.size();
     return std::from_chars(tok.data(), e, out).ptr == e;
+}
+*/
+
+static bool to_int(std::string_view tok, int &out) noexcept
+{
+    std::from_chars_result result;
+
+    if (!tok.empty() && tok.front() == '#')
+        tok.remove_prefix(1);
+    const auto *e = tok.data() + tok.size();
+    result = std::from_chars(tok.data(), e, out);
+    if (result.ec == std::errc::invalid_argument)
+        out = 0;
+    if (result.ec == std::errc::result_out_of_range)
+        out = 0;
+    return result.ptr == e;
 }
 
 const VerbInfo *find_verb(std::string_view verb) noexcept
@@ -111,7 +129,7 @@ bool fill_leading_ints(ServerEvent &ev, const VerbInfo &info,
 {
     for (; consumed < static_cast<std::size_t>(info.int_count)
          && consumed < tokens.size(); ++consumed) {
-        int v;
+        int v = 0;
         if (!to_int(tokens[consumed], v))
             return false;
         ev.ints.push_back(v);
