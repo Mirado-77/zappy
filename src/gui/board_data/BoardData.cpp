@@ -22,6 +22,7 @@ void BoardData::apply(const net::ServerEvent &ev)
 {
     using K = net::EventKind;
     switch (ev.kind) {
+        case K::EBO: on_ebo(ev); break;
         case K::MSZ: on_msz(ev); break;
         case K::SGT: case K::SST: on_sgt(ev); break;
         case K::TNA: on_tna(ev); break;
@@ -39,7 +40,6 @@ void BoardData::apply(const net::ServerEvent &ev)
         case K::PIE: on_pie(ev); break;
         case K::PEX: on_pex(ev); break;
         case K::PFK: on_pfk(ev); break;
-        case K::EBO: on_ebo(ev); break;
         case K::OK: on_admin_ok(ev); break;
         case K::KO: on_admin_fail("ko"); break;
         case K::SBP: on_sbp(); break;
@@ -90,6 +90,15 @@ void BoardData::push_player_event(GraphicalEventKind kind, int player_id,
         ev.y = it->second.y;
     }
     _events.push_back(std::move(ev));
+}
+
+void BoardData::on_ebo(const net::ServerEvent &ev)
+{
+    if (ev.ints.empty())
+        return;
+    auto it = _eggs.find(ev.ints[0]);
+    if (it != _eggs.end())
+        it->second.alive = false;
 }
 
 void BoardData::on_msz(const net::ServerEvent &ev)
@@ -170,7 +179,7 @@ void BoardData::on_plv(const net::ServerEvent &ev)
 
 void BoardData::on_pin(const net::ServerEvent &ev)
 {
-    if (ev.ints.size() < 3 + RESOURCE_COUNT)
+    if (ev.ints.size() < 10)
         return;
     auto it = _players.find(ev.ints[0]);
     if (it == _players.end())
@@ -261,15 +270,6 @@ void BoardData::on_pfk(const net::ServerEvent &ev)
     if (ev.ints.empty())
         return;
     push_player_event(GraphicalEventKind::FORK, ev.ints[0], {});
-}
-
-void BoardData::on_ebo(const net::ServerEvent &ev)
-{
-    if (ev.ints.empty())
-        return;
-    auto it = _eggs.find(ev.ints[0]);
-    if (it != _eggs.end())
-        it->second.alive = false;
 }
 
 void BoardData::set_admin_status(std::string code)

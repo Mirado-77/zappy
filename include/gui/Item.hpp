@@ -58,7 +58,7 @@ enum ResourceIndex {
     R_THYSTAME = 6,
 };
 
-#define SATISFYING_FOOD_COUNT 5
+#define SATISFYING_FOOD_COUNT 15
 
 class Item {
 public:

@@ -24,14 +24,15 @@ struct VerbInfo {
 };
 
 constexpr std::array<VerbInfo, 35> VERBS = {{
+    {"ebo", EventKind::EBO, 1, false},
     {"msz", EventKind::MSZ, 2, false}, {"sgt", EventKind::SGT, 1, false},
     {"sst", EventKind::SST, 1, false}, {"tna", EventKind::TNA, 0, true},
     {"bct", EventKind::BCT, 9, false}, {"pnw", EventKind::PNW, 5, true},
     {"ppo", EventKind::PPO, 4, false}, {"plv", EventKind::PLV, 2, false},
-    {"pin", EventKind::PIN, 9, false}, {"pex", EventKind::PEX, 1, false},
+    {"pin", EventKind::PIN, 10, false}, {"pex", EventKind::PEX, 1, false},
     {"pbc", EventKind::PBC, 1, true}, {"pic", EventKind::PIC, 0, true},
     {"pie", EventKind::PIE, 3, false}, {"pfk", EventKind::PFK, 1, false},
-    {"ebo", EventKind::EBO, 1, false}, {"pdr", EventKind::PDR, 2, false},
+    {"pdr", EventKind::PDR, 2, false},
     {"pgt", EventKind::PGT, 2, false}, {"pdi", EventKind::PDI, 1, false},
     {"enw", EventKind::ENW, 4, false}, {"edi", EventKind::EDI, 1, false},
     {"seg", EventKind::SEG, 0, true}, {"smg", EventKind::SMG, 0, true},
@@ -152,7 +153,6 @@ void fill_from_info(ServerEvent &ev, const VerbInfo &info,
     }
     if (info.has_tail)
         ev.text = tail_after(rest, tokens, consumed);
-    // if consumed < ;
 }
 
 } // namespace
