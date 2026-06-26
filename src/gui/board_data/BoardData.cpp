@@ -234,6 +234,8 @@ void BoardData::on_pic(const net::ServerEvent &ev)
     gev.x = ev.ints[0];
     gev.y = ev.ints[1];
     gev.level = ev.ints[2];
+    gev.success = false;
+    gev.alive = true;
     _events.push_back(std::move(gev));
 }
 
@@ -246,6 +248,7 @@ void BoardData::on_pie(const net::ServerEvent &ev)
     gev.x = ev.ints[0];
     gev.y = ev.ints[1];
     gev.success = ev.ints[2] != 0;
+    gev.alive = false;
     _events.push_back(std::move(gev));
 }
 

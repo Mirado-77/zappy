@@ -28,6 +28,7 @@ struct GraphicalEvent {
     bool success = false;
     std::string text;
     float lifetime = 0.0f;
+    bool alive = true;
 };
 
 } // namespace zappy::gui::board_data

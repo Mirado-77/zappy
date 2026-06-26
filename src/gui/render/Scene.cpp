@@ -176,6 +176,7 @@ void Scene::sync_player(int id, const board_data::PlayerData &player)
     slot.x = player.x;
     slot.y = player.y;
     rotate_to(slot, static_cast<int>(player.orient));
+    slot.robot->_mod->Update_anim();
     if (!player.alive && !slot.dead) {
         slot.robot->death();
         if (slot.robot->_mod->get_current_frame() >=
@@ -248,6 +249,8 @@ void render::Scene::sync_incant(int id, const board_data::GraphicalEvent &event)
         slot.incant = std::make_unique<::Incantation>();
     }
     slot.incant->set_pos(world_pos(event.x, event.y));
+    if (!event.alive && !slot.dead)
+        slot.dead = true;
 }
 
 void Scene::draw_storm(const board_data::StormZone &storm)
@@ -299,7 +302,6 @@ void Scene::draw(const board_data::BoardData &board)
 {
     if (_world)
         _world->draw_world();
-    trantor::_mod->Update_anim();
     for (auto &kv : _slots) {
         if (!kv.second.dead)
             kv.second.robot->draw();
@@ -310,9 +312,10 @@ void Scene::draw(const board_data::BoardData &board)
     }
     for (auto &kv : _items)
         kv.second->draw();
-    for (auto &ic : _incantation)
-        ic.second.incant->draw();
-    // draw_egg_player();
+    for (auto &ic : _incantation) {
+        if (!ic.second.dead)
+            ic.second.incant->draw();
+    }
     if (_show_storm && board.storm().has_value())
         draw_storm(*board.storm());
     draw_meteors();
