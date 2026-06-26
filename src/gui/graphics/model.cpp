@@ -46,7 +46,7 @@ void model::Update_anim()
 {
     if (this->_anim == nullptr || this->_animeCount == 0)
         return;
-    this->_current_frame = (this->_current_frame + 1);
+    this->_current_frame++;
 }
 
 void model::switch_index_anime()

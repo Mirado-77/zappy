@@ -347,12 +347,6 @@ void Scene::draw_meteors()
     });
 }
 
-void Scene::draw_egg_player()
-{
-    ;
-}
-
-
 void Scene::draw_robot(Slot &slot)
 {
     const double now = GetTime();
