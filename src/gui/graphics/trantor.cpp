@@ -63,6 +63,11 @@ void trantor::eject_player()
     this->_state = PUNCH;
 };
 
+void trantor::walk()
+{
+    this->_state = WALK;
+};
+
 void trantor::death()
 {
     _health_bar_batch->kill(_id);

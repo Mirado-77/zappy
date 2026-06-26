@@ -127,6 +127,18 @@ void Renderer::storm_overlay(const board_data::BoardData &board)
     ::draw::Draw_text(line, {10, 100}, 24, ORANGE);
 }
 
+void Renderer::drain_events(board_data::BoardData &board)
+{
+    using Kind = board_data::GraphicalEventKind;
+
+    for (const auto &ev : board.take_events()) {
+        if (ev.kind == Kind::EJECT)
+            _scene.trigger_eject(ev.player_id);
+        else if (ev.kind == Kind::BROADCAST)
+            _chat.push(ev.player_id, ev.text);
+    }
+}
+
 void Renderer::render_dist_hud()
 {
     const float y = static_cast<float>(GetScreenHeight()) - 40.0f;
@@ -211,6 +223,7 @@ void Renderer::draw(board_data::BoardData &board, ui::AdminPanel &admin,
     const bool typing = admin.capturing_keyboard()
         || player.capturing_keyboard();
     _scene.sync(board);
+    drain_events(board);
     update_cursor();
     update_skybox();
     _camera.set_map_size(board.width(), board.height());
@@ -233,6 +246,7 @@ void Renderer::draw(board_data::BoardData &board, ui::AdminPanel &admin,
     overlay(board);
     render_dist_hud();
     storm_overlay(board);
+    _chat.draw();
     if (IsCursorHidden())
         draw_crosshair();
     admin.draw();

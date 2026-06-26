@@ -140,7 +140,7 @@ def _startup_delay(state: PlayerState) -> int:
     """Return a position-based startup delay (ticks) before broadcasting RALLY.
 
     Each AI waits this many ticks after entering LEADING_ELEVATION before
-    it commits to a RALLY broadcast.  During the wait it listens for another
+    it commits to a RALLY broadcast. During the wait it listens for another
     AI's RALLY and yields if one is received.  Using a position-based value
     ensures different AIs have different delays, reducing simultaneous-broadcast
     collisions.

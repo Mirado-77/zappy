@@ -37,6 +37,7 @@ class trantor {
         void Turn_right();
         void look_around();
         void eject_player();
+        void walk();
         void death();
         void sync( const zappy::gui::board_data::PlayerData& player_data, Vector3 player_pos);
         void set_pos(Vector3 pos);

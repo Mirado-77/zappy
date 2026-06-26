@@ -12,6 +12,7 @@
     #include "gui/camera.hpp"
     #include "gui/render/Scene.hpp"
     #include "gui/ui/AdminPanel.hpp"
+    #include "gui/ui/Chat.hpp"
     #include "gui/ui/PlayerPanel.hpp"
     #include "gui/window.hpp"
     #include "skybox.h"
@@ -36,6 +37,7 @@ private:
     void overlay(const board_data::BoardData &board);
     void storm_overlay(const board_data::BoardData &board);
     void render_dist_hud();
+    void drain_events(board_data::BoardData &board);
     void update_cursor();
     void handle_pick(board_data::BoardData &board, ui::AdminPanel &admin,
         ui::PlayerPanel &player);
@@ -47,6 +49,7 @@ private:
     window _window;
     camera _camera;
     Scene _scene;
+    ui::Chat _chat;
     Shader _shader{};
     Skyboxlib _skybox;
 };

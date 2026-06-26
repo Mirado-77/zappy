@@ -43,6 +43,8 @@ public:
     void sync(board_data::BoardData &board);
     void draw(const board_data::BoardData &board, const Camera &cam);
     void set_shader(Shader shader);
+    // Play the punch animation on a player after an eject.
+    void trigger_eject(int player_id);
     [[nodiscard]] int render_distance() const noexcept { return _render_chunks; }
     void set_render_distance(int chunks) noexcept;
     [[nodiscard]] std::optional<int> pick_player(Vector2 screen,
@@ -65,6 +67,11 @@ private:
         bool dead = false;
         int x = 0;
         int y = 0;
+        double punch_until = 0.0;
+        Vector3 move_from{};
+        Vector3 move_to{};
+        double move_start = 0.0;
+        double move_until = 0.0;
     };
 
     struct EggSlot {
@@ -99,6 +106,7 @@ private:
     [[nodiscard]] bool in_range(int x, int y) const noexcept;
     void ensure_world(const board_data::BoardData &board);
     void sync_player(int id, const board_data::PlayerData &player);
+    void draw_robot(Slot &slot);
     void sync_egg(int id, const board_data::EggData &egg);
     void sync_item(const board_data::TileData &tile,
         std::pair<std::size_t, std::size_t> coords);

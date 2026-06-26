@@ -25,6 +25,8 @@ constexpr float ROBOT_LOW = -1.0f;
 constexpr float ROBOT_HIGH = 6.0f;
 constexpr double METEOR_DURATION = 1.5;
 constexpr double LEVELUP_DURATION = 1.5;
+constexpr double EJECT_DURATION = 0.6;
+constexpr double WALK_DURATION = 0.3;
 
 constexpr std::array<int, board_data::BIOME_COUNT> BIOME_MODELS = {
     0, 1, 2, 3, 4, 4
@@ -63,6 +65,14 @@ BoundingBox Scene::player_box(int x, int y) const
 void Scene::set_render_distance(int chunks) noexcept
 {
     _render_chunks = std::clamp(chunks, 0, MAX_RENDER_CHUNKS);
+}
+
+void Scene::trigger_eject(int player_id)
+{
+    const auto it = _slots.find(player_id);
+
+    if (it != _slots.end())
+        it->second.punch_until = GetTime() + EJECT_DURATION;
 }
 
 std::pair<int, int> Scene::focus_tile(const Camera &cam) const
@@ -203,6 +213,15 @@ void Scene::sync_player(int id, const board_data::PlayerData &player)
     if (inserted) {
         slot.robot = std::make_unique<::trantor>(player, player_pos);
     } else {
+        // Animate a slide only for a true adjacent step (no wrap/teleport).
+        const int dx = std::abs(player.x - slot.x);
+        const int dy = std::abs(player.y - slot.y);
+        if (dx + dy == 1) {
+            slot.move_from = world_pos(slot.x, slot.y);
+            slot.move_to = player_pos;
+            slot.move_start = GetTime();
+            slot.move_until = slot.move_start + WALK_DURATION;
+        }
         slot.robot->sync(player, player_pos);
     }
     slot.x = player.x;
@@ -329,6 +348,26 @@ void draw_egg_player()
 }
 */
 
+void Scene::draw_robot(Slot &slot)
+{
+    const double now = GetTime();
+
+    if (now < slot.punch_until) {
+        slot.robot->eject_player();
+    } else if (now < slot.move_until) {
+        const float span = static_cast<float>(slot.move_until
+            - slot.move_start);
+        const float t = span > 0.0f ? std::clamp(static_cast<float>(
+            now - slot.move_start) / span, 0.0f, 1.0f) : 1.0f;
+        const Vector3 &a = slot.move_from;
+        const Vector3 &b = slot.move_to;
+        slot.robot->set_pos({a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t,
+            a.z + (b.z - a.z) * t});
+        slot.robot->walk();
+    }
+    slot.robot->draw();
+}
+
 void Scene::draw(const board_data::BoardData &board, const Camera &cam)
 {
     const auto [cx, cy] = focus_tile(cam);
@@ -345,7 +384,7 @@ void Scene::draw(const board_data::BoardData &board, const Camera &cam)
     trantor::_mod->Update_anim();
     for (auto &kv : _slots) {
         if (!kv.second.dead && in_range(kv.second.x, kv.second.y))
-            kv.second.robot->draw();
+            draw_robot(kv.second);
     }
     for (auto &eg : _eggs) {
         if (!eg.second.dead && in_range(eg.second.x, eg.second.y))
