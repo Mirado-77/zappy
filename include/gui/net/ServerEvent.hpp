@@ -23,8 +23,11 @@ enum class EventKind {
     UNKNOWN
 };
 
-struct ServerEvent {
-    EventKind kind = EventKind::UNKNOWN;
+class ServerEvent
+{
+public:
+    ServerEvent() : kind(EventKind::UNKNOWN), ints({}), text("") {}
+    EventKind kind;
     std::vector<int> ints;
     std::string text;
 };

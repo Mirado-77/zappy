@@ -97,4 +97,6 @@ re: fclean all
 
 debugre: fclean debug
 
-.PHONY: all debug clean fclean re debugre debug_asan debug_base
+debug_base_re: fclean debug_base
+
+.PHONY: all debug clean fclean re debugre debug_asan debug_base debug_base_re

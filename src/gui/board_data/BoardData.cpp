@@ -170,7 +170,7 @@ void BoardData::on_plv(const net::ServerEvent &ev)
 
 void BoardData::on_pin(const net::ServerEvent &ev)
 {
-    if (ev.ints.size() < 9)
+    if (ev.ints.size() < 3 + RESOURCE_COUNT)
         return;
     auto it = _players.find(ev.ints[0]);
     if (it == _players.end())
@@ -395,8 +395,8 @@ void BoardData::on_storm_set(const net::ServerEvent &ev)
 {
     if (ev.ints.size() < 4)
         return;
-    _storm = StormZone{ev.ints[0], ev.ints[1], ev.ints[2],
-        static_cast<Orientation>(ev.ints[3])};
+    _storm = StormZone(ev.ints[0], ev.ints[1], ev.ints[2],
+        static_cast<Orientation>(ev.ints[3]));
 }
 
 void BoardData::on_storm_end()
@@ -408,7 +408,7 @@ void BoardData::on_meteor_impact(const net::ServerEvent &ev)
 {
     if (ev.ints.size() < 3)
         return;
-    _pending_meteors.push_back({ev.ints[0], ev.ints[1], ev.ints[2]});
+    _pending_meteors.emplace_back(MeteorImpact(ev.ints[0], ev.ints[1], ev.ints[2]));
 }
 
 std::vector<MeteorImpact> BoardData::take_pending_meteors()

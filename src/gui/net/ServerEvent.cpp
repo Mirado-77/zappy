@@ -70,12 +70,29 @@ std::vector<std::string_view> tokenize(std::string_view s)
     return out;
 }
 
+/*
 bool to_int(std::string_view tok, int &out) noexcept
 {
     if (!tok.empty() && tok.front() == '#')
         tok.remove_prefix(1);
     const auto *e = tok.data() + tok.size();
     return std::from_chars(tok.data(), e, out).ptr == e;
+}
+*/
+
+static bool to_int(std::string_view tok, int &out) noexcept
+{
+    std::from_chars_result result;
+
+    if (!tok.empty() && tok.front() == '#')
+        tok.remove_prefix(1);
+    const auto *e = tok.data() + tok.size();
+    result = std::from_chars(tok.data(), e, out);
+    if (result.ec == std::errc::invalid_argument)
+        out = 0;
+    if (result.ec == std::errc::result_out_of_range)
+        out = 0;
+    return result.ptr == e;
 }
 
 const VerbInfo *find_verb(std::string_view verb) noexcept
@@ -111,7 +128,7 @@ bool fill_leading_ints(ServerEvent &ev, const VerbInfo &info,
 {
     for (; consumed < static_cast<std::size_t>(info.int_count)
          && consumed < tokens.size(); ++consumed) {
-        int v;
+        int v = 0;
         if (!to_int(tokens[consumed], v))
             return false;
         ev.ints.push_back(v);
@@ -135,6 +152,7 @@ void fill_from_info(ServerEvent &ev, const VerbInfo &info,
     }
     if (info.has_tail)
         ev.text = tail_after(rest, tokens, consumed);
+    // if consumed < ;
 }
 
 } // namespace

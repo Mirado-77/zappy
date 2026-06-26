@@ -20,36 +20,49 @@
 
 namespace zappy::gui::board_data {
 
-struct PlayerData {
-    int id = 0;
-    int x = 0;
-    int y = 0;
-    Orientation orient = Orientation::NORTH;
-    int level = 1;
+const std::string default_team = "default_team";
+
+class PlayerData {
+public:
+    PlayerData()
+        : id(0), x(0), y(0), orient(Orientation::NORTH), level(1),
+        team(default_team), inventory({0, 0, 0, 0, 0, 0, 0}), alive(true) {}
+    int id;
+    int x;
+    int y;
+    Orientation orient;
+    int level;
     std::string team;
-    Resources inventory{};
-    bool alive = true;
+    Resources inventory;
+    bool alive;
 };
 
-struct EggData {
-    int id = 0;
-    int player_id = -1;
-    int x = 0;
-    int y = 0;
-    bool alive = true;
+class EggData {
+public:
+    EggData() : id(0), player_id(-1), x(0), y(0), alive(true) {}
+    int id;
+    int player_id;
+    int x;
+    int y;
+    bool alive;
 };
 
-struct StormZone {
-    int center_x = 0;
-    int center_y = 0;
-    int radius = 0;
-    Orientation direction = Orientation::NORTH;
+class StormZone {
+public:
+    StormZone(int _center_x = 0, int _center_y = 0, int _radius = 0, Orientation _direction = Orientation::NORTH)
+        : center_x(_center_x), center_y(_center_y), radius(_radius), direction(_direction) {}
+    int center_x;
+    int center_y;
+    int radius;
+    Orientation direction;
 };
 
-struct MeteorImpact {
-    int x = 0;
-    int y = 0;
-    int radius = 0;
+class MeteorImpact {
+public:
+    MeteorImpact(int _x = 0, int _y = 0, int _radius = 0) : x(_x), y(_y), radius(_radius) {}
+    int x;
+    int y;
+    int radius;
 };
 
 class BoardData {

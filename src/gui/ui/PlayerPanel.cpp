@@ -1,6 +1,6 @@
 /*
 ** EPITECH PROJECT, 2026
-** Zappy
+** PlayerPanel.cpp
 ** File description:
 ** raygui player profile panel implementation
 */
