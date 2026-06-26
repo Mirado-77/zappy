@@ -68,16 +68,16 @@ zappy::net::ReadResult zappy::net::ClientBuffer::on_readable()
         const ssize_t n = ::read(_fd.get(), chunk.data(), chunk.size());
         if (n == 0)
             result = ReadResult::PEER_CLOSED;
-        else if (n > 0)
+        else if (n > 0) {
             result = _append_and_check(std::string_view(chunk.data(),
                 static_cast<std::size_t>(n)));
+            _extract_lines();
+        }
         else if (errno == EAGAIN || errno == EWOULDBLOCK)
             running = false;
         else if (errno != EINTR)
             result = ReadResult::ERROR;
     }
-    if (result == ReadResult::OK)
-        _extract_lines();
     return result;
 }
 

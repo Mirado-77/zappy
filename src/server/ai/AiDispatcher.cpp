@@ -175,8 +175,9 @@ bool zappy::server::ai::AiDispatcher::adminStartIncantation(int playerId)
 
     if (!isPlayerAlive(playerId)
         || _world.player(playerId).state() == game::PlayerState::INCANTING
-        || !checkPrerequisites(playerId, participants))
+        || _world.player(playerId).level() >= game::ElevationRules::maxLevel())
         return false;
+    _states[playerId].forcedIncant = true;
     beginIncantationRitual(playerId, participants);
     return true;
 }
@@ -327,11 +328,13 @@ void zappy::server::ai::AiDispatcher::finalizeIncantation(int initiatorId,
 {
     std::vector<int> alive;
 
+    const bool forced = _states[initiatorId].forcedIncant;
+
     std::copy_if(participants.begin(), participants.end(),
         std::back_inserter(alive),
         [this](int id) { return isPlayerAlive(id); });
     if (isPlayerAlive(initiatorId)
-        && checkPrerequisites(initiatorId, alive))
+        && (forced || checkPrerequisites(initiatorId, alive)))
         applySuccess(initiatorId, alive,
             _world.player(initiatorId).level() + 1);
     else
@@ -359,6 +362,7 @@ void zappy::server::ai::AiDispatcher::applySuccess(int initiatorId,
     _world.notifyIncantationEnded(initiatorId, true, newLevel);
     unfreezeAll(alive);
     _states[initiatorId].currentEventId = 0;
+    _states[initiatorId].forcedIncant = false;
     _onResponse(initiatorId, line);
 }
 
@@ -378,6 +382,7 @@ void zappy::server::ai::AiDispatcher::applyFailure(int initiatorId,
     _world.notifyIncantationEnded(initiatorId, false, 0);
     unfreezeAll(alive);
     _states[initiatorId].currentEventId = 0;
+    _states[initiatorId].forcedIncant = false;
     if (initiatorAlive)
         _onResponse(initiatorId, "ko");
 }
@@ -397,7 +402,7 @@ void zappy::server::ai::AiDispatcher::consumeStones(game::Position tilePos,
         const auto type = static_cast<game::ResourceType>(i);
         const int current = _world.tileAt(tilePos).resource(type);
         _world.setTileResource(tilePos, type,
-            current - rule.stonesRequired[i]);
+            std::max(0, current - rule.stonesRequired[i]));
     }
 }
 

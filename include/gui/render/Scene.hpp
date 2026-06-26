@@ -41,8 +41,10 @@ struct PairHash {
 class Scene {
 public:
     void sync(board_data::BoardData &board);
-    void draw(const board_data::BoardData &board);
+    void draw(const board_data::BoardData &board, const Camera &cam);
     void set_shader(Shader shader);
+    [[nodiscard]] int render_distance() const noexcept { return _render_chunks; }
+    void set_render_distance(int chunks) noexcept;
     [[nodiscard]] std::optional<int> pick_player(Vector2 screen,
         const Camera &cam) const;
     [[nodiscard]] std::optional<std::pair<int, int>> pick_tile(Vector2 screen,
@@ -68,6 +70,8 @@ private:
     struct EggSlot {
         std::unique_ptr<::Egg> egg;
         bool dead = false;
+        int x = 0;
+        int y = 0;
     };
 
     struct Incant {
@@ -91,6 +95,8 @@ private:
 
     [[nodiscard]] Vector3 world_pos(int x, int y) const;
     [[nodiscard]] BoundingBox player_box(int x, int y)const;
+    [[nodiscard]] std::pair<int, int> focus_tile(const Camera &cam) const;
+    [[nodiscard]] bool in_range(int x, int y) const noexcept;
     void ensure_world(const board_data::BoardData &board);
     void sync_player(int id, const board_data::PlayerData &player);
     void sync_egg(int id, const board_data::EggData &egg);
@@ -121,6 +127,10 @@ private:
     bool _has_shader = false;
     int _width = 0;
     int _height = 0;
+    int _render_chunks = 6;
+    int _focus_x = 0;
+    int _focus_y = 0;
+    int _range_tiles = 0;
     bool _show_biomes = true;
     bool _show_storm = true;
     bool _show_flood = true;

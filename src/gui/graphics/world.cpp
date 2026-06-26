@@ -7,6 +7,7 @@
 
 #include "gui/world.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 
@@ -86,12 +87,22 @@ void world::draw_tile(int x, int y, double time, float scale)
     tile->Draw_model();
 }
 
-void world::draw_world()
+void world::draw_world(int cx, int cy, int radius)
 {
     const double time = GetTime();
     const float scale = wave_scale(time);
+    int x0 = 0;
+    int y0 = 0;
+    int x1 = this->_width;
+    int y1 = this->_height;
 
-    for (int y = 0; y < this->_height; ++y)
-        for (int x = 0; x < this->_width; ++x)
+    if (radius > 0) {
+        x0 = std::max(0, cx - radius);
+        y0 = std::max(0, cy - radius);
+        x1 = std::min(this->_width, cx + radius + 1);
+        y1 = std::min(this->_height, cy + radius + 1);
+    }
+    for (int y = y0; y < y1; ++y)
+        for (int x = x0; x < x1; ++x)
             draw_tile(x, y, time, scale);
 }
