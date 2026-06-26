@@ -308,12 +308,16 @@ Test(ai_dispatcher_incantation, admin_start_runs_full_ritual)
     cr_assert_eq(fx.world.player(id).level(), 2);
 }
 
-Test(ai_dispatcher_incantation, admin_start_without_stone_fails)
+Test(ai_dispatcher_incantation, admin_start_without_stone_forces)
 {
     Fixture fx;
     const int id = fx.spawn();
-    cr_assert_not(fx.disp.adminStartIncantation(id));
-    cr_assert_not(hasReply(fx.replies, id, "Elevation underway"));
+    // Admin force ignores the stone/headcount prerequisites.
+    cr_assert(fx.disp.adminStartIncantation(id));
+    cr_assert(hasReply(fx.replies, id, "Elevation underway"));
+    fx.finishIncantation();
+    cr_assert(hasReply(fx.replies, id, "Current level: 2"));
+    cr_assert_eq(fx.world.player(id).level(), 2);
 }
 
 Test(ai_dispatcher_incantation, admin_stop_aborts_ongoing_ritual)
