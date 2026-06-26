@@ -9,7 +9,7 @@ from player_state import PlayerState
 from sender import CommandSender
 
 # Player must have more food than this to consider forking.
-FORK_FOOD_THRESHOLD = 30
+FORK_FOOD_THRESHOLD = 20
 
 # Player must be at least this level before forking is useful.
 FORK_MIN_LEVEL = 2
