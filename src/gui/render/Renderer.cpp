@@ -11,6 +11,7 @@
 
 #include "gui/draw.hpp"
 #include "gui/trantor.hpp"
+#include "raygui.h"
 
 namespace zappy::gui::render {
 
@@ -124,6 +125,21 @@ void Renderer::storm_overlay(const board_data::BoardData &board)
     ::draw::Draw_text(line, {10, 100}, 24, ORANGE);
 }
 
+void Renderer::render_dist_hud()
+{
+    const float y = static_cast<float>(GetScreenHeight()) - 40.0f;
+    const int dist = _scene.render_distance();
+    const std::string label = dist == 0
+        ? "render dist: off"
+        : "render dist: " + std::to_string(dist);
+
+    ::draw::Draw_text(label, {10.0f, y - 26.0f}, 20, DARKGRAY);
+    if (GuiButton({10, y, 30, 30}, "-"))
+        _scene.set_render_distance(dist - 1);
+    if (GuiButton({45, y, 30, 30}, "+"))
+        _scene.set_render_distance(dist + 1);
+}
+
 void Renderer::update_cursor()
 {
     const bool look = IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
@@ -195,6 +211,7 @@ void Renderer::draw(board_data::BoardData &board, ui::AdminPanel &admin,
     _scene.sync(board);
     update_cursor();
     update_skybox();
+    _camera.set_map_size(board.width(), board.height());
     _camera.update_free_rmb(!typing);
     handle_pick(board, admin, player);
     if (IsKeyPressed(KEY_B) && !typing)
@@ -209,9 +226,10 @@ void Renderer::draw(board_data::BoardData &board, ui::AdminPanel &admin,
     _camera.Begin_mode_3d();
     draw_skybox();
     trantor::_health_bar_batch->draw_health_bars(_camera.cam);
-    _scene.draw(board);
+    _scene.draw(board, _camera.cam);
     _camera.End_mode_3d();
     overlay(board);
+    render_dist_hud();
     storm_overlay(board);
     if (IsCursorHidden())
         draw_crosshair();

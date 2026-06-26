@@ -16,7 +16,7 @@ class world {
     public:
         world(int x, int y);
         ~world();
-        void draw_world();
+        void draw_world(int cx, int cy, int radius);
         void set_tile_model(int x, int y, int model_index);
         void set_shader(Shader shader);
         float get_wave_pos(int x, int y);
