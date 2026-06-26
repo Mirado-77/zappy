@@ -11,6 +11,7 @@
 
 #include "gui/draw.hpp"
 #include "gui/trantor.hpp"
+#include "gui/ui/Theme.hpp"
 #include "raygui.h"
 
 namespace zappy::gui::render {
@@ -49,6 +50,7 @@ Renderer::Renderer()
     _camera.set_mode(CAMERA_FREE);
     SetTargetFPS(60);
     _window.Set_window_state(FLAG_WINDOW_RESIZABLE);
+    ui::apply_modern_theme();
     setup_shader();
     _skybox = SkyboxLoad( "src/gui/assets/skybox/skyboxsea1.png", NULL,
         "src/gui/assets/skybox/gls330/skybox.vs", "src/gui/assets/skybox/gls330/skybox.fs",
