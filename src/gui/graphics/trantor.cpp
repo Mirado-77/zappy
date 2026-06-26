@@ -10,21 +10,6 @@
 #include "gui/Constants.hpp"
 #include "gui/Item.hpp"
 
-/*
-    // int id = 0;
-    // int x = 0;
-    // int y = 0;
-    // Orientation orient = Orientation::NORTH;
-    int level = 1;
-    std::string team;
-    Resources inventory{};
-    bool alive = true;
-    _id(player_data.id),
-    _pos(player_pos),
-    _state(YES),
-    _angle((player_data.orient - 1) * 90)
-*/
-
 inline double health_function(int food_count)
 {
     if (food_count > 6.3) {
@@ -39,7 +24,7 @@ trantor::trantor(const zappy::gui::board_data::PlayerData& trantorian_data, Vect
     : _id(trantorian_data.id),
     _pos(player_pos),
     _state(YES),
-    _angle((static_cast<int>(trantorian_data.orient) - 1) * 90),
+    _angle((static_cast<int>(trantorian_data.orient) + 1) * -90),
     _health(health_function(trantorian_data.inventory[R_FOOD])),
     _is_alive(trantorian_data.alive),
     _death_frame(0)
@@ -90,7 +75,7 @@ void trantor::sync(const zappy::gui::board_data::PlayerData& trantorian_data, Ve
     _id = trantorian_data.id;
     _pos = player_pos;
     _state = YES;
-    _angle = (static_cast<int>(trantorian_data.orient) - 1) * 90;
+    _angle = (static_cast<int>(trantorian_data.orient) + 1) * -90;
     _health = health_function(trantorian_data.inventory[R_FOOD]);
     _is_alive = trantorian_data.alive;
     if (_is_alive)

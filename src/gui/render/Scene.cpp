@@ -230,7 +230,7 @@ void Scene::sync_player(int id, const board_data::PlayerData &player)
     slot.x = player.x;
     slot.y = player.y;
     rotate_to(slot, static_cast<int>(player.orient));
-    if (!player.alive && !slot.dead) {
+    if (!player.alive || slot.dead) {
         slot.robot->death();
         if (slot.robot->_mod->get_current_frame() >=
             slot.robot->_mod->get_frame_count())
