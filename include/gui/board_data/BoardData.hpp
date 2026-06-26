@@ -73,6 +73,8 @@ public:
         const noexcept { return _teams; }
     [[nodiscard]] const std::vector<GraphicalEvent> &events()
         const noexcept { return _events; }
+    // Drain accumulated graphical events (broadcasts, ejects, ...).
+    [[nodiscard]] std::vector<GraphicalEvent> take_events();
     [[nodiscard]] bool game_ended() const noexcept { return _ended; }
     [[nodiscard]] const std::string &winner() const noexcept { return _winner; }
     [[nodiscard]] bool is_admin() const noexcept { return _is_admin; }

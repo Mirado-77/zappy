@@ -421,6 +421,11 @@ std::vector<int> BoardData::take_pending_levelups()
     return std::exchange(_pending_levelups, {});
 }
 
+std::vector<GraphicalEvent> BoardData::take_events()
+{
+    return std::exchange(_events, {});
+}
+
 void BoardData::on_evt_flood_tile(const net::ServerEvent &ev)
 {
     if (ev.ints.size() < 2)
