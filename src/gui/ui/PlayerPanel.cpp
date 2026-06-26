@@ -55,15 +55,9 @@ PlayerPanel::PlayerPanel(board_data::BoardData &board)
 {
 }
 
-Rectangle PlayerPanel::panel_rect() const
-{
-    return {static_cast<float>(GetScreenWidth()) - PANEL_W - 20.0f,
-        80.0f, PANEL_W, PANEL_H};
-}
-
 bool PlayerPanel::blocks_point(Vector2 p) const
 {
-    return _visible && CheckCollisionPointRec(p, panel_rect());
+    return _visible && CheckCollisionPointRec(p, PANEL_RECT);
 }
 
 void PlayerPanel::handle_toggle()
@@ -142,7 +136,7 @@ void PlayerPanel::draw()
     if (!_visible)
         return;
     ensure_selection();
-    const Rectangle box = panel_rect();
+    const Rectangle box = PANEL_RECT;
     if (GuiWindowBox(box, "Player")) {
         _visible = false;
         return;

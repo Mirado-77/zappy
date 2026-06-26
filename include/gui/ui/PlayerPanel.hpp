@@ -17,6 +17,9 @@
 
 namespace zappy::gui::ui {
 
+#define PANEL_RECT {static_cast<float>(GetScreenWidth()) - PANEL_W - 20.0f,\
+    80.0f, PANEL_W, PANEL_H}
+
 class PlayerPanel {
 public:
     explicit PlayerPanel(board_data::BoardData &board);

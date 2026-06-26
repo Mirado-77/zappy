@@ -6,6 +6,7 @@
 */
 
 #include "gui/camera.hpp"
+#include "gui/utils.hpp"
 #include <iostream>
 #include <map>
 
@@ -15,15 +16,15 @@ camera::camera(Vector3 pos)
 {
     this->cam.position = pos;
     this->cam.fovy = 45.0f;
-    this->cam.target = (Vector3){ 0.0f, 0.0f, 0.0f };
-    this->cam.up = (Vector3){ 0.0f, 1.0f, 0.0f };
+    this->cam.target = NULL_VECTOR;
+    this->cam.up = UP_DIRECTION;
     this->cam.projection = CAMERA_PERSPECTIVE;
 }
 
 void camera::set_mode(CameraMode mode)
 {
     cameraMode = mode;
-    this->cam.up = (Vector3){ 0.0f, 1.0f, 0.0f };
+    this->cam.up = UP_DIRECTION;
 }
 
 void camera::update_camera()

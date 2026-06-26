@@ -19,7 +19,6 @@ class Egg {
         static std::unique_ptr<model> _mod;
     private:
         Vector3 _pos;
-        bool is_alive;
 };
 #define EGG_SCALE 0.5
 

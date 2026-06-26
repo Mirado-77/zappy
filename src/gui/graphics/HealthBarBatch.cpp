@@ -84,9 +84,9 @@ void HealthBarBatch::draw_health_bars(Camera camera)
     }
 }
 
-void HealthBarBatch::scale_health_bars(double _scale)
+void HealthBarBatch::scale_health_bars(double scale)
 {
-    _scale = _scale;
+    _scale = scale;
 }
 
 void HealthBarBatch::kill(int id)

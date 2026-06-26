@@ -6,6 +6,7 @@
 */
 
 #include "gui/Incantation.hpp"
+#include "gui/utils.hpp"
 
 Incantation::Incantation()
     : _circle(LoadTexture(CIRCLE_PATH)),
@@ -35,7 +36,7 @@ void Incantation::draw()
     Vector3 worldUp = { sinf(r), cosf(r), 0.0f };
 
     draw::DrawTextureIn3D(this->_circle,
-                        (Vector3){0, 1, 0},
+                        UP_DIRECTION,
                         normal, worldUp,
                         8.0f, 8.0f, _src, WHITE);
 }
