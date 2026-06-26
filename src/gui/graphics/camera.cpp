@@ -31,10 +31,13 @@ void camera::update_camera()
     UpdateCamera(&this->cam, cameraMode);
 }
 
-static Vector3 free_movement()
+static constexpr float BASE_SPEED = 0.3f;
+static constexpr float BASE_ZOOM = 2.0f;
+static constexpr float REFERENCE_MAP = 10.0f;
+
+static Vector3 free_movement(float speed)
 {
     Vector3 mov = {0.0f, 0.0f, 0.0f};
-    const float speed = 0.3f;
 
     mov.x = static_cast<float>((IsKeyDown(KEY_W) || IsKeyDown(KEY_UP))
         - (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN))) * speed;
@@ -45,18 +48,25 @@ static Vector3 free_movement()
     return mov;
 }
 
+void camera::set_map_size(int width, int height)
+{
+    const float biggest = static_cast<float>(width > height ? width : height);
+
+    _move_scale = biggest > 0.0f ? biggest / REFERENCE_MAP : 1.0f;
+}
+
 void camera::update_free_rmb(bool allow_move)
 {
     Vector3 rot = {0.0f, 0.0f, 0.0f};
     Vector3 mov = {0.0f, 0.0f, 0.0f};
-    const float zoom = -GetMouseWheelMove() * 2.0f;
+    const float zoom = -GetMouseWheelMove() * BASE_ZOOM * _move_scale;
 
     if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
         rot.x = GetMouseDelta().x * 0.15f;
         rot.y = GetMouseDelta().y * 0.15f;
     }
     if (allow_move)
-        mov = free_movement();
+        mov = free_movement(BASE_SPEED * _move_scale);
     UpdateCameraPro(&this->cam, mov, rot, zoom);
 }
 

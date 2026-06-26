@@ -35,6 +35,7 @@ private:
     void update_light();
     void overlay(const board_data::BoardData &board);
     void storm_overlay(const board_data::BoardData &board);
+    void render_dist_hud();
     void update_cursor();
     void handle_pick(board_data::BoardData &board, ui::AdminPanel &admin,
         ui::PlayerPanel &player);

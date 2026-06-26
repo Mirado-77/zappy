@@ -18,6 +18,7 @@ class camera {
         void set_mode(CameraMode mode);
         void update_camera();
         void update_free_rmb(bool allow_move);
+        void set_map_size(int width, int height);
         void set_pos(Vector3 pos);
         void set_target(Vector3 pos);
         void set_up(Vector3 pos);
@@ -28,6 +29,7 @@ class camera {
     protected:
     private:
         int cameraMode;
+        float _move_scale = 1.0f;
 };
 
 #endif /* !CAMERA_HPP_ */

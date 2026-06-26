@@ -18,6 +18,8 @@ namespace zappy::gui::render {
 namespace {
 
 constexpr float TILE_UNIT = 6.0f;
+constexpr int CHUNK_SIZE = 4;
+constexpr int MAX_RENDER_CHUNKS = 32;
 constexpr float ROBOT_HALF = 2.5f;
 constexpr float ROBOT_LOW = -1.0f;
 constexpr float ROBOT_HIGH = 6.0f;
@@ -56,6 +58,36 @@ BoundingBox Scene::player_box(int x, int y) const
 
     return {{p.x - ROBOT_HALF, ROBOT_LOW, p.z - ROBOT_HALF},
         {p.x + ROBOT_HALF, ROBOT_HIGH, p.z + ROBOT_HALF}};
+}
+
+void Scene::set_render_distance(int chunks) noexcept
+{
+    _render_chunks = std::clamp(chunks, 0, MAX_RENDER_CHUNKS);
+}
+
+std::pair<int, int> Scene::focus_tile(const Camera &cam) const
+{
+    const Vector3 pos = cam.position;
+    const Vector3 dir = {cam.target.x - pos.x, cam.target.y - pos.y,
+        cam.target.z - pos.z};
+    float fx = pos.x;
+    float fz = pos.z;
+
+    if (dir.y < 0.0f) {
+        const float t = -pos.y / dir.y;
+        fx = pos.x + dir.x * t;
+        fz = pos.z + dir.z * t;
+    }
+    return {static_cast<int>(std::lround(fx / TILE_UNIT)),
+        static_cast<int>(std::lround(fz / TILE_UNIT))};
+}
+
+bool Scene::in_range(int x, int y) const noexcept
+{
+    if (_range_tiles <= 0)
+        return true;
+    return std::abs(x - _focus_x) <= _range_tiles
+        && std::abs(y - _focus_y) <= _range_tiles;
 }
 
 void Scene::set_shader(Shader shader)
@@ -208,6 +240,8 @@ void Scene::sync_egg(int id, const board_data::EggData &egg)
     if (inserted) {
         slot.egg = std::make_unique<::Egg>();
     }
+    slot.x = egg.x;
+    slot.y = egg.y;
     slot.egg->set_pos(world_pos(egg.x, egg.y));
     if (!egg.alive && !slot.dead)
         slot.dead = true;
@@ -295,21 +329,33 @@ void draw_egg_player()
 }
 */
 
-void Scene::draw(const board_data::BoardData &board)
+void Scene::draw(const board_data::BoardData &board, const Camera &cam)
 {
+    const auto [cx, cy] = focus_tile(cam);
+
+    if (_render_chunks > 0) {
+        _focus_x = (cx / CHUNK_SIZE) * CHUNK_SIZE + CHUNK_SIZE / 2;
+        _focus_y = (cy / CHUNK_SIZE) * CHUNK_SIZE + CHUNK_SIZE / 2;
+        _range_tiles = _render_chunks * CHUNK_SIZE;
+    } else {
+        _range_tiles = 0;
+    }
     if (_world)
-        _world->draw_world();
+        _world->draw_world(_focus_x, _focus_y, _range_tiles);
     trantor::_mod->Update_anim();
     for (auto &kv : _slots) {
-        if (!kv.second.dead)
+        if (!kv.second.dead && in_range(kv.second.x, kv.second.y))
             kv.second.robot->draw();
     }
     for (auto &eg : _eggs) {
-        if (!eg.second.dead)
+        if (!eg.second.dead && in_range(eg.second.x, eg.second.y))
             eg.second.egg->draw();
     }
-    for (auto &kv : _items)
-        kv.second->draw();
+    for (auto &kv : _items) {
+        if (in_range(static_cast<int>(kv.first.first),
+            static_cast<int>(kv.first.second)))
+            kv.second->draw();
+    }
     for (auto &ic : _incantation)
         ic.second.incant->draw();
     // draw_egg_player();
