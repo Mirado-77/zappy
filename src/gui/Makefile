@@ -66,13 +66,13 @@ $(BIN_DIR)/$(NAME):	$(OBJ) $(POSIX_LIB) $(NET_LIB) $(PROTOCOL_LIB)
 	@mkdir -p $(BIN_DIR)
 	$(CXX) -o $@ $(OBJ) $(LDFLAGS)
 
-_debug: CXXFLAGS += $(DEBUG_CFLAGS)
-_debug: LDFLAGS += $(DEBUG_LDFLAGS)
-_debug: $(BIN_DIR)/$(NAME)-debug
+debug_base: CXXFLAGS += $(DEBUG_CFLAGS)
+debug_base: LDFLAGS += $(DEBUG_LDFLAGS)
+debug_base: $(BIN_DIR)/$(NAME)-debug
 
 debug_asan: DEBUG_CFLAGS += $(DEBUG_CFLAGS_ASAN)
 debug_asan: DEBUG_LDFLAGS += $(DEBUG_LDFLAGS_ASAN)
-debug_asan : _debug
+debug_asan : debug_base
 
 debug: debug_asan
 
@@ -97,4 +97,4 @@ re: fclean all
 
 debugre: fclean debug
 
-.PHONY: all debug clean fclean re debugre debug_asan _debug
+.PHONY: all debug clean fclean re debugre debug_asan debug_base
