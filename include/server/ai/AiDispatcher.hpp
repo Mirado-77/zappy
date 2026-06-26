@@ -105,6 +105,7 @@ private:
     struct PlayerState {
         std::deque<protocol::ai::ParsedCommand> queue;
         scheduler::EventId currentEventId = 0;
+        bool forcedIncant = false;
     };
 
     static constexpr std::size_t MAX_PENDING_COMMANDS = 10;
