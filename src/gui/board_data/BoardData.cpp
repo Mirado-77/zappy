@@ -424,7 +424,7 @@ std::vector<int> BoardData::take_pending_levelups()
     return std::exchange(_pending_levelups, {});
 }
 
-std::vector<GraphicalEvent> BoardData::take_events()
+std::unordered_map<int, GraphicalEvent> BoardData::take_events()
 {
     return std::exchange(_events, {});
 }

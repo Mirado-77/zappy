@@ -132,10 +132,10 @@ void Renderer::drain_events(board_data::BoardData &board)
     using Kind = board_data::GraphicalEventKind;
 
     for (const auto &ev : board.take_events()) {
-        if (ev.kind == Kind::EJECT)
-            _scene.trigger_eject(ev.player_id);
-        else if (ev.kind == Kind::BROADCAST)
-            _chat.push(ev.player_id, ev.text);
+        if (ev.second.kind == Kind::EJECT)
+            _scene.trigger_eject(ev.second.player_id);
+        else if (ev.second.kind == Kind::BROADCAST)
+            _chat.push(ev.second.player_id, ev.second.text);
     }
 }
 
